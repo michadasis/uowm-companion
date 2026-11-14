@@ -1,0 +1,22 @@
+import type { Icon } from 'phosphor-react-native';
+
+export const ArrowClockwiseIcon: Icon;
+export const ArrowLeftIcon: Icon;
+export const CalendarDotsIcon: Icon;
+export const CaretRightIcon: Icon;
+export const CheckIcon: Icon;
+export const ForkKnifeIcon: Icon;
+export const GraduationCapIcon: Icon;
+export const HouseIcon: Icon;
+export const InfoIcon: Icon;
+export const MagnifyingGlassIcon: Icon;
+export const MapPinIcon: Icon;
+export const MegaphoneIcon: Icon;
+export const PaletteIcon: Icon;
+export const SparkleIcon: Icon;
+export const SquaresFourIcon: Icon;
+export const TranslateIcon: Icon;
+export const TrayIcon: Icon;
+export const WarningCircleIcon: Icon;
+export const WifiSlashIcon: Icon;
+export const XIcon: Icon;
