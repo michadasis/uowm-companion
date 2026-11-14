@@ -34,7 +34,10 @@ function expectValidAnnouncements(source: AnnouncementsSource) {
       expect(Number.isInteger(category) && category > 0).toBe(true);
     }
   } else {
-    expect(new URL(source.listingUrl).pathname).toMatch(/^\/category\//);
+    expect(() => new URL(source.listingUrl)).not.toThrow();
+    // The archive gives the post links; the post pages live under this prefix.
+    expect(source.postPathPrefix.startsWith('/')).toBe(true);
+    expect(source.postPathPrefix.endsWith('/')).toBe(true);
   }
 }
 

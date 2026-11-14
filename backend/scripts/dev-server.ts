@@ -1,6 +1,7 @@
 import { createServer } from 'node:http';
 import { Readable } from 'node:stream';
 
+import announcements from '../api/announcements.js';
 import departments from '../api/departments.js';
 
 interface Endpoint {
@@ -12,6 +13,7 @@ interface Endpoint {
 // an account.
 const routes: Record<string, Endpoint> = {
   '/api/departments': departments,
+  '/api/announcements': announcements,
 };
 
 const port = Number(process.env.PORT ?? 3000);

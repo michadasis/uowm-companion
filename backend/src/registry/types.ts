@@ -42,10 +42,15 @@ export interface WordPressRestSource {
 /**
  * Posts scraped from a category archive page. Only for sites that refuse
  * anonymous REST requests, since their robots.txt also rules out the feeds.
+ * The archive gives the list of post links; the title, date & body are read
+ * from each post's own page, whose markup is far more uniform than an
+ * archive theme's.
  */
 export interface HtmlListingSource {
   adapter: 'html-listing';
   listingUrl: string;
+  /** The path prefix a post permalink has on this site, e.g. "/nea/". */
+  postPathPrefix: string;
 }
 
 export type AnnouncementsSource = WordPressRestSource | HtmlListingSource;

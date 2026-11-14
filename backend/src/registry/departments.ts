@@ -174,7 +174,13 @@ export const departments: readonly Department[] = [
     city: 'kozani',
     website: site('mst'),
     sources: {
-      announcements: { adapter: 'html-listing', listingUrl: `${site('mst')}/category/nea/` },
+      announcements: {
+        adapter: 'html-listing',
+        // The department's plain /category/nea/ page lists only a handful of
+        // pinned posts; this one is the full reverse-chronological feed.
+        listingUrl: `${site('mst')}/epikairotita/anakoinoseis/`,
+        postPathPrefix: '/nea/',
+      },
       staff: [
         page(`${site('mst')}/meli-dep/`),
         page(`${site('mst')}/ektakto-epistimoniko-prosopiko/`),
@@ -231,6 +237,7 @@ export const departments: readonly Department[] = [
       announcements: {
         adapter: 'html-listing',
         listingUrl: `${site('rdcbs')}/category/anakoinoseis/`,
+        postPathPrefix: '/anakoinoseis/',
       },
       staff: [page(`${site('rdcbs')}/?page_id=1093`)],
       secretariat: page(`${site('rdcbs')}/epikoinonia/`),
