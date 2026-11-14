@@ -1,0 +1,583 @@
+{
+  "cities": [
+    {
+      "id": "kozani",
+      "name": {
+        "el": "Κοζάνη",
+        "en": "Kozani"
+      }
+    },
+    {
+      "id": "florina",
+      "name": {
+        "el": "Φλώρινα",
+        "en": "Florina"
+      }
+    },
+    {
+      "id": "kastoria",
+      "name": {
+        "el": "Καστοριά",
+        "en": "Kastoria"
+      }
+    },
+    {
+      "id": "ptolemaida",
+      "name": {
+        "el": "Πτολεμαΐδα",
+        "en": "Ptolemaida"
+      }
+    },
+    {
+      "id": "grevena",
+      "name": {
+        "el": "Γρεβενά",
+        "en": "Grevena"
+      }
+    }
+  ],
+  "schools": [
+    {
+      "id": "engineering",
+      "name": {
+        "el": "Πολυτεχνική Σχολή",
+        "en": "School of Engineering"
+      },
+      "seat": "kozani"
+    },
+    {
+      "id": "economics",
+      "name": {
+        "el": "Σχολή Οικονομικών Επιστημών",
+        "en": "School of Economic Sciences"
+      },
+      "seat": "kozani"
+    },
+    {
+      "id": "social-sciences",
+      "name": {
+        "el": "Σχολή Κοινωνικών και Ανθρωπιστικών Επιστημών",
+        "en": "School of Social Sciences and Humanities"
+      },
+      "seat": "florina"
+    },
+    {
+      "id": "sciences",
+      "name": {
+        "el": "Σχολή Θετικών Επιστημών",
+        "en": "School of Science"
+      },
+      "seat": "kastoria"
+    },
+    {
+      "id": "health",
+      "name": {
+        "el": "Σχολή Επιστημών Υγείας",
+        "en": "School of Health Sciences"
+      },
+      "seat": "ptolemaida"
+    },
+    {
+      "id": "fine-arts",
+      "name": {
+        "el": "Σχολή Καλών Τεχνών",
+        "en": "School of Fine Arts"
+      },
+      "seat": "florina"
+    },
+    {
+      "id": "agriculture",
+      "name": {
+        "el": "Σχολή Γεωπονικών Επιστημών",
+        "en": "School of Agriculture"
+      },
+      "seat": "florina"
+    }
+  ],
+  "departments": [
+    {
+      "id": "ece",
+      "name": {
+        "el": "Τμήμα Ηλεκτρολόγων Μηχανικών και Μηχανικών Υπολογιστών",
+        "en": "Department of Electrical and Computer Engineering"
+      },
+      "shortName": {
+        "el": "Ηλεκτρολόγων Μηχανικών και Μηχανικών Υπολογιστών",
+        "en": "Electrical and Computer Engineering"
+      },
+      "aliases": [
+        "ΤΗΜΜΥ"
+      ],
+      "school": "engineering",
+      "city": "kozani",
+      "website": "https://ece.uowm.gr",
+      "features": [
+        "announcements",
+        "exams",
+        "timetable",
+        "staff",
+        "secretariat"
+      ]
+    },
+    {
+      "id": "mech",
+      "name": {
+        "el": "Τμήμα Μηχανολόγων Μηχανικών",
+        "en": "Department of Mechanical Engineering"
+      },
+      "shortName": {
+        "el": "Μηχανολόγων Μηχανικών",
+        "en": "Mechanical Engineering"
+      },
+      "aliases": [],
+      "school": "engineering",
+      "city": "kozani",
+      "website": "https://mech.uowm.gr",
+      "features": [
+        "announcements",
+        "timetable",
+        "staff",
+        "secretariat"
+      ]
+    },
+    {
+      "id": "chemeng",
+      "name": {
+        "el": "Τμήμα Χημικών Μηχανικών",
+        "en": "Department of Chemical Engineering"
+      },
+      "shortName": {
+        "el": "Χημικών Μηχανικών",
+        "en": "Chemical Engineering"
+      },
+      "aliases": [],
+      "school": "engineering",
+      "city": "kozani",
+      "website": "https://chemeng.uowm.gr",
+      "features": [
+        "announcements",
+        "exams",
+        "timetable",
+        "staff",
+        "secretariat"
+      ]
+    },
+    {
+      "id": "mre",
+      "name": {
+        "el": "Τμήμα Μηχανικών Ορυκτών Πόρων",
+        "en": "Department of Mineral Resources Engineering"
+      },
+      "shortName": {
+        "el": "Μηχανικών Ορυκτών Πόρων",
+        "en": "Mineral Resources Engineering"
+      },
+      "aliases": [
+        "ΜΟΠ"
+      ],
+      "school": "engineering",
+      "city": "kozani",
+      "website": "https://mre.uowm.gr",
+      "features": [
+        "announcements",
+        "timetable",
+        "staff",
+        "secretariat"
+      ]
+    },
+    {
+      "id": "ide",
+      "name": {
+        "el": "Τμήμα Μηχανικών Σχεδίασης Προϊόντων και Συστημάτων",
+        "en": "Department of Product and Systems Design Engineering"
+      },
+      "shortName": {
+        "el": "Μηχανικών Σχεδίασης Προϊόντων και Συστημάτων",
+        "en": "Product and Systems Design Engineering"
+      },
+      "aliases": [],
+      "school": "engineering",
+      "city": "kozani",
+      "website": "https://ide.uowm.gr",
+      "features": [
+        "announcements",
+        "staff",
+        "secretariat"
+      ]
+    },
+    {
+      "id": "iees",
+      "name": {
+        "el": "Τμήμα Διεθνών και Ευρωπαϊκών Οικονομικών Σπουδών",
+        "en": "Department of International and European Economic Studies"
+      },
+      "shortName": {
+        "el": "Διεθνών και Ευρωπαϊκών Οικονομικών Σπουδών",
+        "en": "International and European Economic Studies"
+      },
+      "aliases": [
+        "ΔΕΟΣ"
+      ],
+      "school": "economics",
+      "city": "kozani",
+      "website": "https://iees.uowm.gr",
+      "features": [
+        "announcements",
+        "staff",
+        "secretariat"
+      ]
+    },
+    {
+      "id": "mst",
+      "name": {
+        "el": "Τμήμα Διοικητικής Επιστήμης και Τεχνολογίας",
+        "en": "Department of Management Science and Technology"
+      },
+      "shortName": {
+        "el": "Διοικητικής Επιστήμης και Τεχνολογίας",
+        "en": "Management Science and Technology"
+      },
+      "aliases": [
+        "ΔΕΤ"
+      ],
+      "school": "economics",
+      "city": "kozani",
+      "website": "https://mst.uowm.gr",
+      "features": [
+        "announcements",
+        "staff",
+        "secretariat"
+      ]
+    },
+    {
+      "id": "accfin",
+      "name": {
+        "el": "Τμήμα Λογιστικής και Χρηματοοικονομικής",
+        "en": "Department of Accounting and Finance"
+      },
+      "shortName": {
+        "el": "Λογιστικής και Χρηματοοικονομικής",
+        "en": "Accounting and Finance"
+      },
+      "aliases": [],
+      "school": "economics",
+      "city": "kozani",
+      "website": "https://accfin.uowm.gr",
+      "features": [
+        "announcements",
+        "exams",
+        "timetable",
+        "staff",
+        "secretariat"
+      ]
+    },
+    {
+      "id": "rdcbs",
+      "name": {
+        "el": "Τμήμα Περιφερειακής και Διασυνοριακής Ανάπτυξης",
+        "en": "Department of Regional and Cross-Border Development Studies"
+      },
+      "shortName": {
+        "el": "Περιφερειακής και Διασυνοριακής Ανάπτυξης",
+        "en": "Regional and Cross-Border Development Studies"
+      },
+      "aliases": [],
+      "school": "economics",
+      "city": "kozani",
+      "website": "https://rdcbs.uowm.gr",
+      "features": [
+        "announcements",
+        "staff",
+        "secretariat"
+      ]
+    },
+    {
+      "id": "econ",
+      "name": {
+        "el": "Τμήμα Οικονομικών Επιστημών",
+        "en": "Department of Economics"
+      },
+      "shortName": {
+        "el": "Οικονομικών Επιστημών",
+        "en": "Economics"
+      },
+      "aliases": [],
+      "school": "economics",
+      "city": "kastoria",
+      "website": "https://econ.uowm.gr",
+      "features": [
+        "announcements",
+        "timetable",
+        "staff",
+        "secretariat"
+      ]
+    },
+    {
+      "id": "ba",
+      "name": {
+        "el": "Τμήμα Οργάνωσης και Διοίκησης Επιχειρήσεων",
+        "en": "Department of Business Administration"
+      },
+      "shortName": {
+        "el": "Οργάνωσης και Διοίκησης Επιχειρήσεων",
+        "en": "Business Administration"
+      },
+      "aliases": [
+        "ΟΔΕ"
+      ],
+      "school": "economics",
+      "city": "grevena",
+      "website": "https://ba.uowm.gr",
+      "features": [
+        "announcements",
+        "exams",
+        "timetable",
+        "staff",
+        "secretariat"
+      ]
+    },
+    {
+      "id": "stat",
+      "name": {
+        "el": "Τμήμα Στατιστικής",
+        "en": "Department of Statistics"
+      },
+      "shortName": {
+        "el": "Στατιστικής",
+        "en": "Statistics"
+      },
+      "aliases": [],
+      "school": "economics",
+      "city": "grevena",
+      "website": "https://stat.uowm.gr",
+      "features": [
+        "announcements",
+        "exams",
+        "timetable",
+        "staff",
+        "secretariat"
+      ]
+    },
+    {
+      "id": "eled",
+      "name": {
+        "el": "Παιδαγωγικό Τμήμα Δημοτικής Εκπαίδευσης",
+        "en": "Department of Primary Education"
+      },
+      "shortName": {
+        "el": "Παιδαγωγικό Δημοτικής Εκπαίδευσης",
+        "en": "Primary Education"
+      },
+      "aliases": [
+        "ΠΤΔΕ"
+      ],
+      "school": "social-sciences",
+      "city": "florina",
+      "website": "https://eled.uowm.gr",
+      "features": [
+        "announcements",
+        "timetable",
+        "staff",
+        "secretariat"
+      ]
+    },
+    {
+      "id": "nured",
+      "name": {
+        "el": "Παιδαγωγικό Τμήμα Νηπιαγωγών",
+        "en": "Department of Early Childhood Education"
+      },
+      "shortName": {
+        "el": "Παιδαγωγικό Νηπιαγωγών",
+        "en": "Early Childhood Education"
+      },
+      "aliases": [
+        "ΠΤΝ"
+      ],
+      "school": "social-sciences",
+      "city": "florina",
+      "website": "https://nured.uowm.gr",
+      "features": [
+        "announcements",
+        "exams",
+        "timetable",
+        "staff",
+        "secretariat"
+      ]
+    },
+    {
+      "id": "psy",
+      "name": {
+        "el": "Τμήμα Ψυχολογίας",
+        "en": "Department of Psychology"
+      },
+      "shortName": {
+        "el": "Ψυχολογίας",
+        "en": "Psychology"
+      },
+      "aliases": [],
+      "school": "social-sciences",
+      "city": "florina",
+      "website": "https://psy.uowm.gr",
+      "features": [
+        "announcements",
+        "exams",
+        "timetable",
+        "staff",
+        "secretariat"
+      ]
+    },
+    {
+      "id": "cdm",
+      "name": {
+        "el": "Τμήμα Επικοινωνίας και Ψηφιακών Μέσων",
+        "en": "Department of Communication and Digital Media"
+      },
+      "shortName": {
+        "el": "Επικοινωνίας και Ψηφιακών Μέσων",
+        "en": "Communication and Digital Media"
+      },
+      "aliases": [],
+      "school": "social-sciences",
+      "city": "kastoria",
+      "website": "https://cdm.uowm.gr",
+      "features": [
+        "announcements",
+        "exams",
+        "timetable",
+        "staff",
+        "secretariat"
+      ]
+    },
+    {
+      "id": "math",
+      "name": {
+        "el": "Τμήμα Μαθηματικών",
+        "en": "Department of Mathematics"
+      },
+      "shortName": {
+        "el": "Μαθηματικών",
+        "en": "Mathematics"
+      },
+      "aliases": [],
+      "school": "sciences",
+      "city": "kastoria",
+      "website": "https://math.uowm.gr",
+      "features": [
+        "announcements",
+        "exams",
+        "timetable",
+        "staff",
+        "secretariat"
+      ]
+    },
+    {
+      "id": "cs",
+      "name": {
+        "el": "Τμήμα Πληροφορικής",
+        "en": "Department of Informatics"
+      },
+      "shortName": {
+        "el": "Πληροφορικής",
+        "en": "Informatics"
+      },
+      "aliases": [],
+      "school": "sciences",
+      "city": "kastoria",
+      "website": "https://cs.uowm.gr",
+      "features": [
+        "announcements",
+        "exams",
+        "timetable",
+        "staff",
+        "secretariat"
+      ]
+    },
+    {
+      "id": "ot",
+      "name": {
+        "el": "Τμήμα Εργοθεραπείας",
+        "en": "Department of Occupational Therapy"
+      },
+      "shortName": {
+        "el": "Εργοθεραπείας",
+        "en": "Occupational Therapy"
+      },
+      "aliases": [],
+      "school": "health",
+      "city": "ptolemaida",
+      "website": "https://ot.uowm.gr",
+      "features": [
+        "announcements",
+        "exams",
+        "timetable",
+        "staff",
+        "secretariat"
+      ]
+    },
+    {
+      "id": "mw",
+      "name": {
+        "el": "Τμήμα Μαιευτικής",
+        "en": "Department of Midwifery"
+      },
+      "shortName": {
+        "el": "Μαιευτικής",
+        "en": "Midwifery"
+      },
+      "aliases": [],
+      "school": "health",
+      "city": "ptolemaida",
+      "website": "https://mw.uowm.gr",
+      "features": [
+        "announcements",
+        "staff",
+        "secretariat"
+      ]
+    },
+    {
+      "id": "eetf",
+      "name": {
+        "el": "Τμήμα Εικαστικών και Εφαρμοσμένων Τεχνών",
+        "en": "Department of Fine and Applied Arts"
+      },
+      "shortName": {
+        "el": "Εικαστικών και Εφαρμοσμένων Τεχνών",
+        "en": "Fine and Applied Arts"
+      },
+      "aliases": [
+        "ΤΕΕΤ"
+      ],
+      "school": "fine-arts",
+      "city": "florina",
+      "website": "https://eetf.uowm.gr",
+      "features": [
+        "announcements",
+        "staff",
+        "secretariat"
+      ]
+    },
+    {
+      "id": "agro",
+      "name": {
+        "el": "Τμήμα Γεωπονίας",
+        "en": "Department of Agriculture"
+      },
+      "shortName": {
+        "el": "Γεωπονίας",
+        "en": "Agriculture"
+      },
+      "aliases": [],
+      "school": "agriculture",
+      "city": "florina",
+      "website": "https://agro.uowm.gr",
+      "features": [
+        "announcements",
+        "exams",
+        "timetable",
+        "staff",
+        "secretariat"
+      ]
+    }
+  ]
+}
