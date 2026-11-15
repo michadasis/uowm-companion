@@ -1,3 +1,5 @@
+import { useRouter } from 'expo-router';
+import type { Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { RefreshControl, ScrollView, View } from 'react-native';
 
@@ -15,7 +17,12 @@ import {
 import { formatUpdatedAt } from '@/features/announcements/format';
 import { BlockRenderer } from '@/features/content/BlockRenderer';
 import { openExternal } from '@/features/content/links';
+import { useSettings } from '@/features/settings/store';
 import type { Language } from '@/features/settings/store';
+import { useUniversisAuth } from '@/features/universis/auth';
+import { CourseFilterBar } from '@/features/universis/CourseFilterBar';
+import { filterByCourses, selectedCourseKeys } from '@/features/universis/match';
+import { useStudentCourses } from '@/features/universis/useStudentCourses';
 
 import { ExamsAgenda } from './ExamsAgenda';
 import type { ScheduleKind } from './schema';
@@ -34,6 +41,7 @@ export interface ScheduleViewProps {
  */
 export function ScheduleView({ scope, kind }: ScheduleViewProps) {
   const { t, i18n } = useTranslation();
+  const router = useRouter();
   const theme = useTheme();
   const styles = useStyles();
   const { data, isLoading, isRefetching, refetch, fetchStatus, dataUpdatedAt } = useSchedule(
@@ -41,6 +49,23 @@ export function ScheduleView({ scope, kind }: ScheduleViewProps) {
     kind,
   );
   const offline = fetchStatus === 'paused';
+
+  const linked = useUniversisAuth((s) => s.token !== null);
+  const courseFilter = useSettings((s) => s.courseFilter);
+  const setCourseFilter = useSettings((s) => s.setCourseFilter);
+  const { data: courses } = useStudentCourses();
+  // Only narrow once the student has linked & their courses are in; otherwise
+  // the whole schedule shows.
+  const courseKeys = linked ? selectedCourseKeys(courses ?? [], courseFilter) : null;
+
+  const courseFilterBar = (
+    <CourseFilterBar
+      linked={linked}
+      filter={courseFilter}
+      onFilter={setCourseFilter}
+      onConnect={() => router.push('/universis-login' as Href)}
+    />
+  );
 
   if (isLoading) {
     return (
@@ -116,19 +141,24 @@ export function ScheduleView({ scope, kind }: ScheduleViewProps) {
     <View style={styles.agendaHeader}>
       {offlineNotice}
       {documentCard}
+      {courseFilterBar}
     </View>
   );
 
   if (kind === 'exams' && data.exams.length > 0) {
     return (
-      <ExamsAgenda exams={data.exams} refreshControl={refreshControl} header={structuredHeader} />
+      <ExamsAgenda
+        exams={filterByCourses(data.exams, courseKeys)}
+        refreshControl={refreshControl}
+        header={structuredHeader}
+      />
     );
   }
 
   if (kind === 'timetable' && data.classes.length > 0) {
     return (
       <TimetableView
-        classes={data.classes}
+        classes={filterByCourses(data.classes, courseKeys)}
         refreshControl={refreshControl}
         header={structuredHeader}
       />
@@ -143,6 +173,7 @@ export function ScheduleView({ scope, kind }: ScheduleViewProps) {
     >
       {offlineNotice}
       {documentCard}
+      {courseFilterBar}
       {data.original.length > 0 ? (
         <View style={styles.original}>
           <BlockRenderer blocks={data.original} onLinkPress={openExternal} />

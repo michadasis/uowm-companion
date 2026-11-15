@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import type { ThemePreference } from '@/design';
+import type { CourseFilter } from '@/features/universis/types';
 import i18n from '@/i18n';
 
 export type Language = 'el' | 'en';
@@ -13,6 +14,8 @@ interface Settings {
   departmentId: string | null;
   /** The semester the student is in, e.g. "Α΄"; null means show every one. */
   semester: string | null;
+  /** Which of the student's Universis courses the schedule narrows to. */
+  courseFilter: CourseFilter;
   language: Language;
   theme: ThemePreference;
 }
@@ -20,6 +23,7 @@ interface Settings {
 interface SettingsActions {
   setDepartment: (departmentId: string) => void;
   setSemester: (semester: string | null) => void;
+  setCourseFilter: (courseFilter: CourseFilter) => void;
   setLanguage: (language: Language) => void;
   setTheme: (theme: ThemePreference) => void;
 }
@@ -27,6 +31,7 @@ interface SettingsActions {
 export const defaultSettings: Settings = {
   departmentId: null,
   semester: null,
+  courseFilter: 'all',
   language: 'el',
   theme: 'system',
 };
@@ -43,6 +48,7 @@ export const useSettings = create<Settings & SettingsActions>()(
       // A new department has its own semesters, so the old pick no longer fits.
       setDepartment: (departmentId) => set({ departmentId, semester: null }),
       setSemester: (semester) => set({ semester }),
+      setCourseFilter: (courseFilter) => set({ courseFilter }),
       setLanguage: (language) => {
         // The translations ship with the app, so this takes effect at once
         // and every screen re-renders in the new language.
@@ -55,9 +61,10 @@ export const useSettings = create<Settings & SettingsActions>()(
       name: 'settings',
       version: 1,
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: ({ departmentId, semester, language, theme }): Settings => ({
+      partialize: ({ departmentId, semester, courseFilter, language, theme }): Settings => ({
         departmentId,
         semester,
+        courseFilter,
         language,
         theme,
       }),

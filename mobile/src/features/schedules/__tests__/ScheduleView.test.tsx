@@ -5,6 +5,8 @@ import type { ReactNode } from 'react';
 
 import '@/i18n';
 import * as api from '@/lib/api';
+import { useSettings } from '@/features/settings/store';
+import { useUniversisAuth } from '@/features/universis/auth';
 
 import { ScheduleView } from '../ScheduleView';
 import type { ScheduleResponse } from '../schema';
@@ -38,6 +40,8 @@ function renderView(kind: ScheduleResponse['kind'] = 'exams') {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  useUniversisAuth.setState({ token: null });
+  useSettings.setState({ courseFilter: 'all' });
 });
 
 describe('ScheduleView', () => {
@@ -83,6 +87,35 @@ describe('ScheduleView', () => {
 
     expect(await screen.findByText('Ηλεκτρονική')).toBeOnTheScreen();
     expect(screen.getByText('Μεγ. Αμφιθέατρο')).toBeOnTheScreen();
+  });
+
+  it('narrows the exams to the owed courses once Universis is linked', async () => {
+    getJson.mockResolvedValue({
+      ...withDocument,
+      exams: [
+        { course: 'Αλγόριθμοι', date: '2026-08-31', startTime: '09:00' },
+        { course: 'Παλιό Μάθημα', date: '2026-09-01', startTime: '09:00' },
+      ],
+    });
+    const fetchMock = jest.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => [
+        { course: { name: 'Αλγόριθμοι' }, isPassed: false },
+        { course: { name: 'Παλιό Μάθημα' }, isPassed: true },
+      ],
+    } as Response);
+    useUniversisAuth.setState({ token: 'tok' });
+    useSettings.setState({ courseFilter: 'owed' });
+
+    await renderView('exams');
+
+    expect(await screen.findByText('Αλγόριθμοι')).toBeOnTheScreen();
+    expect(screen.queryByText('Παλιό Μάθημα')).not.toBeOnTheScreen();
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('api1.uowm.gr/api/students/me/courses'),
+      expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'Bearer tok' }) }),
+    );
+    fetchMock.mockRestore();
   });
 
   it('opens the source document when asked', async () => {
