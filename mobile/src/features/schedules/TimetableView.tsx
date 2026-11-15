@@ -5,9 +5,17 @@ import type { RefreshControlProps } from 'react-native';
 
 import { Card, Chip, createStyles, Icon, Text, useTheme } from '@/design';
 import type { Language } from '@/features/settings/store';
+import { useSettings } from '@/features/settings/store';
 
 import type { ClassSession } from './schema';
-import { byWeekday, formatClassTime, nowAndNext, todayWeekday, weekdayShort } from './timetable';
+import {
+  byWeekday,
+  formatClassTime,
+  nowAndNext,
+  semestersOf,
+  todayWeekday,
+  weekdayShort,
+} from './timetable';
 
 export interface TimetableViewProps {
   classes: ClassSession[];
@@ -49,7 +57,14 @@ function ClassCard({ session, status }: { session: ClassSession; status: Status 
             {time}
           </Text>
         ) : null}
-        {status ? <StatusBadge status={status} /> : null}
+        <View style={styles.cardTopRight}>
+          {session.semester ? (
+            <Text variant="caption" color="textSubtle">
+              {t('schedule.semester', { semester: session.semester })}
+            </Text>
+          ) : null}
+          {status ? <StatusBadge status={status} /> : null}
+        </View>
       </View>
       <Text variant="subheading" numberOfLines={3}>
         {session.course}
@@ -90,12 +105,31 @@ export function TimetableView({ classes, header, refreshControl, now = new Date(
   const styles = useStyles();
   const language = i18n.language as Language;
 
-  const week = useMemo(() => byWeekday(classes), [classes]);
-  const today = todayWeekday(now);
-  const defaultDay = week.some((d) => d.day === today) ? today : (week[0]?.day ?? today);
-  const [selectedDay, setSelectedDay] = useState(defaultDay);
+  const savedSemester = useSettings((s) => s.semester);
+  const setSemester = useSettings((s) => s.setSemester);
 
-  const selected = week.find((d) => d.day === selectedDay) ?? week[0];
+  const semesters = useMemo(() => semestersOf(classes), [classes]);
+  // Keep to the saved semester only while it is one these classes offer, so a
+  // stale pick from another department does not empty the screen.
+  const activeSemester =
+    savedSemester && semesters.includes(savedSemester) ? savedSemester : null;
+  const shown = useMemo(
+    () => (activeSemester ? classes.filter((c) => c.semester === activeSemester) : classes),
+    [classes, activeSemester],
+  );
+
+  const week = useMemo(() => byWeekday(shown), [shown]);
+  const today = todayWeekday(now);
+  const [selectedDay, setSelectedDay] = useState(() =>
+    week.some((d) => d.day === today) ? today : (week[0]?.day ?? today),
+  );
+  // The chosen day may vanish when the semester filter changes; fall back
+  // rather than show an empty day with no chip selected.
+  const effectiveDay = week.some((d) => d.day === selectedDay)
+    ? selectedDay
+    : (week[0]?.day ?? selectedDay);
+
+  const selected = week.find((d) => d.day === effectiveDay);
   const dayClasses = selected?.classes ?? [];
 
   const isToday = selected?.day === today;
@@ -117,6 +151,29 @@ export function TimetableView({ classes, header, refreshControl, now = new Date(
       }
     >
       {header}
+      {semesters.length > 1 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.days}
+        >
+          <Chip
+            label={t('schedule.timetableView.allSemesters')}
+            selected={activeSemester === null}
+            onPress={() => setSemester(null)}
+            testID="timetable-semester-all"
+          />
+          {semesters.map((semester) => (
+            <Chip
+              key={semester}
+              label={t('schedule.semester', { semester })}
+              selected={activeSemester === semester}
+              onPress={() => setSemester(semester)}
+              testID={`timetable-semester-${semester}`}
+            />
+          ))}
+        </ScrollView>
+      ) : null}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -126,7 +183,7 @@ export function TimetableView({ classes, header, refreshControl, now = new Date(
           <Chip
             key={day.day}
             label={weekdayShort(day.day, language)}
-            selected={day.day === selectedDay}
+            selected={day.day === effectiveDay}
             onPress={() => setSelectedDay(day.day)}
             testID={`timetable-day-${day.day}`}
           />
@@ -177,6 +234,11 @@ const useStyles = createStyles((theme) => ({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  cardTopRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing[2],
   },
   badge: {
     paddingHorizontal: theme.spacing[2],

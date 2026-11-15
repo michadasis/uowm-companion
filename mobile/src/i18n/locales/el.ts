@@ -99,6 +99,7 @@ export const el = {
     timetableView: {
       now: 'Τώρα',
       next: 'Επόμενο',
+      allSemesters: 'Όλα',
       noClasses: 'Δεν υπάρχουν μαθήματα αυτή τη μέρα.',
       types: {
         lab: 'Εργαστήριο',

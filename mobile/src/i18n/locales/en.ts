@@ -101,6 +101,7 @@ export const en: Messages = {
     timetableView: {
       now: 'Now',
       next: 'Next',
+      allSemesters: 'All',
       noClasses: 'No classes on this day.',
       types: {
         lab: 'Lab',

@@ -6,6 +6,15 @@ export interface WeekdayClasses {
   classes: ClassSession[];
 }
 
+/** The semesters present in a set of classes, in the order they first appear. */
+export function semestersOf(classes: ClassSession[]): string[] {
+  const seen: string[] = [];
+  for (const session of classes) {
+    if (session.semester && !seen.includes(session.semester)) seen.push(session.semester);
+  }
+  return seen;
+}
+
 /** Minutes since midnight for an "HH:MM" time, or null when it is missing. */
 export function minutesOf(time?: string): number | null {
   if (!time) return null;

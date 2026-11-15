@@ -4,6 +4,7 @@ import {
   formatClassTime,
   minutesOf,
   nowAndNext,
+  semestersOf,
   todayWeekday,
   weekdayLabel,
   weekdayShort,
@@ -30,6 +31,19 @@ describe('byWeekday', () => {
 
   it('drops classes with no weekday', () => {
     expect(byWeekday([{ course: 'Χωρίς μέρα' }])).toEqual([]);
+  });
+});
+
+describe('semestersOf', () => {
+  it('lists each semester once, in first-seen order, skipping classes without one', () => {
+    expect(
+      semestersOf([
+        { course: 'Α', day: 1, semester: 'Γ΄' },
+        { course: 'Β', day: 1, semester: 'Α΄' },
+        { course: 'Γ', day: 2, semester: 'Γ΄' },
+        { course: 'Δ', day: 3 },
+      ]),
+    ).toEqual(['Γ΄', 'Α΄']);
   });
 });
 
