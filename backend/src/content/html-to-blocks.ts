@@ -145,12 +145,26 @@ function pushList(node: Element, out: Block[], baseUrl: string, ordered: boolean
   if (items.length) out.push({ type: 'list', ordered, items });
 }
 
+// A table cell can hold several paragraphs — a course, its teacher & its room,
+// say. They are joined with newlines so a parser & the renderer both keep the
+// lines apart, which they would otherwise run together.
+function cellInline(cell: Element, baseUrl: string): Inline {
+  const paragraphs = childElements(cell, 'p');
+  if (paragraphs.length <= 1) return inlineOf(cell, baseUrl, {});
+  const runs: InlineRun[] = [];
+  paragraphs.forEach((paragraph, index) => {
+    if (index > 0) runs.push({ text: '\n' });
+    runs.push(...inlineOf(paragraph, baseUrl, {}));
+  });
+  return normalise(runs);
+}
+
 function pushTable(node: Element, out: Block[], baseUrl: string) {
   const rows: Inline[][] = [];
   let header: Inline[] | null = null;
 
   for (const tr of descendantElements(node, 'tr')) {
-    const cells = childElements(tr, 'td', 'th').map((cell) => inlineOf(cell, baseUrl, {}));
+    const cells = childElements(tr, 'td', 'th').map((cell) => cellInline(cell, baseUrl));
     if (!cells.length) continue;
     const allHeaderCells = childElements(tr, 'td', 'th').every(
       (cell) => cell.name.toLowerCase() === 'th',
