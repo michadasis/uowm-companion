@@ -1,39 +1,17 @@
 import { useTranslation } from 'react-i18next';
 import { ScrollView, View } from 'react-native';
 
-import { Card, createStyles, Icon, Screen, SectionHeader, Text } from '@/design';
-import type { IconName } from '@/design';
+import { Card, createStyles, Icon, Screen, Text } from '@/design';
 import { describeDepartment } from '@/features/departments/describe';
 import { findDepartment, useDirectory } from '@/features/departments/useDirectory';
 import { dayPart, formatToday } from '@/features/home/greeting';
+import {
+  LatestAnnouncementsSection,
+  NextUpSection,
+  TodayMenuSection,
+} from '@/features/home/sections';
 import { useSettings } from '@/features/settings/store';
 import type { Language } from '@/features/settings/store';
-
-interface ComingUpProps {
-  icon: IconName;
-  title: string;
-  text: string;
-}
-
-/** A home section that has nothing to show yet, and says what will. */
-function ComingUp({ icon, title, text }: ComingUpProps) {
-  const styles = useStyles();
-  return (
-    <View>
-      <SectionHeader title={title} />
-      <Card style={styles.card}>
-        <View style={styles.comingUp}>
-          <View style={styles.comingUpIcon}>
-            <Icon name={icon} color="textMuted" />
-          </View>
-          <Text variant="callout" color="textMuted" style={styles.comingUpText}>
-            {text}
-          </Text>
-        </View>
-      </Card>
-    </View>
-  );
-}
 
 export default function HomeScreen() {
   const { t, i18n } = useTranslation();
@@ -72,13 +50,13 @@ export default function HomeScreen() {
           </Card>
         ) : null}
 
-        <ComingUp icon="schedule" title={t('home.nextUp.title')} text={t('home.nextUp.empty')} />
-        <ComingUp icon="menu" title={t('home.menuToday.title')} text={t('home.menuToday.empty')} />
-        <ComingUp
-          icon="announcements"
-          title={t('home.latest.title')}
-          text={t('home.latest.empty')}
-        />
+        {departmentId ? (
+          <>
+            <NextUpSection scope={departmentId} />
+            <TodayMenuSection />
+            <LatestAnnouncementsSection scope={departmentId} />
+          </>
+        ) : null}
       </ScrollView>
     </Screen>
   );
@@ -113,21 +91,5 @@ const useStyles = createStyles((theme) => ({
   departmentText: {
     flex: 1,
     gap: theme.spacing[0.5],
-  },
-  comingUp: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing[3],
-  },
-  comingUpIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: theme.radius.full,
-    backgroundColor: theme.colors.surfaceMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  comingUpText: {
-    flex: 1,
   },
 }));
