@@ -34,6 +34,10 @@ export async function fetchText(url: string): Promise<string> {
   return (await request(url)).text();
 }
 
+export async function fetchBuffer(url: string): Promise<Uint8Array> {
+  return new Uint8Array(await (await request(url)).arrayBuffer());
+}
+
 export async function fetchJson(url: string): Promise<unknown> {
   const response = await request(url);
   try {
