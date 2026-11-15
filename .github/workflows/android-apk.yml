@@ -1,0 +1,59 @@
+name: Android test APK
+
+# Run on demand from the Actions tab. Builds a standalone, debug-signed APK on
+# Linux (no Windows path limits) and uploads it as a downloadable artifact.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install JS dependencies
+        working-directory: mobile
+        run: npm ci
+
+      - name: Install the Android NDK, CMake, platform & build tools
+        run: |
+          SDK="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDK" --licenses > /dev/null 2>&1 || true
+          "$SDK" "ndk;27.1.12297006" "cmake;3.22.1" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Generate the native Android project
+        working-directory: mobile
+        run: npx expo prebuild --platform android --no-install
+
+      - name: Build the release APK
+        working-directory: mobile/android
+        # EXPO_PUBLIC_API_URL is a public URL, not a secret. Set it as a repo
+        # variable (Settings -> Secrets and variables -> Actions -> Variables)
+        # to point the app at the deployed backend; without it the app runs on
+        # what it bundles & caches.
+        env:
+          EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Upload the APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: uowm-companion-test-apk
+          path: mobile/android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
