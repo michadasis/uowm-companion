@@ -123,6 +123,22 @@ export const en: Messages = {
       message: "Your department's exam schedule and timetable will show up here.",
     },
   },
+  universis: {
+    link: {
+      title: 'Connect Universis',
+      hint: 'Connect Universis so the schedule shows only your courses.',
+      cta: 'Connect',
+    },
+    filter: {
+      label: 'Courses',
+      all: 'All',
+      owed: 'Owed',
+      registered: 'Registered',
+    },
+    linked: 'Connected',
+    signOut: 'Disconnect',
+    loading: 'Loading Universis…',
+  },
   menu: {
     title: 'Menu',
     meals: {

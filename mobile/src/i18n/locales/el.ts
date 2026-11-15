@@ -121,6 +121,22 @@ export const el = {
       message: 'Η εξεταστική και το ωρολόγιο πρόγραμμα του τμήματός σου θα εμφανίζονται εδώ.',
     },
   },
+  universis: {
+    link: {
+      title: 'Σύνδεση με Universis',
+      hint: 'Συνδέσου στο Universis για να δείχνει το πρόγραμμα μόνο τα μαθήματά σου.',
+      cta: 'Σύνδεση',
+    },
+    filter: {
+      label: 'Μαθήματα',
+      all: 'Όλα',
+      owed: 'Χρωστάμενα',
+      registered: 'Δηλωμένα',
+    },
+    linked: 'Συνδεδεμένο',
+    signOut: 'Αποσύνδεση',
+    loading: 'Φόρτωση Universis…',
+  },
   menu: {
     title: 'Λέσχη',
     meals: {

@@ -18,6 +18,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { ThemeProvider, useTheme } from '@/design';
 import { useSettings, useSettingsHydrated } from '@/features/settings/store';
+import { hydrateUniversisAuth } from '@/features/universis/auth';
 import { connectQueryClientToDevice, persistOptions, queryClient } from '@/lib/query';
 
 // Held until the fonts and the saved settings are in, so the first frame is
@@ -59,6 +60,7 @@ export default function RootLayout() {
   const onboarded = useSettings((settings) => settings.departmentId !== null);
 
   useEffect(() => connectQueryClientToDevice(), []);
+  useEffect(() => void hydrateUniversisAuth(), []);
 
   // A font that fails to load is not worth a blank screen: the system font
   // takes over.
@@ -82,6 +84,7 @@ export default function RootLayout() {
                 <Stack.Screen name="(tabs)" />
                 <Stack.Screen name="announcement/[id]" />
                 <Stack.Screen name="settings/department" />
+                <Stack.Screen name="universis-login" options={{ presentation: 'modal' }} />
                 <Stack.Screen name="design-system" />
               </Stack.Protected>
             </Stack>
