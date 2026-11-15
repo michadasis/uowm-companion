@@ -18,12 +18,21 @@ const routes: Record<string, Endpoint> = {
 
 const port = Number(process.env.PORT ?? 3000);
 
+// Lets the app's web build, served from a different port in development,
+// read the API. Native builds aren't subject to this.
+const cors = { 'Access-Control-Allow-Origin': '*' };
+
 const server = createServer((incoming, outgoing) => {
   void (async () => {
+    if (incoming.method === 'OPTIONS') {
+      outgoing.writeHead(204, { ...cors, 'Access-Control-Allow-Headers': 'Accept' });
+      outgoing.end();
+      return;
+    }
     const url = new URL(incoming.url ?? '/', `http://${incoming.headers.host ?? 'localhost'}`);
     const endpoint = routes[url.pathname];
     if (!endpoint) {
-      outgoing.writeHead(404, { 'Content-Type': 'application/json' });
+      outgoing.writeHead(404, { ...cors, 'Content-Type': 'application/json' });
       outgoing.end(JSON.stringify({ error: 'Not found' }));
       return;
     }
@@ -38,7 +47,7 @@ const server = createServer((incoming, outgoing) => {
     });
 
     const response = await endpoint.fetch(request);
-    outgoing.writeHead(response.status, Object.fromEntries(response.headers));
+    outgoing.writeHead(response.status, { ...Object.fromEntries(response.headers), ...cors });
     outgoing.end(Buffer.from(await response.arrayBuffer()));
     console.log(`${incoming.method} ${url.pathname}${url.search} ${response.status}`);
   })();
