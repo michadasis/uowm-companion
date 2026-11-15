@@ -27,6 +27,14 @@ const icons = {
   appearance: glyphs.PaletteIcon,
   about: glyphs.InfoIcon,
   designSystem: glyphs.SparkleIcon,
+  externalLink: glyphs.ArrowSquareOutIcon,
+  date: glyphs.CalendarBlankIcon,
+  time: glyphs.ClockIcon,
+  filePdf: glyphs.FilePdfIcon,
+  fileDoc: glyphs.FileDocIcon,
+  fileXls: glyphs.FileXlsIcon,
+  filePpt: glyphs.FilePptIcon,
+  file: glyphs.FileIcon,
 } as const;
 
 export type IconName = keyof typeof icons;

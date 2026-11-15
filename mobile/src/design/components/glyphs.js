@@ -4,6 +4,14 @@
 // so this module stays JavaScript and glyphs.d.ts describes it.
 export { ArrowClockwiseIcon } from 'phosphor-react-native/src/icons/ArrowClockwise';
 export { ArrowLeftIcon } from 'phosphor-react-native/src/icons/ArrowLeft';
+export { ArrowSquareOutIcon } from 'phosphor-react-native/src/icons/ArrowSquareOut';
+export { CalendarBlankIcon } from 'phosphor-react-native/src/icons/CalendarBlank';
+export { ClockIcon } from 'phosphor-react-native/src/icons/Clock';
+export { FileIcon } from 'phosphor-react-native/src/icons/File';
+export { FileDocIcon } from 'phosphor-react-native/src/icons/FileDoc';
+export { FilePdfIcon } from 'phosphor-react-native/src/icons/FilePdf';
+export { FilePptIcon } from 'phosphor-react-native/src/icons/FilePpt';
+export { FileXlsIcon } from 'phosphor-react-native/src/icons/FileXls';
 export { CalendarDotsIcon } from 'phosphor-react-native/src/icons/CalendarDots';
 export { CaretRightIcon } from 'phosphor-react-native/src/icons/CaretRight';
 export { CheckIcon } from 'phosphor-react-native/src/icons/Check';

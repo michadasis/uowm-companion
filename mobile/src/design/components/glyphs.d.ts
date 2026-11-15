@@ -2,6 +2,14 @@ import type { Icon } from 'phosphor-react-native';
 
 export const ArrowClockwiseIcon: Icon;
 export const ArrowLeftIcon: Icon;
+export const ArrowSquareOutIcon: Icon;
+export const CalendarBlankIcon: Icon;
+export const ClockIcon: Icon;
+export const FileIcon: Icon;
+export const FileDocIcon: Icon;
+export const FilePdfIcon: Icon;
+export const FilePptIcon: Icon;
+export const FileXlsIcon: Icon;
 export const CalendarDotsIcon: Icon;
 export const CaretRightIcon: Icon;
 export const CheckIcon: Icon;
