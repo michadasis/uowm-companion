@@ -2,9 +2,11 @@
 
 A native app for students of the University of Western Macedonia: announcements,
 exam schedules, timetables and the student restaurant menu for all 22 departments,
-in one place. It is a rebuild of the older [myCS](https://github.com/ieeesbkastoria/My-UoWM)
-web app, which mostly links out to department websites; this app shows the content
-itself, natively.
+in one place. It takes the idea of
+[myCS](https://github.com/ieeesbkastoria/My-UoWM), the web app the IEEE Student
+Branch of UoWM Kastoria built for the Informatics department alone, and extends it
+to the whole university while showing the content natively rather than linking out
+to department websites.
 
 It is unofficial and not affiliated with the University of Western Macedonia.
 
@@ -123,6 +125,7 @@ GitHub Actions runs both on every push and pull request.
 ## Credits
 
 The first-year guides, FAQ and useful links reused in later phases come from
-[My-UoWM](https://github.com/ieeesbkastoria/My-UoWM) by Open Source UoM, MIT licensed.
-Their licence notice will be kept in `THIRD_PARTY_NOTICES.md` when that content is
-included.
+[myCS](https://github.com/ieeesbkastoria/My-UoWM) by the IEEE Student Branch of UoWM
+Kastoria, itself a fork of [myUoM](https://github.com/Open-Source-UoM/MyUoM) by Open
+Source UoM. The content is MIT licensed; the licence notice (Open Source UoM) will be
+kept in `THIRD_PARTY_NOTICES.md` when that content is included.
