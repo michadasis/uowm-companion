@@ -115,6 +115,25 @@ export const en: Messages = {
   },
   menu: {
     title: 'Menu',
+    meals: {
+      breakfast: 'Breakfast',
+      lunch: 'Lunch',
+      dinner: 'Dinner',
+    },
+    courses: {
+      first: 'Starter',
+      main: 'Main',
+      extra: 'Sweet / Fruit',
+    },
+    breakfastCategories: {
+      drinks: 'Drinks',
+      spreads: 'Spreads',
+      breads: 'Bread',
+      staples: 'Staples',
+    },
+    today: 'Today',
+    week: 'Week {{week}}',
+    noMeal: 'No menu for this meal.',
     empty: {
       title: 'No menu yet',
       message: "The student restaurant's menu will show up here.",

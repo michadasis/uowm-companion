@@ -113,6 +113,25 @@ export const el = {
   },
   menu: {
     title: 'Λέσχη',
+    meals: {
+      breakfast: 'Πρωινό',
+      lunch: 'Μεσημεριανό',
+      dinner: 'Βραδινό',
+    },
+    courses: {
+      first: 'Πρώτο πιάτο',
+      main: 'Κυρίως πιάτο',
+      extra: 'Γλυκό / Φρούτο',
+    },
+    breakfastCategories: {
+      drinks: 'Ροφήματα',
+      spreads: 'Αλείμματα',
+      breads: 'Ψωμί',
+      staples: 'Βασικά',
+    },
+    today: 'Σήμερα',
+    week: 'Εβδομάδα {{week}}',
+    noMeal: 'Δεν υπάρχει μενού γι’ αυτό το γεύμα.',
     empty: {
       title: 'Κανένα μενού ακόμα',
       message: 'Το μενού της φοιτητικής λέσχης θα εμφανίζεται εδώ.',
