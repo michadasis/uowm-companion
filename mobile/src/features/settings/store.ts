@@ -11,18 +11,22 @@ export type Language = 'el' | 'en';
 interface Settings {
   /** Null until the student has picked a department, which is onboarding. */
   departmentId: string | null;
+  /** The semester the student is in, e.g. "Α΄"; null means show every one. */
+  semester: string | null;
   language: Language;
   theme: ThemePreference;
 }
 
 interface SettingsActions {
   setDepartment: (departmentId: string) => void;
+  setSemester: (semester: string | null) => void;
   setLanguage: (language: Language) => void;
   setTheme: (theme: ThemePreference) => void;
 }
 
 export const defaultSettings: Settings = {
   departmentId: null,
+  semester: null,
   language: 'el',
   theme: 'system',
 };
@@ -36,7 +40,9 @@ export const useSettings = create<Settings & SettingsActions>()(
   persist(
     (set) => ({
       ...defaultSettings,
-      setDepartment: (departmentId) => set({ departmentId }),
+      // A new department has its own semesters, so the old pick no longer fits.
+      setDepartment: (departmentId) => set({ departmentId, semester: null }),
+      setSemester: (semester) => set({ semester }),
       setLanguage: (language) => {
         // The translations ship with the app, so this takes effect at once
         // and every screen re-renders in the new language.
@@ -49,8 +55,9 @@ export const useSettings = create<Settings & SettingsActions>()(
       name: 'settings',
       version: 1,
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: ({ departmentId, language, theme }): Settings => ({
+      partialize: ({ departmentId, semester, language, theme }): Settings => ({
         departmentId,
+        semester,
         language,
         theme,
       }),

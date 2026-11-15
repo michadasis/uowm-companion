@@ -31,9 +31,18 @@ describe('settings', () => {
     useSettings.getState().setTheme('dark');
 
     expect(await saved()).toEqual({
-      state: { departmentId: 'cs', language: 'en', theme: 'dark' },
+      state: { departmentId: 'cs', semester: null, language: 'en', theme: 'dark' },
       version: 1,
     });
+  });
+
+  it('remembers the semester but forgets it when the department changes', () => {
+    useSettings.getState().setDepartment('cs');
+    useSettings.getState().setSemester('Γ΄');
+    expect(useSettings.getState().semester).toBe('Γ΄');
+
+    useSettings.getState().setDepartment('mech');
+    expect(useSettings.getState().semester).toBeNull();
   });
 
   it('restores saved choices on the next launch', async () => {
