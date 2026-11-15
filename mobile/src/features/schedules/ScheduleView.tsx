@@ -17,6 +17,7 @@ import { BlockRenderer } from '@/features/content/BlockRenderer';
 import { openExternal } from '@/features/content/links';
 import type { Language } from '@/features/settings/store';
 
+import { ExamsAgenda } from './ExamsAgenda';
 import type { ScheduleKind } from './schema';
 import { useSchedule } from './useSchedule';
 
@@ -72,46 +73,67 @@ export function ScheduleView({ scope, kind }: ScheduleViewProps) {
   }
 
   const document = data.document;
+  const refreshControl = (
+    <RefreshControl
+      refreshing={isRefetching}
+      onRefresh={() => void refetch()}
+      tintColor={theme.colors.primary}
+      colors={[theme.colors.primary]}
+    />
+  );
+  const offlineNotice = offline ? (
+    <OfflineNotice
+      title={t('states.offline.notice')}
+      detail={t('states.offline.lastUpdated', {
+        time: formatUpdatedAt(dataUpdatedAt, i18n.language as Language),
+      })}
+    />
+  ) : null;
+  const documentCard = (
+    <Card style={styles.docCard}>
+      <View style={styles.docText}>
+        <Text variant="overline" color="textSubtle">
+          {t(`schedule.original.${kind}`)}
+        </Text>
+        <Text variant="subheading" numberOfLines={2}>
+          {document.label}
+        </Text>
+      </View>
+      <Button
+        label={t('schedule.viewDocument')}
+        variant="secondary"
+        icon="externalLink"
+        onPress={() => openExternal(document.url)}
+      />
+    </Card>
+  );
+
+  // When the document parsed into an agenda, that is the screen; the source
+  // document stays one tap away at the top. Otherwise the document itself,
+  // rendered natively, is the screen.
+  if (data.exams.length > 0) {
+    return (
+      <ExamsAgenda
+        exams={data.exams}
+        refreshControl={refreshControl}
+        header={
+          <View style={styles.agendaHeader}>
+            {offlineNotice}
+            {documentCard}
+          </View>
+        }
+      />
+    );
+  }
 
   return (
     <ScrollView
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefetching}
-          onRefresh={() => void refetch()}
-          tintColor={theme.colors.primary}
-          colors={[theme.colors.primary]}
-        />
-      }
+      refreshControl={refreshControl}
     >
-      {offline ? (
-        <OfflineNotice
-          title={t('states.offline.notice')}
-          detail={t('states.offline.lastUpdated', {
-            time: formatUpdatedAt(dataUpdatedAt, i18n.language as Language),
-          })}
-        />
-      ) : null}
-
-      <Card style={styles.docCard}>
-        <View style={styles.docText}>
-          <Text variant="overline" color="textSubtle">
-            {t(`schedule.original.${kind}`)}
-          </Text>
-          <Text variant="subheading" numberOfLines={2}>
-            {document.label}
-          </Text>
-        </View>
-        <Button
-          label={t('schedule.viewDocument')}
-          variant="secondary"
-          icon="externalLink"
-          onPress={() => openExternal(document.url)}
-        />
-      </Card>
-
+      {offlineNotice}
+      {documentCard}
       {data.original.length > 0 ? (
         <View style={styles.original}>
           <BlockRenderer blocks={data.original} onLinkPress={openExternal} />
@@ -132,6 +154,11 @@ const useStyles = createStyles((theme) => ({
     paddingTop: theme.spacing[2],
     paddingBottom: theme.spacing[10],
     gap: theme.spacing[4],
+  },
+  agendaHeader: {
+    paddingHorizontal: theme.spacing[4],
+    paddingTop: theme.spacing[2],
+    gap: theme.spacing[3],
   },
   docCard: {
     gap: theme.spacing[3],

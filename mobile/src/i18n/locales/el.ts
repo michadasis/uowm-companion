@@ -90,6 +90,8 @@ export const el = {
       timetable: 'Ωρολόγιο',
     },
     viewDocument: 'Άνοιγμα εγγράφου',
+    semester: 'Εξάμηνο {{semester}}',
+    otherExams: 'Χωρίς ημερομηνία',
     original: {
       exams: 'Πρόγραμμα εξεταστικής',
       timetable: 'Ωρολόγιο πρόγραμμα',

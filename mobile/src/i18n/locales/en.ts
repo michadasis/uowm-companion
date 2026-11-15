@@ -92,6 +92,8 @@ export const en: Messages = {
       timetable: 'Timetable',
     },
     viewDocument: 'Open document',
+    semester: 'Semester {{semester}}',
+    otherExams: 'No date',
     original: {
       exams: 'Exam schedule',
       timetable: 'Timetable',

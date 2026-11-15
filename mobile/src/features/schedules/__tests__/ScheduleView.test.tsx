@@ -41,12 +41,34 @@ beforeEach(() => {
 });
 
 describe('ScheduleView', () => {
-  it('shows the document & its Original view', async () => {
+  it('shows the document & its Original view when it did not parse', async () => {
     getJson.mockResolvedValue(withDocument);
     await renderView();
 
     expect(await screen.findByText('Πρόγραμμα Σεπτεμβρίου')).toBeOnTheScreen();
     expect(screen.getByText('Η εξεταστική ξεκινά τη Δευτέρα.')).toBeOnTheScreen();
+  });
+
+  it('shows the agenda when the exam schedule parsed', async () => {
+    getJson.mockResolvedValue({
+      ...withDocument,
+      exams: [
+        {
+          course: 'Αλγόριθμοι και Πολυπλοκότητα',
+          date: '2026-08-31',
+          startTime: '11:00',
+          endTime: '13:00',
+          room: 'Μ.Αμφ.',
+          examiners: ['Ν. Δημόκας'],
+        },
+      ],
+    });
+    await renderView();
+
+    expect(await screen.findByText('Αλγόριθμοι και Πολυπλοκότητα')).toBeOnTheScreen();
+    expect(screen.getByText('11:00 - 13:00')).toBeOnTheScreen();
+    expect(screen.getByRole('header', { name: 'Δευτέρα 31 Αυγούστου' })).toBeOnTheScreen();
+    expect(screen.getByText('Μ.Αμφ.')).toBeOnTheScreen();
   });
 
   it('opens the source document when asked', async () => {
