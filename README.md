@@ -34,17 +34,22 @@ links this repo, respects robots.txt, and keeps each item's source URL as attrib
 
 ## Status
 
-Phase 1: the skeleton, the design system and the department registry.
+Phases 1 and 2 are done: the skeleton, the design system, the department registry,
+and announcements with the native content renderer.
 
 - The design system, with a light and a dark theme tuned on their own, built from
   colour, type, spacing and motion tokens, with a loading, empty, offline and error
   state for every screen.
 - Onboarding: pick your department, grouped by school and city, searchable in Greek
   and in Greeklish.
-- The five tabs (Home, Announcements, Schedule, Menu, More), Greek and English, and
-  the backend's `GET /api/departments`.
+- Announcements for every department and the university, shown natively. The backend
+  turns each post's HTML into a typed block model (headings, text with inline marks
+  and links, lists, tables, images, quotes, dividers and the documents it links); the
+  app renders it with its own components, including tables that scroll sideways with a
+  frozen first column. The feed searches, pulls to refresh and reads from the cache
+  offline; tapping a link to another announcement opens it in the app.
 
-The feeds that fill the tabs come in later phases.
+Exam schedules, the menu and push notifications come in later phases.
 
 ## Source coverage
 
