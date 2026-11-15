@@ -1,8 +1,6 @@
-// pdfjs loads this at runtime for DOMMatrix & Path2D, which Node lacks. It
-// requires it dynamically, so Vercel's bundler would drop it; importing it
-// here keeps it in the serverless function so PDFs render on the server too.
-import '@napi-rs/canvas';
-import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
+// unpdf ships a serverless build of pdfjs that needs no native canvas or DOM
+// shims, so PDF text extraction runs the same locally & on Vercel.
+import { getDocumentProxy } from 'unpdf';
 
 import type { Block } from '../content/blocks.js';
 
@@ -20,40 +18,35 @@ interface Line {
  * PDF with no text layer at all comes back empty, for the caller to handle.
  */
 export async function pdfToBlocks(data: Uint8Array): Promise<Block[]> {
-  const task = getDocument({ data, disableFontFace: true });
-  const doc = await task.promise;
+  const doc = await getDocumentProxy(data);
   const blocks: Block[] = [];
 
-  try {
-    for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber++) {
-      const page = await doc.getPage(pageNumber);
-      const content = await page.getTextContent();
+  for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber++) {
+    const page = await doc.getPage(pageNumber);
+    const content = await page.getTextContent();
 
-      const lines: Line[] = [];
-      let current = '';
-      let y = 0;
-      let height = 0;
-      for (const item of content.items) {
-        if (!('str' in item)) continue;
-        current += item.str;
-        y = item.transform[5] as number;
-        height = Math.max(height, item.height || 0);
-        if (item.hasEOL) {
-          const text = current.replace(/\s+/g, ' ').trim();
-          if (text) lines.push({ text, y, height: height || 10 });
-          current = '';
-          height = 0;
-        }
+    const lines: Line[] = [];
+    let current = '';
+    let y = 0;
+    let height = 0;
+    for (const item of content.items) {
+      if (!('str' in item)) continue;
+      current += item.str;
+      y = item.transform[5] as number;
+      height = Math.max(height, item.height || 0);
+      if (item.hasEOL) {
+        const text = current.replace(/\s+/g, ' ').trim();
+        if (text) lines.push({ text, y, height: height || 10 });
+        current = '';
+        height = 0;
       }
-      const tail = current.replace(/\s+/g, ' ').trim();
-      if (tail) lines.push({ text: tail, y, height: height || 10 });
-
-      if (pageNumber > 1 && lines.length) blocks.push({ type: 'divider' });
-      blocks.push(...linesToParagraphs(lines));
-      page.cleanup();
     }
-  } finally {
-    await task.destroy();
+    const tail = current.replace(/\s+/g, ' ').trim();
+    if (tail) lines.push({ text: tail, y, height: height || 10 });
+
+    if (pageNumber > 1 && lines.length) blocks.push({ type: 'divider' });
+    blocks.push(...linesToParagraphs(lines));
+    page.cleanup();
   }
 
   return blocks;
