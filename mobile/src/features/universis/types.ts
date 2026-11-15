@@ -25,7 +25,9 @@ export interface StudentCourse {
 /**
  * Which of the student's courses the schedule should show:
  * - `all` — no filter, every class and exam;
- * - `owed` — courses not yet passed (what the student still has to sit);
- * - `registered` — the current period's declared courses.
+ * - `owed` — courses not yet passed, electives from earlier semesters included,
+ *   which is everything the student still has to sit;
+ * - `registered` — the courses on the student's latest submitted declaration
+ *   (Universis "Προηγούμενες Δηλώσεις"), not a declaration still being drafted.
  */
 export type CourseFilter = 'all' | 'owed' | 'registered';
