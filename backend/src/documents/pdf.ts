@@ -1,3 +1,7 @@
+// pdfjs loads this at runtime for DOMMatrix & Path2D, which Node lacks. It
+// requires it dynamically, so Vercel's bundler would drop it; importing it
+// here keeps it in the serverless function so PDFs render on the server too.
+import '@napi-rs/canvas';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 import type { Block } from '../content/blocks.js';
