@@ -3,6 +3,8 @@ import { Readable } from 'node:stream';
 
 import announcements from '../api/announcements.js';
 import departments from '../api/departments.js';
+import exams from '../api/exams.js';
+import timetable from '../api/timetable.js';
 
 interface Endpoint {
   fetch(request: Request): Promise<Response>;
@@ -14,6 +16,8 @@ interface Endpoint {
 const routes: Record<string, Endpoint> = {
   '/api/departments': departments,
   '/api/announcements': announcements,
+  '/api/exams': exams,
+  '/api/timetable': timetable,
 };
 
 const port = Number(process.env.PORT ?? 3000);
