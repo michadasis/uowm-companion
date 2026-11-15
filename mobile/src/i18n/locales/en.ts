@@ -98,6 +98,15 @@ export const en: Messages = {
       exams: 'Exam schedule',
       timetable: 'Timetable',
     },
+    timetableView: {
+      now: 'Now',
+      next: 'Next',
+      noClasses: 'No classes on this day.',
+      types: {
+        lab: 'Lab',
+        tutorial: 'Tutorial',
+      },
+    },
     unavailable: {
       exams: {
         title: 'No exam schedule',

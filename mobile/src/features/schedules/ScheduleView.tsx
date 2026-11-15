@@ -19,6 +19,7 @@ import type { Language } from '@/features/settings/store';
 
 import { ExamsAgenda } from './ExamsAgenda';
 import type { ScheduleKind } from './schema';
+import { TimetableView } from './TimetableView';
 import { useSchedule } from './useSchedule';
 
 export interface ScheduleViewProps {
@@ -108,20 +109,28 @@ export function ScheduleView({ scope, kind }: ScheduleViewProps) {
     </Card>
   );
 
-  // When the document parsed into an agenda, that is the screen; the source
-  // document stays one tap away at the top. Otherwise the document itself,
-  // rendered natively, is the screen.
-  if (data.exams.length > 0) {
+  // When the document parsed into structured items, those are the screen; the
+  // source document stays one tap away at the top. Otherwise the document
+  // itself, rendered natively, is the screen.
+  const structuredHeader = (
+    <View style={styles.agendaHeader}>
+      {offlineNotice}
+      {documentCard}
+    </View>
+  );
+
+  if (kind === 'exams' && data.exams.length > 0) {
     return (
-      <ExamsAgenda
-        exams={data.exams}
+      <ExamsAgenda exams={data.exams} refreshControl={refreshControl} header={structuredHeader} />
+    );
+  }
+
+  if (kind === 'timetable' && data.classes.length > 0) {
+    return (
+      <TimetableView
+        classes={data.classes}
         refreshControl={refreshControl}
-        header={
-          <View style={styles.agendaHeader}>
-            {offlineNotice}
-            {documentCard}
-          </View>
-        }
+        header={structuredHeader}
       />
     );
   }

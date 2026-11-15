@@ -96,6 +96,15 @@ export const el = {
       exams: 'Πρόγραμμα εξεταστικής',
       timetable: 'Ωρολόγιο πρόγραμμα',
     },
+    timetableView: {
+      now: 'Τώρα',
+      next: 'Επόμενο',
+      noClasses: 'Δεν υπάρχουν μαθήματα αυτή τη μέρα.',
+      types: {
+        lab: 'Εργαστήριο',
+        tutorial: 'Φροντιστήριο',
+      },
+    },
     unavailable: {
       exams: {
         title: 'Δεν υπάρχει πρόγραμμα εξεταστικής',

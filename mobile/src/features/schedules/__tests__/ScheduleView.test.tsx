@@ -71,6 +71,20 @@ describe('ScheduleView', () => {
     expect(screen.getByText('Μ.Αμφ.')).toBeOnTheScreen();
   });
 
+  it('shows the timetable when it parsed into classes', async () => {
+    getJson.mockResolvedValue({
+      ...withDocument,
+      kind: 'timetable',
+      classes: [
+        { course: 'Ηλεκτρονική', day: 1, startTime: '09:00', endTime: '10:00', room: 'Μεγ. Αμφιθέατρο' },
+      ],
+    });
+    await renderView('timetable');
+
+    expect(await screen.findByText('Ηλεκτρονική')).toBeOnTheScreen();
+    expect(screen.getByText('Μεγ. Αμφιθέατρο')).toBeOnTheScreen();
+  });
+
   it('opens the source document when asked', async () => {
     getJson.mockResolvedValue(withDocument);
     const user = userEvent.setup();
