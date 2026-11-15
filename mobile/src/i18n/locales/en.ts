@@ -87,6 +87,25 @@ export const en: Messages = {
   },
   schedule: {
     title: 'Schedule',
+    tabs: {
+      exams: 'Exams',
+      timetable: 'Timetable',
+    },
+    viewDocument: 'Open document',
+    original: {
+      exams: 'Exam schedule',
+      timetable: 'Timetable',
+    },
+    unavailable: {
+      exams: {
+        title: 'No exam schedule',
+        message: 'Your department does not publish an exam schedule we can show.',
+      },
+      timetable: {
+        title: 'No timetable',
+        message: 'Your department does not publish a timetable we can show.',
+      },
+    },
     empty: {
       title: 'No schedule yet',
       message: "Your department's exam schedule and timetable will show up here.",
