@@ -4,6 +4,7 @@ import { Readable } from 'node:stream';
 import announcements from '../api/announcements.js';
 import departments from '../api/departments.js';
 import exams from '../api/exams.js';
+import menu from '../api/menu.js';
 import timetable from '../api/timetable.js';
 
 interface Endpoint {
@@ -18,6 +19,7 @@ const routes: Record<string, Endpoint> = {
   '/api/announcements': announcements,
   '/api/exams': exams,
   '/api/timetable': timetable,
+  '/api/menu': menu,
 };
 
 const port = Number(process.env.PORT ?? 3000);

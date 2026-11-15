@@ -7,7 +7,7 @@
     "node": "24.x"
   },
   "scripts": {
-    "dev": "tsx watch scripts/dev-server.ts",
+    "dev": "tsx watch --env-file-if-exists=.env scripts/dev-server.ts",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
@@ -17,6 +17,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.0",
     "@types/node": "^24.19.2",
+    "@types/pg": "^8.23.1",
     "eslint": "^10.14.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.14.0",
@@ -30,6 +31,7 @@
     "cheerio": "^1.2.0",
     "mammoth": "^1.13.0",
     "pdfjs-dist": "^6.5.438",
+    "pg": "^8.23.1",
     "zod": "^4.6.7"
   }
 }
