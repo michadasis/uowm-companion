@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { UseQueryResult } from '@tanstack/react-query';
 
 import { useUniversisAuth } from './auth';
-import { fetchStudentCourses, UniversisError } from './client';
+import { loadStudentCourses, UniversisError } from './client';
 import type { StudentCourse } from './types';
 
 /**
@@ -16,7 +16,7 @@ export function useStudentCourses(): UseQueryResult<StudentCourse[]> {
 
   return useQuery({
     queryKey: ['universis', 'courses', token],
-    queryFn: ({ signal }) => fetchStudentCourses(token!, { signal }),
+    queryFn: ({ signal }) => loadStudentCourses(token!, { signal }),
     enabled: token !== null,
     staleTime: 1000 * 60 * 30,
     retry: (failureCount, error) => {

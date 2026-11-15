@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { courseKey } from './match';
 import type { StudentCourse } from './types';
 
 /** The University of Western Macedonia's Universis API. */
@@ -103,4 +104,113 @@ export async function fetchStudentCourses(
   const body = coursesResponse.parse(await response.json());
   const list = Array.isArray(body) ? body : body.value;
   return list.map(mapCourse).filter((c): c is StudentCourse => c !== null);
+}
+
+// A registration (a submitted declaration) holds the classes the student
+// declared for a period. The latest one is the current declaration.
+const registrationsPath =
+  '/students/me/registrations?$expand=classes($expand=course,courseType)&$count=false';
+
+const registrationClass = z
+  .object({
+    semester: z.number().optional(),
+    courseTitle: z.string().optional(),
+    courseCode: z.string().optional(),
+    course: z.object({ name: z.string().optional(), displayCode: z.string().optional() }).passthrough().optional(),
+  })
+  .passthrough();
+
+const registration = z
+  .object({
+    registrationYear: z.number().optional(),
+    academicYear: z.number().optional(),
+    semester: z.number().optional(),
+    classes: z.array(registrationClass).optional(),
+  })
+  .passthrough();
+
+const registrationsResponse = z.union([
+  z.array(registration),
+  z.object({ value: z.array(registration) }).passthrough(),
+]);
+
+type Registration = z.infer<typeof registration>;
+
+function registrationOrder(r: Registration): number {
+  return (r.registrationYear ?? r.academicYear ?? 0) * 10 + (r.semester ?? 0);
+}
+
+/**
+ * The courses on the student's latest submitted declaration. Universis returns
+ * a declaration per period; the most recent one is what the student is taking
+ * now. Returns names (with code & semester) for matching against the schedule.
+ */
+export async function fetchStudentRegistrations(
+  token: string,
+  options: { signal?: AbortSignal; baseUrl?: string } = {},
+): Promise<{ name: string; code?: string; semester?: number }[]> {
+  const base = options.baseUrl ?? UNIVERSIS_API;
+  let response: Response;
+  try {
+    response = await fetch(`${base}${registrationsPath}`, {
+      headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+      signal: options.signal,
+    });
+  } catch {
+    throw new UniversisError('Could not reach Universis', undefined);
+  }
+  if (!response.ok) throw new UniversisError(`Universis replied ${response.status}`, response.status);
+
+  const body = registrationsResponse.parse(await response.json());
+  const all = Array.isArray(body) ? body : body.value;
+  if (all.length === 0) return [];
+
+  const latest = all.reduce((a, b) => (registrationOrder(b) >= registrationOrder(a) ? b : a));
+  return (latest.classes ?? []).flatMap((c) => {
+    const name = c.courseTitle ?? c.course?.name;
+    if (!name) return [];
+    const code = c.courseCode ?? c.course?.displayCode;
+    return [{ name, ...(code ? { code } : {}), ...(c.semester !== undefined ? { semester: c.semester } : {}) }];
+  });
+}
+
+/**
+ * The student's courses with both facts the filter needs: whether each is
+ * passed (from the transcript) & whether it is on the current declaration. The
+ * transcript is required; a declaration that fails to load just leaves the
+ * registered flag off, so the owed filter still works.
+ */
+export async function loadStudentCourses(
+  token: string,
+  options: { signal?: AbortSignal; baseUrl?: string } = {},
+): Promise<StudentCourse[]> {
+  const [coursesResult, registrationsResult] = await Promise.allSettled([
+    fetchStudentCourses(token, options),
+    fetchStudentRegistrations(token, options),
+  ]);
+  if (coursesResult.status === 'rejected') throw coursesResult.reason;
+
+  const courses = coursesResult.value;
+  const registered = registrationsResult.status === 'fulfilled' ? registrationsResult.value : [];
+  const registeredKeys = new Set(registered.map((r) => courseKey(r.name)));
+
+  const known = new Set(courses.map((c) => courseKey(c.name)));
+  const merged = courses.map((c) =>
+    registeredKeys.has(courseKey(c.name)) ? { ...c, registered: true } : c,
+  );
+  // A freshly declared course may not be in the transcript yet; add it so the
+  // registered filter still finds it.
+  for (const r of registered) {
+    const key = courseKey(r.name);
+    if (!known.has(key)) {
+      merged.push({
+        name: r.name,
+        passed: false,
+        registered: true,
+        ...(r.code ? { code: r.code } : {}),
+        ...(r.semester !== undefined ? { semester: r.semester } : {}),
+      });
+    }
+  }
+  return merged;
 }

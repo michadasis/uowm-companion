@@ -1,4 +1,25 @@
-import { fetchStudentCourses, mapCourse, UniversisError } from '../client';
+import {
+  fetchStudentCourses,
+  fetchStudentRegistrations,
+  loadStudentCourses,
+  mapCourse,
+  UniversisError,
+} from '../client';
+
+// Routes a mocked fetch by whether the URL is the courses or registrations call.
+function mockApi(bodies: { courses?: unknown; registrations?: unknown; status?: number }) {
+  return jest.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+    const url = String(input);
+    const isReg = url.includes('/registrations');
+    if (bodies.status && bodies.status >= 400) {
+      return Promise.resolve({ ok: false, status: bodies.status } as Response);
+    }
+    return Promise.resolve({
+      ok: true,
+      json: async () => (isReg ? (bodies.registrations ?? []) : (bodies.courses ?? [])),
+    } as Response);
+  });
+}
 
 describe('mapCourse', () => {
   it('reads a passed course with nested course & type', () => {
@@ -88,5 +109,87 @@ describe('fetchStudentCourses', () => {
     await expect(fetchStudentCourses(token, { baseUrl: 'https://api.test' })).rejects.toBeInstanceOf(
       UniversisError,
     );
+  });
+});
+
+describe('fetchStudentRegistrations', () => {
+  const token = 'tok';
+  afterEach(() => jest.restoreAllMocks());
+
+  it('takes the latest declaration & maps its classes', async () => {
+    mockApi({
+      registrations: [
+        { registrationYear: 2024, classes: [{ course: { name: 'Παλιό', displayCode: 'Π-Α-01' } }] },
+        {
+          registrationYear: 2026,
+          semester: 3,
+          classes: [
+            { course: { name: 'Φυσική', displayCode: 'Π-Β-03' }, semester: 3 },
+            { course: { name: 'Μεταγλωττιστές' } },
+          ],
+        },
+      ],
+    });
+
+    const reg = await fetchStudentRegistrations(token, { baseUrl: 'https://api.test' });
+    expect(reg.map((r) => r.name)).toEqual(['Φυσική', 'Μεταγλωττιστές']);
+    expect(reg[0]).toMatchObject({ name: 'Φυσική', code: 'Π-Β-03', semester: 3 });
+  });
+
+  it('returns nothing when there are no declarations', async () => {
+    mockApi({ registrations: [] });
+    expect(await fetchStudentRegistrations(token, { baseUrl: 'https://api.test' })).toEqual([]);
+  });
+});
+
+describe('loadStudentCourses', () => {
+  const token = 'tok';
+  afterEach(() => jest.restoreAllMocks());
+
+  it('flags the transcript courses that are on the current declaration', async () => {
+    mockApi({
+      courses: [
+        { course: { name: 'Φυσική' }, isPassed: false },
+        { course: { name: 'Αλγόριθμοι' }, isPassed: true },
+      ],
+      registrations: [{ registrationYear: 2026, classes: [{ course: { name: 'Φυσική' } }] }],
+    });
+
+    const merged = await loadStudentCourses(token, { baseUrl: 'https://api.test' });
+    expect(merged.find((c) => c.name === 'Φυσική')?.registered).toBe(true);
+    expect(merged.find((c) => c.name === 'Αλγόριθμοι')?.registered).toBeUndefined();
+  });
+
+  it('adds a declared course that is not yet in the transcript', async () => {
+    mockApi({
+      courses: [{ course: { name: 'Φυσική' }, isPassed: true }],
+      registrations: [{ registrationYear: 2026, classes: [{ course: { name: 'Νέο Μάθημα' } }] }],
+    });
+
+    const merged = await loadStudentCourses(token, { baseUrl: 'https://api.test' });
+    expect(merged.find((c) => c.name === 'Νέο Μάθημα')).toMatchObject({
+      registered: true,
+      passed: false,
+    });
+  });
+
+  it('still returns the transcript when the declaration call fails', async () => {
+    jest.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+      if (String(input).includes('/registrations')) return Promise.reject(new Error('down'));
+      return Promise.resolve({
+        ok: true,
+        json: async () => [{ course: { name: 'Φυσική' }, isPassed: false }],
+      } as Response);
+    });
+
+    const merged = await loadStudentCourses(token, { baseUrl: 'https://api.test' });
+    expect(merged.map((c) => c.name)).toEqual(['Φυσική']);
+  });
+
+  it('fails when the transcript itself fails', async () => {
+    mockApi({ status: 401 });
+    await expect(loadStudentCourses(token, { baseUrl: 'https://api.test' })).rejects.toMatchObject({
+      status: 401,
+    });
   });
 });

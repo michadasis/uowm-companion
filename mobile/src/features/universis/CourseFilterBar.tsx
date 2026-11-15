@@ -13,8 +13,7 @@ export interface CourseFilterBarProps {
   onConnect: () => void;
 }
 
-// 'registered' waits on the declarations endpoint, so the bar offers these two.
-const filters: CourseFilter[] = ['all', 'owed'];
+const filters: CourseFilter[] = ['all', 'owed', 'registered'];
 
 /**
  * The course filter for the schedule: a prompt to link Universis when the
