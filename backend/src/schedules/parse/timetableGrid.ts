@@ -1,6 +1,6 @@
 import { plainText } from '../../content/blocks.js';
 import type { Block, Inline } from '../../content/blocks.js';
-import type { ClassSession } from '../types.js';
+import type { ClassSession, CourseTrack } from '../types.js';
 
 const dayNames: Record<string, number> = {
   δευτερα: 1,
@@ -67,7 +67,14 @@ function splitByLines(cell: Inline): { course: string; teacher?: string; room: s
  * teacher or a course title that wrapped across lines is kept whole this way,
  * where splitting on line breaks alone would not.
  */
-function parseCell(cell: Inline, day: number, start: string, end: string, semester?: string): ClassSession | null {
+function parseCell(
+  cell: Inline,
+  day: number,
+  start: string,
+  end: string,
+  semester?: string,
+  track?: CourseTrack,
+): ClassSession | null {
   const italics = cell
     .map((run, index) => ({ run, index }))
     .filter(({ run }) => run.italic === true && run.text.trim() !== '');
@@ -100,6 +107,7 @@ function parseCell(cell: Inline, day: number, start: string, end: string, semest
     ...(room ? { room } : {}),
     ...(type ? { type } : {}),
     ...(semester ? { semester } : {}),
+    ...(track ? { track } : {}),
     ...(teacher ? { teacher } : {}),
   };
 }
@@ -127,12 +135,22 @@ const timeRange = /(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})/u;
 export function parseTimetableGrid(blocks: Block[]): ClassSession[] {
   const classes: ClassSession[] = [];
   let semester: string | undefined;
+  let track: CourseTrack | undefined;
 
   for (const block of blocks) {
     if (block.type === 'paragraph' || block.type === 'heading') {
       const text = plainText(block.content);
       const match = /([Α-Ω]['΄’])\s*εξάμην/u.exec(text);
-      if (match) semester = match[1];
+      if (match) {
+        // A new semester heading ends any teaching-proficiency section before it.
+        semester = match[1];
+        track = undefined;
+      } else if (/επαρκει/u.test(fold(text))) {
+        // The teaching-proficiency programme is its own section with no
+        // semester; without this its classes would inherit the last one seen.
+        track = 'pde';
+        semester = undefined;
+      }
       continue;
     }
     if (block.type !== 'table') continue;
@@ -149,7 +167,7 @@ export function parseTimetableGrid(blocks: Block[]): ClassSession[] {
       for (const [col, day] of columns) {
         const cell = row[col] ?? [];
         if (!cellText(cell).trim()) continue;
-        const session = parseCell(cell, day, start!, end!, semester);
+        const session = parseCell(cell, day, start!, end!, semester, track);
         if (session) classes.push(session);
       }
     }

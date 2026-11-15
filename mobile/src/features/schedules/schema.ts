@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 import { blocksSchema } from '@/features/content/schema';
 
+const courseTrack = z.enum(['pde']);
+
 const exam = z.object({
   course: z.string(),
   date: z.string().optional(),
@@ -9,6 +11,7 @@ const exam = z.object({
   endTime: z.string().optional(),
   room: z.string().optional(),
   semester: z.string().optional(),
+  track: courseTrack.optional(),
   examiners: z.array(z.string()).optional(),
 });
 
@@ -20,6 +23,7 @@ const classSession = z.object({
   room: z.string().optional(),
   type: z.string().optional(),
   semester: z.string().optional(),
+  track: courseTrack.optional(),
   teacher: z.string().optional(),
 });
 

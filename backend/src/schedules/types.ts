@@ -10,6 +10,13 @@ export type ScheduleKind = 'exams' | 'timetable';
  * later step — for now the list is empty and the Original view carries the
  * content.
  */
+/**
+ * The optional Pedagogical & Teaching Proficiency programme (ΠΔΕ) a student may
+ * take alongside the regular curriculum. Its courses sit outside the semester
+ * ladder, so they are tagged rather than numbered.
+ */
+export type CourseTrack = 'pde';
+
 export interface Exam {
   course: string;
   /** ISO date, no time. */
@@ -18,6 +25,7 @@ export interface Exam {
   endTime?: string;
   room?: string;
   semester?: string;
+  track?: CourseTrack;
   examiners?: string[];
 }
 
@@ -30,6 +38,7 @@ export interface ClassSession {
   room?: string;
   type?: string;
   semester?: string;
+  track?: CourseTrack;
   teacher?: string;
 }
 

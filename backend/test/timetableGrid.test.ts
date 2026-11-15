@@ -124,6 +124,22 @@ describe('parseTimetableGrid', () => {
     expect(session).toMatchObject({ course: 'Μαθηματική Ανάλυση Ι', type: 'tutorial', teacher: 'Γ. Ψαραδάκης' });
   });
 
+  it('tags the teaching-proficiency section & drops the inherited semester', () => {
+    const classes = parseTimetableGrid([
+      semester('Ζ΄'),
+      table([header, [time('09:00 – 10:00'), classCell('Ασφάλεια Δικτύων', 'Σ. Νικολάου', 'Β1'), [], [], [], []]]),
+      { type: 'paragraph', content: [{ text: 'Προαιρετικό Πρόγραμμα Παιδαγωγικής & Διδακτικής Επάρκειας' }] },
+      table([header, [time('17:00 – 18:00'), [], classCell('Διδακτική Μεθοδολογία', 'Α. Αθανασιάδης', 'B2'), [], [], []]]),
+    ]);
+
+    expect(classes).toEqual([
+      expect.objectContaining({ course: 'Ασφάλεια Δικτύων', semester: 'Ζ΄' }),
+      expect.objectContaining({ course: 'Διδακτική Μεθοδολογία', day: 2, track: 'pde' }),
+    ]);
+    expect(classes[0]!.track).toBeUndefined();
+    expect(classes[1]!.semester).toBeUndefined();
+  });
+
   it('ignores a table that is not a weekday grid', () => {
     expect(
       parseTimetableGrid([

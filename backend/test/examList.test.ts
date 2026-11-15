@@ -14,7 +14,7 @@ describe('parseExamList', () => {
         'Πρόγραμμα Εξετάσεων Σεπτεμβρίου 2025-2026',
         '1η εβδομάδα',
         'Δευτέρα 31-08-2026',
-        "09:00-11:00 Εκπαιδευτική Ψυχολογία (Δ') (ΠΔΕ), (5+0) Κ. Μόσχου Αμφ.2 Φ.Π.",
+        "09:00-11:00 Εκπαιδευτική Ψυχολογία (Δ'), (5+0) Κ. Μόσχου Αμφ.2 Φ.Π.",
       ),
     );
 
@@ -87,6 +87,25 @@ describe('parseExamList', () => {
       semester: 'Ε’, Ζ’',
       room: 'Μ.Αμφ.',
     });
+  });
+
+  it('tags a teaching-proficiency exam & keeps its semester clean', () => {
+    const [beside] = parseExamList(
+      paragraphs('Δευτέρα 31-08-2026', "09:00-11:00 Εκπαιδευτική Ψυχολογία (Δ') (ΠΔΕ), (5+0) Κ. Μόσχου Αμφ.2 Φ.Π."),
+    );
+    expect(beside).toMatchObject({ course: 'Εκπαιδευτική Ψυχολογία', semester: "Δ'", track: 'pde' });
+
+    const [inside] = parseExamList(
+      paragraphs('Τρίτη 01-09-2026', "16:00-18:00 Εισαγωγή στην Παιδαγωγική (Γ' ΠΔΕ), (7+0) Β. Μ. Πανάτσα Αμφ.2 Φ.Π."),
+    );
+    expect(inside).toMatchObject({ course: 'Εισαγωγή στην Παιδαγωγική', semester: "Γ'", track: 'pde' });
+  });
+
+  it('leaves a regular exam without a track', () => {
+    const [exam] = parseExamList(
+      paragraphs('Δευτέρα 31-08-2026', "09:00-11:00 Αλγόριθμοι (Ε'), (5+0) Ν. Δημόκας Μ.Αμφ."),
+    );
+    expect(exam?.track).toBeUndefined();
   });
 
   it('carries the day forward across its exam lines & ignores non-exam text', () => {

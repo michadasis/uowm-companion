@@ -59,8 +59,15 @@ function parseExamLine(line: string, date: string | undefined): Exam | null {
     rest = rest.slice(0, examinerMatch.index);
   }
 
-  // Semester markers are the parenthetical groups that contain an ordinal.
-  const semesters = [...rest.matchAll(/\(([^)]*['’΄][^)]*)\)/gu)].map((m) => m[1]!.trim());
+  // The optional teaching-proficiency programme is marked "ΠΔΕ", on its own or
+  // next to the semester, e.g. "(Γ' ΠΔΕ)" or "(Δ') (ΠΔΕ)".
+  const pde = /ΠΔΕ/u.test(rest);
+
+  // Semester markers are the parenthetical groups that contain an ordinal; the
+  // ΠΔΕ note is peeled off so the semester reads cleanly.
+  const semesters = [...rest.matchAll(/\(([^)]*['’΄][^)]*)\)/gu)]
+    .map((m) => m[1]!.replace(/ΠΔΕ/gu, '').replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
   const course = rest
     .replace(/\([^)]*\)/gu, ' ')
     .replace(/\s+/g, ' ')
@@ -75,6 +82,7 @@ function parseExamLine(line: string, date: string | undefined): Exam | null {
     startTime,
     endTime,
     ...(semesters.length ? { semester: semesters.join(', ') } : {}),
+    ...(pde ? { track: 'pde' as const } : {}),
     ...(room ? { room } : {}),
     ...(examiners ? { examiners } : {}),
   };
