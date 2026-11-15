@@ -80,6 +80,7 @@ export default function RootLayout() {
               </Stack.Protected>
               <Stack.Protected guard={onboarded} redirectTo="/welcome">
                 <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="announcement/[id]" />
                 <Stack.Screen name="settings/department" />
                 <Stack.Screen name="design-system" />
               </Stack.Protected>

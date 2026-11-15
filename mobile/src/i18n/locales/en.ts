@@ -66,9 +66,23 @@ export const en: Messages = {
   },
   announcements: {
     title: 'Announcements',
+    search: 'Search announcements',
+    viewOnWebsite: 'View on website',
+    feeds: {
+      department: 'Department',
+      university: 'University',
+    },
     empty: {
       title: 'No announcements yet',
       message: 'Announcements from your department and the university will show up here.',
+    },
+    noResults: {
+      title: 'No announcements',
+      message: 'Try another word.',
+    },
+    notFound: {
+      title: 'Announcement not found',
+      message: 'It may have been removed, or it has not loaded yet.',
     },
   },
   schedule: {
