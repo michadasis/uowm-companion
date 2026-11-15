@@ -34,12 +34,20 @@ export async function fetchSchedule(
   const document = await discoverDocument(source, fetchText);
   if (!document) return empty;
 
-  const rendered = await renderDocument(document, fetchBuffer);
-  return {
-    ...empty,
-    document: { url: document.url, label: document.label, format: document.format },
-    exams: kind === 'exams' ? parseExamList(rendered.blocks) : [],
-    classes: kind === 'timetable' ? parseTimetableGrid(rendered.blocks) : [],
-    original: rendered.blocks,
-  };
+  const meta = { url: document.url, label: document.label, format: document.format };
+  try {
+    const rendered = await renderDocument(document, fetchBuffer);
+    return {
+      ...empty,
+      document: meta,
+      exams: kind === 'exams' ? parseExamList(rendered.blocks) : [],
+      classes: kind === 'timetable' ? parseTimetableGrid(rendered.blocks) : [],
+      original: rendered.blocks,
+    };
+  } catch {
+    // The document was found but could not be read (an unreadable PDF, say).
+    // Still report it as available with its link, so the app offers the source
+    // instead of failing the whole request.
+    return { ...empty, document: meta };
+  }
 }
