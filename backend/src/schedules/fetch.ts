@@ -3,6 +3,7 @@ import { renderDocument } from '../documents/pipeline.js';
 import { fetchBuffer, fetchText } from '../http/fetch.js';
 import type { Department } from '../registry/index.js';
 
+import { parseExamList } from './parse/examList.js';
 import type { ScheduleKind, ScheduleResponse } from './types.js';
 
 /**
@@ -36,6 +37,7 @@ export async function fetchSchedule(
   return {
     ...empty,
     document: { url: document.url, label: document.label, format: document.format },
+    exams: kind === 'exams' ? parseExamList(rendered.blocks) : [],
     original: rendered.blocks,
   };
 }
