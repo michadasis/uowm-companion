@@ -42,17 +42,42 @@ function cleanRoom(room: string): string {
 // the source failed to mark the teacher italic, so the run split can't find it.
 const teacherLine = /^(?:[Α-ΩΆ-Ώ]\.\s*){1,3}[Α-ΩΆ-Ώ][α-ωά-ώϊΐ'’]+$/u;
 
+// Words a line of a course title can end on only if the title runs on to the
+// next line: "ΕΙΣΑΓΩΓΗ ΣΤΗ" / "ΔΙΟΙΚΗΣΗ ΕΠΙΧΕΙΡΗΣΕΩΝ".
+const joiningEnd =
+  /(\s|^)(στη|στην|στον|στο|στα|στις|στους|σε|του|της|των|τον|την|και|με|για|απο|&|-|–)$/u;
+
+// A course code some departments put before the title: "ΜΠ103 ", "ΕΘ102Ε - ".
+const courseCode = /^[Α-ΩA-Z]{1,4}\s?\d{2,4}[Α-ΩA-Z]?\s*[-–:]?\s+/u;
+
+/**
+ * Splits a cell with no italic teacher by its lines. The course is the first
+ * line, & the next ones too while the title plainly runs on — the line ends on
+ * a joining word, or the next starts in lower case. Of the rest, a line that
+ * is just a teacher's name is the teacher; the others are where it is held.
+ */
 function splitByLines(cell: Inline): { course: string; teacher?: string; room: string } {
-  const lines = cellText(cell).split('\n').map(tidy).filter(Boolean);
-  const teacherIndex = lines.findIndex((line, i) => i > 0 && teacherLine.test(line));
-  const course = lines[0] ?? '';
-  const teacher = teacherIndex >= 0 ? lines[teacherIndex] : undefined;
-  const room = lines
-    .slice(1)
-    .filter((_, i) => i + 1 !== teacherIndex)
-    .join(' ');
+  const all = cellText(cell).split('\n').map(tidy).filter(Boolean);
+  // A room printed above the course belongs with the rest of the details.
+  const leading = all.findIndex((line) => !looksLikeRoom(line));
+  const lines = leading > 0 ? [...all.slice(leading), ...all.slice(0, leading)] : all;
+  let courseEnd = 1;
+  while (
+    courseEnd < lines.length &&
+    (joiningEnd.test(fold(lines[courseEnd - 1]!)) || /^[α-ωά-ώ]/u.test(lines[courseEnd]!))
+  ) {
+    courseEnd += 1;
+  }
+  const course = lines.slice(0, courseEnd).join(' ').replace(courseCode, '');
+  const rest = lines.slice(courseEnd);
+  const teacherIndex = rest.findIndex((line) => teacherLine.test(line));
+  const teacher = teacherIndex >= 0 ? rest[teacherIndex] : undefined;
+  const room = rest.filter((_, i) => i !== teacherIndex).join(' ');
   return { course, teacher, room };
 }
+
+// A row of column labels under the weekday names, as some grids have.
+const labelsOnly = /^(μαθημα|αιθ\.?|αιθουσα|ομαδα|θ-ε-απ|διδασκων|καθηγητης|\s)+$/u;
 
 /**
  * Splits one class cell by the teacher's run, which the source marks italic:
@@ -89,7 +114,7 @@ function parseCell(
   }
 
   const { course, type } = classType(courseText);
-  if (!course) return null;
+  if (!course || labelsOnly.test(fold(cellText(cell).replace(/\n/g, ' ')))) return null;
   const room = cleanRoom(roomText);
 
   return {
@@ -126,7 +151,7 @@ function semesterIn(text: string): string | undefined {
   const lettered =
     /([Α-Ω]{1,2}['΄’])\s*εξάμην/u.exec(text) ?? /([Α-Ω]{1,2}['΄’])\s*ΕΞΑΜΗΝ/u.exec(text);
   if (lettered) return lettered[1]!.replace(/['’]/u, '΄');
-  const numbered = /(\d{1,2})\s*ο?\s*εξαμην/u.exec(fold(text));
+  const numbered = /(\d{1,2})\s*[οo]?\s*εξαμην/u.exec(fold(text));
   const letter = numbered ? semesterLetters[Number(numbered[1]) - 1] : undefined;
   return letter ? `${letter}΄` : undefined;
 }
@@ -239,9 +264,11 @@ export function parseTimetableGrid(blocks: Block[]): ClassSession[] {
           }
           continue;
         }
-        // A room under a course is where it is held.
-        if (above && above.slot >= slot - 1 && !above.session.room && looksLikeRoom(text)) {
-          above.session.room = tidy(text);
+        // A room under a course is where it is held; one with no course above
+        // it belongs to a class the grid prints lower down, & is not a class.
+        if (looksLikeRoom(text)) {
+          if (above && above.slot >= slot - 1 && !above.session.room)
+            above.session.room = tidy(text);
           continue;
         }
         if (!time) continue;

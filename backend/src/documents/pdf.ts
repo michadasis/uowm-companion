@@ -4,6 +4,9 @@ import { getDocumentProxy } from 'unpdf';
 
 import type { Block } from '../content/blocks.js';
 
+import { gridBlocks } from './pdfGrid.js';
+import type { PositionedText } from './pdfGrid.js';
+
 interface Line {
   text: string;
   y: number;
@@ -13,9 +16,10 @@ interface Line {
 /**
  * Extracts a PDF's text into paragraph blocks for the Original view. This is
  * the native rich-text fallback: it reads the text layer line by line and
- * joins lines into paragraphs by the gaps between them. The table detection
- * that turns an exam grid into structured rows is a separate, later step; a
- * PDF with no text layer at all comes back empty, for the caller to handle.
+ * joins lines into paragraphs by the gaps between them. A page laid out as a
+ * weekly timetable grid is rebuilt as a table instead, from where its text
+ * sits, so the grid parser can read it; a PDF with no text layer at all comes
+ * back empty, for the caller to handle.
  */
 export async function pdfToBlocks(data: Uint8Array): Promise<Block[]> {
   const doc = await getDocumentProxy(data);
@@ -24,6 +28,24 @@ export async function pdfToBlocks(data: Uint8Array): Promise<Block[]> {
   for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber++) {
     const page = await doc.getPage(pageNumber);
     const content = await page.getTextContent();
+
+    const positioned: PositionedText[] = [];
+    for (const item of content.items) {
+      if (!('str' in item) || !item.str.trim()) continue;
+      positioned.push({
+        text: item.str,
+        x: item.transform[4] as number,
+        y: item.transform[5] as number,
+        width: item.width,
+      });
+    }
+    const grid = gridBlocks(positioned);
+    if (grid) {
+      if (pageNumber > 1) blocks.push({ type: 'divider' });
+      blocks.push(...grid);
+      page.cleanup();
+      continue;
+    }
 
     const lines: Line[] = [];
     let current = '';
