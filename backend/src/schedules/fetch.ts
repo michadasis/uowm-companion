@@ -5,6 +5,8 @@ import { fetchBuffer, fetchText } from '../http/fetch.js';
 import type { Department } from '../registry/index.js';
 
 import { parseExamList } from './parse/examList.js';
+import { parseExamTable } from './parse/examTable.js';
+import { plausibleClasses, plausibleExams } from './parse/plausible.js';
 import { parseTimetableGrid } from './parse/timetableGrid.js';
 import type { ScheduleKind, ScheduleResponse } from './types.js';
 
@@ -56,24 +58,20 @@ export async function fetchSchedule(
   // A schedule split into several documents reads as one, each part headed by
   // the name it was linked under.
   const named = new Set(documents.map((document) => document.label)).size > 1;
-  const blocks: Block[] =
-    !named
-      ? rendered.flat()
-      : rendered.flatMap((part, index) =>
-          part.length
-            ? [
-                { type: 'heading', level: 3, content: [{ text: documents[index]!.label }] },
-                ...part,
-              ]
-            : [],
-        );
+  const blocks: Block[] = !named
+    ? rendered.flat()
+    : rendered.flatMap((part, index) =>
+        part.length
+          ? [{ type: 'heading', level: 3, content: [{ text: documents[index]!.label }] }, ...part]
+          : [],
+      );
 
   try {
     return {
       ...empty,
       document: meta,
-      exams: kind === 'exams' ? parseExamList(blocks) : [],
-      classes: kind === 'timetable' ? parseTimetableGrid(blocks) : [],
+      exams: kind === 'exams' ? parseExams(blocks) : [],
+      classes: kind === 'timetable' ? parseClasses(blocks) : [],
       original: blocks,
     };
   } catch {
@@ -81,4 +79,23 @@ export async function fetchSchedule(
     // written, with its link, rather than failing the whole request.
     return { ...empty, document: meta, original: blocks };
   }
+}
+
+/**
+ * The exams in a schedule, read by whichever parser recognises its layout: a
+ * list of day & time lines, or a table with a header row. Both are tried; the
+ * one that finds more is the one that matched.
+ */
+function parseExams(blocks: Block[]): ReturnType<typeof parseExamList> {
+  const fromList = parseExamList(blocks);
+  const fromTable = parseExamTable(blocks);
+  const best = fromTable.length > fromList.length ? fromTable : fromList;
+  // An agenda that doesn't hold together is worse than none: the app then
+  // shows the document as written.
+  return plausibleExams(best) ? best : [];
+}
+
+function parseClasses(blocks: Block[]): ReturnType<typeof parseTimetableGrid> {
+  const classes = parseTimetableGrid(blocks);
+  return plausibleClasses(classes) ? classes : [];
 }

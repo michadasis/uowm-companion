@@ -112,13 +112,29 @@ describe('attachmentBlocks', () => {
   it('turns the documents uploaded to a post into attachments, skipping images', () => {
     expect(
       attachmentBlocks([
-        { source_url: 'https://eled.uowm.gr/u/4%CE%B7-%CE%A0%CE%A1%CE%9F%CE%9A%CE%97%CE%A1%CE%A5%CE%9E%CE%97.pdf' },
-        { source_url: 'https://eled.uowm.gr/u/form.doc', title: { rendered: 'Αίτηση &#8211; έντυπο' } },
+        {
+          source_url:
+            'https://eled.uowm.gr/u/4%CE%B7-%CE%A0%CE%A1%CE%9F%CE%9A%CE%97%CE%A1%CE%A5%CE%9E%CE%97.pdf',
+        },
+        {
+          source_url: 'https://eled.uowm.gr/u/form.doc',
+          title: { rendered: 'Αίτηση &#8211; έντυπο' },
+        },
         { source_url: 'https://eled.uowm.gr/u/photo.jpg' },
       ]),
     ).toEqual([
-      { type: 'attachment', name: '4η ΠΡΟΚΗΡΥΞΗ', href: 'https://eled.uowm.gr/u/4%CE%B7-%CE%A0%CE%A1%CE%9F%CE%9A%CE%97%CE%A1%CE%A5%CE%9E%CE%97.pdf', format: 'pdf' },
-      { type: 'attachment', name: 'Αίτηση – έντυπο', href: 'https://eled.uowm.gr/u/form.doc', format: 'doc' },
+      {
+        type: 'attachment',
+        name: '4η ΠΡΟΚΗΡΥΞΗ',
+        href: 'https://eled.uowm.gr/u/4%CE%B7-%CE%A0%CE%A1%CE%9F%CE%9A%CE%97%CE%A1%CE%A5%CE%9E%CE%97.pdf',
+        format: 'pdf',
+      },
+      {
+        type: 'attachment',
+        name: 'Αίτηση – έντυπο',
+        href: 'https://eled.uowm.gr/u/form.doc',
+        format: 'doc',
+      },
     ]);
   });
 

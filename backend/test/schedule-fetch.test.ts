@@ -21,7 +21,10 @@ vi.mock('../src/http/fetch.js', () => ({ fetchText: vi.fn(), fetchBuffer: vi.fn(
 const { fetchSchedule } = await import('../src/schedules/fetch.js');
 const { NotADocumentError } = await import('../src/documents/pipeline.js');
 
-const dept = { id: 'mech', sources: { timetable: { kind: 'document-page' } } } as unknown as Department;
+const dept = {
+  id: 'mech',
+  sources: { timetable: { kind: 'document-page' } },
+} as unknown as Department;
 
 beforeEach(() => {
   render.mockReset();

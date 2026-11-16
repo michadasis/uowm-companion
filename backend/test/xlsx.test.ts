@@ -19,7 +19,10 @@ async function workbook(): Promise<Uint8Array> {
       '<Relationship Id="rId2" Target="worksheets/sheet2.xml"/>' +
       '<Relationship Id="rId3" Target="/xl/worksheets/sheet3.xml"/></Relationships>',
   );
-  zip.file('xl/sharedStrings.xml', '<sst><si><t>ΩΡΑ</t></si><si><r><t>ΔΕΥ</t></r><r><t>ΤΕΡΑ</t></r></si></sst>');
+  zip.file(
+    'xl/sharedStrings.xml',
+    '<sst><si><t>ΩΡΑ</t></si><si><r><t>ΔΕΥ</t></r><r><t>ΤΕΡΑ</t></r></si></sst>',
+  );
   zip.file(
     'xl/worksheets/sheet1.xml',
     '<worksheet><sheetData>' +
@@ -28,8 +31,14 @@ async function workbook(): Promise<Uint8Array> {
       '<row r="3"><c r="A3" t="inlineStr"><is><t>09:00 - 10:00</t></is></c><c r="C3" t="str"><v>Φυσική</v></c></row>' +
       '</sheetData></worksheet>',
   );
-  zip.file('xl/worksheets/sheet2.xml', '<worksheet><sheetData><row><c r="A1" t="inlineStr"><is><t>κρυφό</t></is></c></row></sheetData></worksheet>');
-  zip.file('xl/worksheets/sheet3.xml', '<worksheet><sheetData><row><c r="B1"><v>42</v></c></row></sheetData></worksheet>');
+  zip.file(
+    'xl/worksheets/sheet2.xml',
+    '<worksheet><sheetData><row><c r="A1" t="inlineStr"><is><t>κρυφό</t></is></c></row></sheetData></worksheet>',
+  );
+  zip.file(
+    'xl/worksheets/sheet3.xml',
+    '<worksheet><sheetData><row><c r="B1"><v>42</v></c></row></sheetData></worksheet>',
+  );
   return zip.generateAsync({ type: 'uint8array' });
 }
 
@@ -57,7 +66,9 @@ describe('renderDocument', () => {
     const html = new TextEncoder().encode('<!DOCTYPE html><title>404</title>');
 
     await expect(
-      renderDocument({ url: 'https://x/gone.pdf', format: 'pdf', label: 'x' }, () => Promise.resolve(html)),
+      renderDocument({ url: 'https://x/gone.pdf', format: 'pdf', label: 'x' }, () =>
+        Promise.resolve(html),
+      ),
     ).rejects.toBeInstanceOf(NotADocumentError);
   });
 });

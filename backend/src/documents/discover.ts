@@ -105,7 +105,9 @@ async function fromWordPress(
   const params = new URLSearchParams({ per_page: '20', _fields: 'date,title,content,link' });
   if (source.category !== undefined) params.set('categories', String(source.category));
   if (source.search) params.set('search', source.search);
-  const posts = JSON.parse(await fetchText(`${source.apiRoot}wp/v2/posts?${params.toString()}`)) as unknown;
+  const posts = JSON.parse(
+    await fetchText(`${source.apiRoot}wp/v2/posts?${params.toString()}`),
+  ) as unknown;
   if (!Array.isArray(posts)) return null;
 
   const { want, skip } = titles[kind];

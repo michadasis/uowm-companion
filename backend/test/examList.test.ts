@@ -91,14 +91,28 @@ describe('parseExamList', () => {
 
   it('tags a teaching-proficiency exam & keeps its semester clean', () => {
     const [beside] = parseExamList(
-      paragraphs('Δευτέρα 31-08-2026', "09:00-11:00 Εκπαιδευτική Ψυχολογία (Δ') (ΠΔΕ), (5+0) Κ. Μόσχου Αμφ.2 Φ.Π."),
+      paragraphs(
+        'Δευτέρα 31-08-2026',
+        "09:00-11:00 Εκπαιδευτική Ψυχολογία (Δ') (ΠΔΕ), (5+0) Κ. Μόσχου Αμφ.2 Φ.Π.",
+      ),
     );
-    expect(beside).toMatchObject({ course: 'Εκπαιδευτική Ψυχολογία', semester: "Δ'", track: 'pde' });
+    expect(beside).toMatchObject({
+      course: 'Εκπαιδευτική Ψυχολογία',
+      semester: "Δ'",
+      track: 'pde',
+    });
 
     const [inside] = parseExamList(
-      paragraphs('Τρίτη 01-09-2026', "16:00-18:00 Εισαγωγή στην Παιδαγωγική (Γ' ΠΔΕ), (7+0) Β. Μ. Πανάτσα Αμφ.2 Φ.Π."),
+      paragraphs(
+        'Τρίτη 01-09-2026',
+        "16:00-18:00 Εισαγωγή στην Παιδαγωγική (Γ' ΠΔΕ), (7+0) Β. Μ. Πανάτσα Αμφ.2 Φ.Π.",
+      ),
     );
-    expect(inside).toMatchObject({ course: 'Εισαγωγή στην Παιδαγωγική', semester: "Γ'", track: 'pde' });
+    expect(inside).toMatchObject({
+      course: 'Εισαγωγή στην Παιδαγωγική',
+      semester: "Γ'",
+      track: 'pde',
+    });
   });
 
   it('leaves a regular exam without a track', () => {

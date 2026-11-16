@@ -41,7 +41,14 @@ describe('parseTimetableGrid', () => {
       semester('Α΄'),
       table([
         header,
-        [time('09:00 – 10:00'), classCell('Ηλεκτρονική', 'Δ. Φωτιάδης', 'Μεγ. Αμφιθέατρο'), [], [], [], []],
+        [
+          time('09:00 – 10:00'),
+          classCell('Ηλεκτρονική', 'Δ. Φωτιάδης', 'Μεγ. Αμφιθέατρο'),
+          [],
+          [],
+          [],
+          [],
+        ],
       ]),
     ]);
 
@@ -89,7 +96,9 @@ describe('parseTimetableGrid', () => {
       run('\n'),
       run('Εργ. Α3', { bold: true }),
     ];
-    const [session] = parseTimetableGrid([table([header, [time('13:00 – 14:00'), cell, [], [], [], []]])]);
+    const [session] = parseTimetableGrid([
+      table([header, [time('13:00 – 14:00'), cell, [], [], [], []]]),
+    ]);
 
     expect(session).toMatchObject({
       course: 'Προγραμματισμός στο Διαδίκτυο',
@@ -106,9 +115,15 @@ describe('parseTimetableGrid', () => {
       run('\n'),
       run('Αμφιθέατρο 2', { bold: true }),
     ];
-    const [session] = parseTimetableGrid([table([header, [time('17:00 – 18:00'), cell, [], [], [], []]])]);
+    const [session] = parseTimetableGrid([
+      table([header, [time('17:00 – 18:00'), cell, [], [], [], []]]),
+    ]);
 
-    expect(session).toMatchObject({ course: 'Διακριτά Μαθηματικά', teacher: 'Χ. Σαλής', room: 'Αμφιθέατρο 2' });
+    expect(session).toMatchObject({
+      course: 'Διακριτά Μαθηματικά',
+      teacher: 'Χ. Σαλής',
+      room: 'Αμφιθέατρο 2',
+    });
   });
 
   it('marks a tutorial or lab & drops the marker from the course', () => {
@@ -119,17 +134,39 @@ describe('parseTimetableGrid', () => {
       run('\n'),
       run('Εργ. Ε6', { bold: true }),
     ];
-    const [session] = parseTimetableGrid([table([header, [time('13:00 – 14:00'), tutorialCell, [], [], [], []]])]);
+    const [session] = parseTimetableGrid([
+      table([header, [time('13:00 – 14:00'), tutorialCell, [], [], [], []]]),
+    ]);
 
-    expect(session).toMatchObject({ course: 'Μαθηματική Ανάλυση Ι', type: 'tutorial', teacher: 'Γ. Ψαραδάκης' });
+    expect(session).toMatchObject({
+      course: 'Μαθηματική Ανάλυση Ι',
+      type: 'tutorial',
+      teacher: 'Γ. Ψαραδάκης',
+    });
   });
 
   it('tags the teaching-proficiency section & drops the inherited semester', () => {
     const classes = parseTimetableGrid([
       semester('Ζ΄'),
-      table([header, [time('09:00 – 10:00'), classCell('Ασφάλεια Δικτύων', 'Σ. Νικολάου', 'Β1'), [], [], [], []]]),
-      { type: 'paragraph', content: [{ text: 'Προαιρετικό Πρόγραμμα Παιδαγωγικής & Διδακτικής Επάρκειας' }] },
-      table([header, [time('17:00 – 18:00'), [], classCell('Διδακτική Μεθοδολογία', 'Α. Αθανασιάδης', 'B2'), [], [], []]]),
+      table([
+        header,
+        [time('09:00 – 10:00'), classCell('Ασφάλεια Δικτύων', 'Σ. Νικολάου', 'Β1'), [], [], [], []],
+      ]),
+      {
+        type: 'paragraph',
+        content: [{ text: 'Προαιρετικό Πρόγραμμα Παιδαγωγικής & Διδακτικής Επάρκειας' }],
+      },
+      table([
+        header,
+        [
+          time('17:00 – 18:00'),
+          [],
+          classCell('Διδακτική Μεθοδολογία', 'Α. Αθανασιάδης', 'B2'),
+          [],
+          [],
+          [],
+        ],
+      ]),
     ]);
 
     expect(classes).toEqual([
@@ -149,5 +186,53 @@ describe('parseTimetableGrid', () => {
         ]),
       ]),
     ).toEqual([]);
+  });
+});
+
+describe('parseTimetableGrid on a spreadsheet layout', () => {
+  const plain = (text: string): Inline => (text ? [{ text }] : []);
+  const row = (...cells: string[]): Inline[] => cells.map(plain);
+
+  it('reads a teacher & room put under the course, a day spanning two columns, & a two-hour class', () => {
+    const classes = parseTimetableGrid([
+      { type: 'heading', level: 3, content: [{ text: '1ο ΕΞΑΜΗΝΟ' }] },
+      table([
+        row('1ο ΕΞΑΜΗΝΟ', '', '', '', '', ''),
+        row('ΩΡΕΣ', 'ΔΕΥΤΕΡΑ', 'ΤΡΙΤΗ', 'ΤΕΤΑΡΤΗ', 'ΠΕΜΠΤΗ', '', 'ΠΑΡΑΣΚΕΥΗ'),
+        row('09:00 - 10:00', 'ΔΗΜΟΣΙΟΓΡΑΦΙΑ', '', '', 'ΕΙΚΟΝΑ - ΕΤ1', 'ΕΙΚΟΝΑ - ΕΤ2', ''),
+        row('', 'ΜΩΡΑΪΤΗΣ', '', '', 'ΚΑΛΤΣΙΑΔΟΥ', 'ΜΑΡΚΟΥ', ''),
+        row('10:00 - 11:00', 'ΑΙΘΟΥΣΑ Β9', '', '', '', '', ''),
+        row('11:00 - 12:00', 'ΔΗΜΟΣΙΟΓΡΑΦΙΑ', '', '', '', '', ''),
+      ]),
+    ]);
+
+    expect(classes).toEqual([
+      expect.objectContaining({
+        course: 'ΔΗΜΟΣΙΟΓΡΑΦΙΑ',
+        day: 1,
+        startTime: '09:00',
+        endTime: '10:00',
+        teacher: 'ΜΩΡΑΪΤΗΣ',
+        room: 'ΑΙΘΟΥΣΑ Β9',
+        semester: 'Α΄',
+      }),
+      expect.objectContaining({ course: 'ΕΙΚΟΝΑ - ΕΤ1', day: 4, teacher: 'ΚΑΛΤΣΙΑΔΟΥ' }),
+      expect.objectContaining({ course: 'ΕΙΚΟΝΑ - ΕΤ2', day: 4, teacher: 'ΜΑΡΚΟΥ' }),
+      expect.objectContaining({ course: 'ΔΗΜΟΣΙΟΓΡΑΦΙΑ', day: 1, startTime: '11:00' }),
+    ]);
+  });
+
+  it('joins a class that runs over consecutive slots into one', () => {
+    const classes = parseTimetableGrid([
+      semester('Γ΄'),
+      table([
+        header,
+        [time('09:00 – 10:00'), classCell('Φυσική', 'Θ. Π', 'Β1'), [], [], [], []],
+        [time('10:00 – 11:00'), classCell('Φυσική', 'Θ. Π', 'Β1'), [], [], [], []],
+      ]),
+    ]);
+    expect(classes).toEqual([
+      expect.objectContaining({ course: 'Φυσική', startTime: '09:00', endTime: '11:00' }),
+    ]);
   });
 });

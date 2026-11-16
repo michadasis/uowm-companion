@@ -72,7 +72,10 @@ function fileName(url: string, title: string | undefined): string {
   } catch {
     /* keep it encoded */
   }
-  return base.replace(/\.[a-z0-9]+$/i, '').replace(/[-_]+/g, ' ').trim();
+  return base
+    .replace(/\.[a-z0-9]+$/i, '')
+    .replace(/[-_]+/g, ' ')
+    .trim();
 }
 
 /**

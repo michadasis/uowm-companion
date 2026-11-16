@@ -38,7 +38,9 @@ export async function fetchAnnouncements(
       if (announcement.body.length > 0) return announcement;
       const postId = Number(announcement.id.split(':').pop());
       try {
-        const media = wpMediaSchema.parse(await fetchJson(wordpressMediaUrl(source.apiRoot, postId)));
+        const media = wpMediaSchema.parse(
+          await fetchJson(wordpressMediaUrl(source.apiRoot, postId)),
+        );
         return withAttachments(announcement, attachmentBlocks(media));
       } catch {
         return announcement;

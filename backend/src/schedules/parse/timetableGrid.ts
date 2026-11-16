@@ -13,11 +13,7 @@ const dayNames: Record<string, number> = {
 };
 
 function fold(text: string): string {
-  return text
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .trim();
+  return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 }
 
 // The cell's text with its line breaks kept — plainText would fold them into
@@ -47,10 +43,7 @@ function cleanRoom(room: string): string {
 const teacherLine = /^(?:[Α-ΩΆ-Ώ]\.\s*){1,3}[Α-ΩΆ-Ώ][α-ωά-ώϊΐ'’]+$/u;
 
 function splitByLines(cell: Inline): { course: string; teacher?: string; room: string } {
-  const lines = cellText(cell)
-    .split('\n')
-    .map(tidy)
-    .filter(Boolean);
+  const lines = cellText(cell).split('\n').map(tidy).filter(Boolean);
   const teacherIndex = lines.findIndex((line, i) => i > 0 && teacherLine.test(line));
   const course = lines[0] ?? '';
   const teacher = teacherIndex >= 0 ? lines[teacherIndex] : undefined;
@@ -122,15 +115,65 @@ function dayColumns(headerCells: Inline[]): Map<number, number> {
   return map;
 }
 
-const timeRange = /(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})/u;
+const timeRange = /(\d{1,2}[:.]\d{2})\s*[–-]\s*(\d{1,2}[:.]\d{2})/u;
+
+const pad = (time: string): string => time.replace('.', ':').replace(/^(\d):/, '0$1:');
+
+const semesterLetters = ['Α', 'Β', 'Γ', 'Δ', 'Ε', 'ΣΤ', 'Ζ', 'Η', 'Θ', 'Ι'];
+
+/** The semester a heading names, as "Γ΄", whether it is written "Γ΄" or "3ο". */
+function semesterIn(text: string): string | undefined {
+  const lettered =
+    /([Α-Ω]{1,2}['΄’])\s*εξάμην/u.exec(text) ?? /([Α-Ω]{1,2}['΄’])\s*ΕΞΑΜΗΝ/u.exec(text);
+  if (lettered) return lettered[1]!.replace(/['’]/u, '΄');
+  const numbered = /(\d{1,2})\s*ο?\s*εξαμην/u.exec(fold(text));
+  const letter = numbered ? semesterLetters[Number(numbered[1]) - 1] : undefined;
+  return letter ? `${letter}΄` : undefined;
+}
+
+/**
+ * The column -> day map, with the columns a day spans: a day with parallel
+ * groups heads only its first column, the others left blank in the header.
+ */
+function spannedDayColumns(header: Inline[]): Map<number, number> {
+  const named = dayColumns(header);
+  const map = new Map<number, number>();
+  let current: number | undefined;
+  header.forEach((cell, index) => {
+    if (index === 0) return;
+    const day = named.get(index);
+    if (day) current = day;
+    else if (cellText(cell).trim()) current = undefined;
+    if (current) map.set(index, current);
+  });
+  return map;
+}
+
+/**
+ * A cell that holds only a person's name — a surname or two, in capitals, as
+ * a sheet puts the teacher on the line under the course.
+ */
+function looksLikeName(text: string): boolean {
+  const trimmed = text.trim();
+  if (!trimmed || trimmed.includes('\n') || /\d/.test(trimmed) || trimmed.length > 40) return false;
+  const words = trimmed.split(/[\s,–-]+/).filter(Boolean);
+  return words.length <= 3 && words.every((word) => /^[Α-ΩΆ-ΏΪΫ][Α-ΩΆ-ΏΪΫ.]*$/u.test(word));
+}
+
+/** A cell that names only a room, as a sheet puts it under the course. */
+function looksLikeRoom(text: string): boolean {
+  const trimmed = text.trim();
+  if (!trimmed || trimmed.includes('\n') || trimmed.length > 40) return false;
+  return /^(αιθουσα|αιθ\.?\s|αμφιθεατρο|αμφ\.?\s|εργαστηριο|εργ\.\s|[βb]\d)/u.test(fold(trimmed));
+}
 
 /**
  * Parses a timetable laid out as a grid: a header row of weekday columns, then
  * a row per time slot whose first cell is the time & whose other cells hold a
- * class as a course, its teacher & its room on separate lines. Several tables,
- * one per semester, are read in turn, the semester taken from the heading
- * before each. The format the Informatics department uses; another shape
- * yields nothing.
+ * class — as a course, its teacher & its room on separate lines (Informatics),
+ * or with the teacher in the row beneath (sheets like Communication's). A class
+ * that runs over consecutive slots reads as one. Several tables, one per
+ * semester, are read in turn, the semester taken from the heading before each.
  */
 export function parseTimetableGrid(blocks: Block[]): ClassSession[] {
   const classes: ClassSession[] = [];
@@ -140,10 +183,10 @@ export function parseTimetableGrid(blocks: Block[]): ClassSession[] {
   for (const block of blocks) {
     if (block.type === 'paragraph' || block.type === 'heading') {
       const text = plainText(block.content);
-      const match = /([Α-Ω]['΄’])\s*εξάμην/u.exec(text);
-      if (match) {
+      const named = semesterIn(text);
+      if (named) {
         // A new semester heading ends any teaching-proficiency section before it.
-        semester = match[1];
+        semester = named;
         track = undefined;
       } else if (/επαρκει/u.test(fold(text))) {
         // The teaching-proficiency programme is its own section with no
@@ -158,17 +201,68 @@ export function parseTimetableGrid(blocks: Block[]): ClassSession[] {
     const rows = block.header ? [block.header, ...block.rows] : block.rows;
     const headerIndex = rows.findIndex((row) => dayColumns(row).size >= 3);
     if (headerIndex === -1) continue;
-    const columns = dayColumns(rows[headerIndex]!);
+    const columns = spannedDayColumns(rows[headerIndex]!);
+    // A sheet may title the table with its semester in a row above the days.
+    for (const row of rows.slice(0, headerIndex)) {
+      const named = semesterIn(row.map(cellText).join(' '));
+      if (named) {
+        semester = named;
+        track = undefined;
+      }
+    }
+
+    // The class last placed in each column, & the slot it ended in.
+    const last = new Map<number, { session: ClassSession; slot: number }>();
+    let slot = 0;
+    let slotEnd: string | undefined;
 
     for (const row of rows.slice(headerIndex + 1)) {
       const time = timeRange.exec(cellText(row[0] ?? []));
-      if (!time) continue;
-      const [, start, end] = time;
+      if (time) {
+        slot += 1;
+        slotEnd = pad(time[2]!);
+      }
       for (const [col, day] of columns) {
         const cell = row[col] ?? [];
-        if (!cellText(cell).trim()) continue;
-        const session = parseCell(cell, day, start!, end!, semester, track);
-        if (session) classes.push(session);
+        const text = cellText(cell).trim();
+        if (!text) continue;
+        const above = last.get(col);
+        const fromSlotAbove = above !== undefined && above.slot >= slot - (time ? 1 : 0);
+
+        // A name under a course is that course's teacher, not a class of its
+        // own; on a timed row it also means the course runs on into this slot.
+        if (fromSlotAbove && !above.session.teacher && looksLikeName(text)) {
+          above.session.teacher = tidy(text);
+          if (time && slotEnd) {
+            above.session.endTime = slotEnd;
+            above.slot = slot;
+          }
+          continue;
+        }
+        // A room under a course is where it is held.
+        if (above && above.slot >= slot - 1 && !above.session.room && looksLikeRoom(text)) {
+          above.session.room = tidy(text);
+          continue;
+        }
+        if (!time) continue;
+
+        const session = parseCell(cell, day, pad(time[1]!), pad(time[2]!), semester, track);
+        if (!session) continue;
+        // The same course in the next slot is the same class running on.
+        if (
+          above &&
+          above.slot === slot - 1 &&
+          above.session.course === session.course &&
+          above.session.endTime === session.startTime &&
+          (session.teacher === undefined || session.teacher === above.session.teacher)
+        ) {
+          above.session.endTime = session.endTime;
+          above.slot = slot;
+          if (!above.session.room && session.room) above.session.room = session.room;
+          continue;
+        }
+        classes.push(session);
+        last.set(col, { session, slot });
       }
     }
   }

@@ -121,7 +121,6 @@ describe('discoverDocument', () => {
 
     expect(await discoverDocument(source, fetchText)).toBeNull();
   });
-
 });
 
 describe('discoverDocuments', () => {
@@ -165,7 +164,11 @@ describe('discoverDocuments', () => {
         JSON.stringify([
           post('2026-10-26T10:00:00', 'Κατατακτήριες εξετάσεις 2026', '<a href="/k.pdf">k</a>'),
           post('2026-09-01T10:00:00', 'Αστικά δρομολόγια εξεταστικής', '<a href="/d.pdf">d</a>'),
-          post('2026-07-16T10:00:00', 'ΠΡΟΓΡΑΜΜΑ ΕΞΕΤΑΣΤΙΚΗΣ ΣΕΠΤΕΜΒΡΙΟΥ 2026', '<a href="/e.pdf">e</a>'),
+          post(
+            '2026-07-16T10:00:00',
+            'ΠΡΟΓΡΑΜΜΑ ΕΞΕΤΑΣΤΙΚΗΣ ΣΕΠΤΕΜΒΡΙΟΥ 2026',
+            '<a href="/e.pdf">e</a>',
+          ),
         ]),
       ),
     );
@@ -178,7 +181,13 @@ describe('discoverDocuments', () => {
   it('gives no schedule when the newest one is from a term long over', async () => {
     const fetchText = vi.fn(() =>
       Promise.resolve(
-        JSON.stringify([post('2024-07-30T10:00:00', 'ΠΡΟΓΡΑΜΜΑ ΕΞΕΤΑΣΕΩΝ ΣΕΠΤΕΜΒΡΙΟΥ 2024', '<a href="/old.pdf">o</a>')]),
+        JSON.stringify([
+          post(
+            '2024-07-30T10:00:00',
+            'ΠΡΟΓΡΑΜΜΑ ΕΞΕΤΑΣΕΩΝ ΣΕΠΤΕΜΒΡΙΟΥ 2024',
+            '<a href="/old.pdf">o</a>',
+          ),
+        ]),
       ),
     );
     const source: ScheduleSource = { adapter: 'wordpress-posts', apiRoot: api, category: 131 };
@@ -218,7 +227,11 @@ describe('discoverDocuments', () => {
 
   it('wraps a single-document source', async () => {
     const fetchText = pages({ [examsPage]: '<article><a href="/a.docx">Α</a></article>' });
-    const source: ScheduleSource = { adapter: 'document-page', pageUrl: examsPage, pick: 'first-link' };
+    const source: ScheduleSource = {
+      adapter: 'document-page',
+      pageUrl: examsPage,
+      pick: 'first-link',
+    };
 
     const found = await discoverDocuments(source, 'exams', fetchText, now);
     expect(found?.documents).toHaveLength(1);
