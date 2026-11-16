@@ -50,3 +50,14 @@ describe('xlsxToBlocks', () => {
     ]);
   });
 });
+
+describe('renderDocument', () => {
+  it('refuses a "document" that is really a web page', async () => {
+    const { NotADocumentError, renderDocument } = await import('../src/documents/pipeline.js');
+    const html = new TextEncoder().encode('<!DOCTYPE html><title>404</title>');
+
+    await expect(
+      renderDocument({ url: 'https://x/gone.pdf', format: 'pdf', label: 'x' }, () => Promise.resolve(html)),
+    ).rejects.toBeInstanceOf(NotADocumentError);
+  });
+});

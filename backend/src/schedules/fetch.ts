@@ -1,6 +1,6 @@
 import type { Block } from '../content/blocks.js';
 import { discoverDocuments } from '../documents/discover.js';
-import { renderDocument } from '../documents/pipeline.js';
+import { NotADocumentError, renderDocument } from '../documents/pipeline.js';
 import { fetchBuffer, fetchText } from '../http/fetch.js';
 import type { Department } from '../registry/index.js';
 
@@ -35,27 +35,34 @@ export async function fetchSchedule(
   const discovery = await discoverDocuments(source, kind, fetchText);
   if (!discovery) return empty;
 
-  const [first] = discovery.documents;
-  const meta = { url: first!.url, label: discovery.label, format: first!.format };
   // Each document is read on its own: one that can't be read leaves the rest.
-  const rendered = await Promise.all(
+  // A link that turns out to serve no document at all — a dead link landing on
+  // a 404 page — is dropped, as if it had never been listed.
+  const results = await Promise.all(
     discovery.documents.map((document) =>
       renderDocument(document, fetchBuffer).then(
-        (result) => result.blocks,
-        () => [] as Block[],
+        (result) => ({ document, blocks: result.blocks }),
+        (error: unknown) =>
+          error instanceof NotADocumentError ? null : { document, blocks: [] as Block[] },
       ),
     ),
   );
+  const parts = results.filter((part) => part !== null);
+  if (parts.length === 0) return empty;
+  const documents = parts.map((part) => part.document);
+  const rendered = parts.map((part) => part.blocks);
+
+  const meta = { url: documents[0]!.url, label: discovery.label, format: documents[0]!.format };
   // A schedule split into several documents reads as one, each part headed by
   // the name it was linked under.
-  const named = new Set(discovery.documents.map((document) => document.label)).size > 1;
+  const named = new Set(documents.map((document) => document.label)).size > 1;
   const blocks: Block[] =
     !named
       ? rendered.flat()
       : rendered.flatMap((part, index) =>
           part.length
             ? [
-                { type: 'heading', level: 3, content: [{ text: discovery.documents[index]!.label }] },
+                { type: 'heading', level: 3, content: [{ text: documents[index]!.label }] },
                 ...part,
               ]
             : [],

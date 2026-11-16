@@ -366,7 +366,14 @@ export const departments: readonly Department[] = [
     website: site('psy'),
     sources: {
       announcements: wordpress('psy', [1]),
-      exams: { adapter: 'menu-link', pageUrl: `${site('psy')}/`, label: 'Πρόγραμμα εξεταστικής' },
+      // The menu's link goes stale between sittings; each new schedule goes
+      // out as an announcement.
+      exams: {
+        adapter: 'wordpress-posts',
+        apiRoot: `${site('psy')}/wp-json/`,
+        category: 1,
+        search: 'εξεταστικής',
+      },
       timetable: { adapter: 'menu-link', pageUrl: `${site('psy')}/`, label: 'Ωρολόγιο Πρόγραμμα' },
       staff: [
         page(`${site('psy')}/didaktiko-erevnitiko-prosopiko-d-e-p/`),
