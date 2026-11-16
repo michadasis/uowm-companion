@@ -34,9 +34,9 @@ export const departments: readonly Department[] = [
     website: site('ece'),
     sources: {
       announcements: wordpress('ece', [13]),
-      exams: { adapter: 'wordpress-category', apiRoot: `${site('ece')}/wp-json/`, category: 97 },
+      exams: { adapter: 'wordpress-posts', apiRoot: `${site('ece')}/wp-json/`, category: 97 },
       timetable: {
-        adapter: 'wordpress-category',
+        adapter: 'wordpress-posts',
         apiRoot: `${site('ece')}/wp-json/`,
         category: 89,
       },
@@ -78,12 +78,12 @@ export const departments: readonly Department[] = [
     sources: {
       announcements: wordpress('chemeng', [35]),
       exams: {
-        adapter: 'wordpress-category',
+        adapter: 'wordpress-posts',
         apiRoot: `${site('chemeng')}/wp-json/`,
         category: 63,
       },
       timetable: {
-        adapter: 'wordpress-category',
+        adapter: 'wordpress-posts',
         apiRoot: `${site('chemeng')}/wp-json/`,
         category: 52,
       },
@@ -202,10 +202,13 @@ export const departments: readonly Department[] = [
     website: site('accfin'),
     sources: {
       announcements: wordpress('accfin', [35]),
+      // The exam schedule goes out as an announcement; the category kept for
+      // it has not been used since 2024.
       exams: {
-        adapter: 'wordpress-category',
+        adapter: 'wordpress-posts',
         apiRoot: `${site('accfin')}/wp-json/`,
-        category: 131,
+        category: 35,
+        search: 'πρόγραμμα εξετ',
       },
       timetable: {
         adapter: 'menu-link',
@@ -271,7 +274,7 @@ export const departments: readonly Department[] = [
     website: site('ba'),
     sources: {
       announcements: wordpress('ba', [3]),
-      exams: { adapter: 'wordpress-category', apiRoot: `${site('ba')}/wp-json/`, category: 102 },
+      exams: { adapter: 'wordpress-posts', apiRoot: `${site('ba')}/wp-json/`, category: 102 },
       timetable: { adapter: 'menu-link', pageUrl: `${site('ba')}/`, label: 'Ωρολόγιο Πρόγραμμα' },
       staff: [
         page(`${site('ba')}/προσωπικό/didaktiko-prosopiko/d-e-p/`),
@@ -333,10 +336,12 @@ export const departments: readonly Department[] = [
     website: site('nured'),
     sources: {
       announcements: wordpress('nured', [23]),
+      // No menu entry; the exam schedule goes out as an announcement.
       exams: {
-        adapter: 'menu-link',
-        pageUrl: `${site('nured')}/`,
-        label: 'Πρόγραμμα Εξεταστικής',
+        adapter: 'wordpress-posts',
+        apiRoot: `${site('nured')}/wp-json/`,
+        category: 23,
+        search: 'εξεταστικής',
       },
       timetable: {
         adapter: 'document-page',

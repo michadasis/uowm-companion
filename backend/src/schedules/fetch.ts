@@ -1,4 +1,5 @@
-import { discoverDocument } from '../documents/discover.js';
+import type { Block } from '../content/blocks.js';
+import { discoverDocuments } from '../documents/discover.js';
 import { renderDocument } from '../documents/pipeline.js';
 import { fetchBuffer, fetchText } from '../http/fetch.js';
 import type { Department } from '../registry/index.js';
@@ -31,23 +32,46 @@ export async function fetchSchedule(
 
   if (!source) return empty;
 
-  const document = await discoverDocument(source, fetchText);
-  if (!document) return empty;
+  const discovery = await discoverDocuments(source, kind, fetchText);
+  if (!discovery) return empty;
 
-  const meta = { url: document.url, label: document.label, format: document.format };
+  const [first] = discovery.documents;
+  const meta = { url: first!.url, label: discovery.label, format: first!.format };
+  // Each document is read on its own: one that can't be read leaves the rest.
+  const rendered = await Promise.all(
+    discovery.documents.map((document) =>
+      renderDocument(document, fetchBuffer).then(
+        (result) => result.blocks,
+        () => [] as Block[],
+      ),
+    ),
+  );
+  // A schedule split into several documents reads as one, each part headed by
+  // the name it was linked under.
+  const named = new Set(discovery.documents.map((document) => document.label)).size > 1;
+  const blocks: Block[] =
+    !named
+      ? rendered.flat()
+      : rendered.flatMap((part, index) =>
+          part.length
+            ? [
+                { type: 'heading', level: 3, content: [{ text: discovery.documents[index]!.label }] },
+                ...part,
+              ]
+            : [],
+        );
+
   try {
-    const rendered = await renderDocument(document, fetchBuffer);
     return {
       ...empty,
       document: meta,
-      exams: kind === 'exams' ? parseExamList(rendered.blocks) : [],
-      classes: kind === 'timetable' ? parseTimetableGrid(rendered.blocks) : [],
-      original: rendered.blocks,
+      exams: kind === 'exams' ? parseExamList(blocks) : [],
+      classes: kind === 'timetable' ? parseTimetableGrid(blocks) : [],
+      original: blocks,
     };
   } catch {
-    // The document was found but could not be read (an unreadable PDF, say).
-    // Still report it as available with its link, so the app offers the source
-    // instead of failing the whole request.
-    return { ...empty, document: meta };
+    // A parser tripped on an unusual document. The schedule still shows as
+    // written, with its link, rather than failing the whole request.
+    return { ...empty, document: meta, original: blocks };
   }
 }

@@ -63,15 +63,17 @@ export type AnnouncementsSource = WordPressRestSource | HtmlListingSource;
  * - `menu-link`: the site menu links to the current document, or to a page
  *   that holds it. The target changes every semester, so it is found again
  *   by the start of its label, ignoring case and accents.
- * - `embedded-sheet`: a standing page that embeds a Google Sheet.
- * - `wordpress-category`: every schedule is published as a post in a
- *   category of its own.
+ * - `embedded-sheet`: a standing page that embeds a Google Sheet; the sheet
+ *   is read as a spreadsheet export.
+ * - `wordpress-posts`: each new schedule is published as a post, its document
+ *   attached. The posts are found by category, by a search, or both, & the
+ *   newest one whose title names the right kind of schedule is taken.
  */
 export type ScheduleSource =
   | { adapter: 'document-page'; pageUrl: string; pick: 'first-link' | 'newest-upload' }
   | { adapter: 'menu-link'; pageUrl: string; label: string }
   | { adapter: 'embedded-sheet'; pageUrl: string }
-  | { adapter: 'wordpress-category'; apiRoot: string; category: number };
+  | { adapter: 'wordpress-posts'; apiRoot: string; category?: number; search?: string };
 
 export interface PageSource {
   adapter: 'html-page';

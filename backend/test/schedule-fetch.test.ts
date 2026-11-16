@@ -3,8 +3,11 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Department } from '../src/registry/index.js';
 
 vi.mock('../src/documents/discover.js', () => ({
-  discoverDocument: vi.fn(() =>
-    Promise.resolve({ url: 'https://x/doc.pdf', label: 'Doc', format: 'pdf' }),
+  discoverDocuments: vi.fn(() =>
+    Promise.resolve({
+      label: 'Doc',
+      documents: [{ url: 'https://x/doc.pdf', label: 'Doc', format: 'pdf' }],
+    }),
   ),
 }));
 vi.mock('../src/documents/pipeline.js', () => ({
