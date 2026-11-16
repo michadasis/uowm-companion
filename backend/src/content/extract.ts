@@ -68,10 +68,31 @@ export function parsePostPage(html: string): PostPageContent {
 
 /** The post permalinks linked from a category archive, in page order, deduped. */
 export function parseArchiveLinks(html: string, baseUrl: string, postPathPrefix: string): string[] {
+  return parseArchiveEntries(html, baseUrl, postPathPrefix).map((entry) => entry.url);
+}
+
+export interface ArchiveEntry {
+  url: string;
+  /** The date the listing prints beside the link, as ISO; null if none. */
+  date: string | null;
+}
+
+// How far up from a link to look for the listing item that holds its date.
+const itemDepth = 5;
+
+/**
+ * The post links on an archive page, in order, each with the date the listing
+ * shows for it. Some themes print a post's date only in the listing, never on
+ * the post's own page, so this is the one place to read it.
+ */
+export function parseArchiveEntries(
+  html: string,
+  baseUrl: string,
+  postPathPrefix: string,
+): ArchiveEntry[] {
   const $ = load(html);
   const host = new URL(baseUrl).host;
-  const links: string[] = [];
-  const seen = new Set<string>();
+  const entries: ArchiveEntry[] = [];
 
   $('a[href]').each((_, el) => {
     const href = $(el).attr('href');
@@ -86,12 +107,42 @@ export function parseArchiveLinks(html: string, baseUrl: string, postPathPrefix:
     // The prefix itself is the archive/category root, not a post.
     if (url.pathname === postPathPrefix) return;
     const clean = `${url.origin}${url.pathname}`;
-    if (seen.has(clean)) return;
-    seen.add(clean);
-    links.push(clean);
+    const known = entries.find((entry) => entry.url === clean);
+    if (known?.date) return;
+
+    // Climb from the link to the item that holds it — the closest ancestor
+    // with a date in it — but no further than one that also links another
+    // post, since that is the list itself.
+    const isOtherPost = (a: Parameters<typeof $>[0]): boolean => {
+      try {
+        const other = new URL($(a).attr('href') ?? '', baseUrl);
+        return (
+          other.host === host &&
+          other.pathname.startsWith(postPathPrefix) &&
+          other.pathname !== postPathPrefix &&
+          `${other.origin}${other.pathname}` !== clean
+        );
+      } catch {
+        return false;
+      }
+    };
+    let date: string | null = null;
+    let item = $(el).parent();
+    for (let depth = 0; depth < itemDepth && item.length && !date; depth++) {
+      if (item.find('a[href]').filter((__, a) => isOtherPost(a)).length > 0) break;
+      const stamp =
+        item.find('time[datetime]').attr('datetime') ??
+        item.find('.post-date, .entry-date, .posted-on, time').first().text().trim();
+      if (stamp) date = toIsoDate(stamp);
+      item = item.parent();
+    }
+    // A post linked twice, say from a sidebar first, keeps its first place but
+    // takes the date from wherever the listing prints one.
+    if (known) known.date = date;
+    else entries.push({ url: clean, date });
   });
 
-  return links;
+  return entries;
 }
 
 // Greek month names, genitive & nominative, mapped to a month index. Dates on

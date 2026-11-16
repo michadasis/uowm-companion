@@ -1,14 +1,25 @@
-import { parseArchiveLinks } from '../content/extract.js';
+import { parseArchiveEntries } from '../content/extract.js';
 import { fetchJson, fetchText, mapWithConcurrency } from '../http/fetch.js';
 import type { AnnouncementsSource } from '../registry/index.js';
 
 import { parseHtmlListingPost } from './htmlListing.js';
 import type { Announcement } from './types.js';
-import { parseWordPressPosts, wordpressPostsUrl, wpPostsSchema } from './wordpress.js';
+import {
+  attachmentBlocks,
+  parseWordPressPosts,
+  withAttachments,
+  wordpressMediaUrl,
+  wordpressPostsUrl,
+  wpMediaSchema,
+  wpPostsSchema,
+} from './wordpress.js';
 
 const perPage = 20;
 const htmlListingLimit = 15;
 const htmlListingConcurrency = 4;
+// Fewer announcements than this on a listing's first page sends us to its next ones.
+const minimumListed = 10;
+const listingExtraPages = [2, 3];
 
 /**
  * Reads a department's or the university's announcements from whichever source
@@ -21,18 +32,45 @@ export async function fetchAnnouncements(
 ): Promise<Announcement[]> {
   if (source.adapter === 'wordpress-rest') {
     const data = await fetchJson(wordpressPostsUrl(source.apiRoot, source.categories, perPage));
-    return parseWordPressPosts(wpPostsSchema.parse(data), id);
+    const announcements = parseWordPressPosts(wpPostsSchema.parse(data), id);
+    // A post with no text may still carry files; ask for them, a few at a time.
+    return mapWithConcurrency(announcements, htmlListingConcurrency, async (announcement) => {
+      if (announcement.body.length > 0) return announcement;
+      const postId = Number(announcement.id.split(':').pop());
+      try {
+        const media = wpMediaSchema.parse(await fetchJson(wordpressMediaUrl(source.apiRoot, postId)));
+        return withAttachments(announcement, attachmentBlocks(media));
+      } catch {
+        return announcement;
+      }
+    });
   }
 
   const archive = await fetchText(source.listingUrl);
-  const links = parseArchiveLinks(archive, source.listingUrl, source.postPathPrefix).slice(
-    0,
-    htmlListingLimit,
-  );
-  const announcements = await mapWithConcurrency(links, htmlListingConcurrency, async (url) => {
-    const announcement = parseHtmlListingPost(await fetchText(url), url, id);
-    if (!announcement) throw new Error(`Could not parse ${url}`);
-    return announcement;
+  let all = parseArchiveEntries(archive, source.listingUrl, source.postPathPrefix);
+  // A listing that shows only a few posts a page is read a few pages deep.
+  const nextPage = `${new URL(source.listingUrl).pathname}page/2/`;
+  if (all.filter((entry) => entry.date).length < minimumListed && archive.includes(nextPage)) {
+    const more = await Promise.all(
+      listingExtraPages.map((page) =>
+        fetchText(`${source.listingUrl}page/${page}/`).then(
+          (html) => parseArchiveEntries(html, source.listingUrl, source.postPathPrefix),
+          () => [],
+        ),
+      ),
+    );
+    const known = new Set(all.map((entry) => entry.url));
+    all = [...all, ...more.flat().filter((entry) => !known.has(entry.url))];
+  }
+  // Where the listing dates its items, an undated link is the site's menu or
+  // sidebar pointing at a standing page, not an announcement.
+  const dated = all.filter((entry) => entry.date !== null);
+  const entries = (dated.length >= 3 ? dated : all).slice(0, htmlListingLimit);
+  const announcements = await mapWithConcurrency(entries, htmlListingConcurrency, async (entry) => {
+    const announcement = parseHtmlListingPost(await fetchText(entry.url), entry.url, id);
+    if (!announcement) throw new Error(`Could not parse ${entry.url}`);
+    // A theme that dates posts only in the listing still gets them dated.
+    return announcement.date ? announcement : { ...announcement, date: entry.date };
   });
   return orderNewestFirst(announcements);
 }

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseArchiveLinks, parsePostPage, toIsoDate } from '../src/content/extract.js';
+import {
+  parseArchiveEntries,
+  parseArchiveLinks,
+  parsePostPage,
+  toIsoDate,
+} from '../src/content/extract.js';
 
 describe('toIsoDate', () => {
   it('keeps an ISO timestamp', () => {
@@ -85,5 +90,24 @@ describe('parsePostPage', () => {
     const page = parsePostPage(html);
     expect(page.title).toBe('Μια ανακοίνωση');
     expect(page.date).toBe('2026-11-14T00:00:00.000Z');
+  });
+});
+
+describe('parseArchiveEntries', () => {
+  it('reads the date a listing prints beside each post, even after a sidebar link to it', () => {
+    const html =
+      '<aside><a href="/nea/second/">Δεύτερο</a></aside>' +
+      '<div class="post-list-item"><h4><a href="/nea/first/">Πρώτο</a></h4>' +
+      '<div class="post-date"><span>16 Νοεμβρίου 2026</span></div>' +
+      '<a href="/category/nea/">Ανακοινώσεις</a></div>' +
+      '<div class="post-list-item"><h4><a href="/nea/second/">Δεύτερο</a></h4>' +
+      '<div class="post-date"><span>13 Νοεμβρίου 2026</span></div></div>' +
+      '<nav><a href="/nea/about/">Σχετικά</a></nav>';
+
+    expect(parseArchiveEntries(html, 'https://mst.uowm.gr/list/', '/nea/')).toEqual([
+      { url: 'https://mst.uowm.gr/nea/second/', date: '2026-11-13T00:00:00.000Z' },
+      { url: 'https://mst.uowm.gr/nea/first/', date: '2026-11-16T00:00:00.000Z' },
+      { url: 'https://mst.uowm.gr/nea/about/', date: null },
+    ]);
   });
 });

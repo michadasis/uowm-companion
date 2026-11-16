@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-import { collectAttachments, collectImages } from '../content/blocks.js';
+import { attachmentFormat, collectAttachments, collectImages } from '../content/blocks.js';
+import type { Block } from '../content/blocks.js';
 import { decodeHtml } from '../content/extract.js';
 import { htmlToBlocks } from '../content/html-to-blocks.js';
 
@@ -50,4 +51,55 @@ export function parseWordPressPosts(posts: WpPost[], deptId: string): Announceme
       sourceUrl: post.link,
     };
   });
+}
+
+export const wpMediaSchema = z.array(
+  z.object({ source_url: z.string(), title: rendered.optional() }).passthrough(),
+);
+
+/** The files uploaded to a post, asked of WordPress by the post's id. */
+export function wordpressMediaUrl(apiRoot: string, postId: number): string {
+  const params = new URLSearchParams({ parent: String(postId), _fields: 'source_url,title' });
+  return `${apiRoot.replace(/\/$/, '')}/wp/v2/media?${params.toString()}`;
+}
+
+/** A file's name as a reader would give it: its title, or its file name tidied. */
+function fileName(url: string, title: string | undefined): string {
+  if (title?.trim()) return decodeHtml(title);
+  let base = url.split('/').pop() ?? url;
+  try {
+    base = decodeURIComponent(base);
+  } catch {
+    /* keep it encoded */
+  }
+  return base.replace(/\.[a-z0-9]+$/i, '').replace(/[-_]+/g, ' ').trim();
+}
+
+/**
+ * Attachment blocks for the documents uploaded to a post. Some sites publish
+ * an announcement as a title & a few files, never putting the files in the
+ * text; without this such a post reads as empty. Images are left out — they
+ * are decoration here, not the message.
+ */
+export function attachmentBlocks(media: z.infer<typeof wpMediaSchema>): Block[] {
+  const seen = new Set<string>();
+  return media.flatMap((file) => {
+    const format = attachmentFormat(file.source_url);
+    if (!format || format === 'other' || seen.has(file.source_url)) return [];
+    seen.add(file.source_url);
+    return [
+      {
+        type: 'attachment' as const,
+        name: fileName(file.source_url, file.title?.rendered),
+        href: file.source_url,
+        format,
+      },
+    ];
+  });
+}
+
+/** Gives a post that has no text the files uploaded to it as its body. */
+export function withAttachments(announcement: Announcement, files: Block[]): Announcement {
+  if (announcement.body.length > 0 || files.length === 0) return announcement;
+  return { ...announcement, body: files, attachments: collectAttachments(files) };
 }

@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import { parseHtmlListingPost } from '../src/announcements/htmlListing.js';
-import { parseWordPressPosts, wordpressPostsUrl } from '../src/announcements/wordpress.js';
+import {
+  attachmentBlocks,
+  parseWordPressPosts,
+  withAttachments,
+  wordpressMediaUrl,
+  wordpressPostsUrl,
+} from '../src/announcements/wordpress.js';
 import type { WpPost } from '../src/announcements/wordpress.js';
 
 const wpPost = (over: Partial<WpPost> = {}): WpPost => ({
@@ -99,5 +105,38 @@ describe('parseHtmlListingPost', () => {
       date: null,
       excerpt: 'Το μάθημα αναβάλλεται.',
     });
+  });
+});
+
+describe('attachmentBlocks', () => {
+  it('turns the documents uploaded to a post into attachments, skipping images', () => {
+    expect(
+      attachmentBlocks([
+        { source_url: 'https://eled.uowm.gr/u/4%CE%B7-%CE%A0%CE%A1%CE%9F%CE%9A%CE%97%CE%A1%CE%A5%CE%9E%CE%97.pdf' },
+        { source_url: 'https://eled.uowm.gr/u/form.doc', title: { rendered: 'Αίτηση &#8211; έντυπο' } },
+        { source_url: 'https://eled.uowm.gr/u/photo.jpg' },
+      ]),
+    ).toEqual([
+      { type: 'attachment', name: '4η ΠΡΟΚΗΡΥΞΗ', href: 'https://eled.uowm.gr/u/4%CE%B7-%CE%A0%CE%A1%CE%9F%CE%9A%CE%97%CE%A1%CE%A5%CE%9E%CE%97.pdf', format: 'pdf' },
+      { type: 'attachment', name: 'Αίτηση – έντυπο', href: 'https://eled.uowm.gr/u/form.doc', format: 'doc' },
+    ]);
+  });
+
+  it('fills only a post that has no text of its own', () => {
+    const [post] = parseWordPressPosts([{ ...wpPost(), content: { rendered: '' } }], 'eled');
+    const files = attachmentBlocks([{ source_url: 'https://x/a.pdf' }]);
+
+    const filled = withAttachments(post!, files);
+    expect(filled.body).toEqual(files);
+    expect(filled.attachments).toHaveLength(1);
+
+    const [withText] = parseWordPressPosts([wpPost()], 'eled');
+    expect(withAttachments(withText!, files)).toBe(withText);
+  });
+
+  it('asks WordPress for the files by the post id', () => {
+    expect(wordpressMediaUrl('https://eled.uowm.gr/wp-json/', 42)).toBe(
+      'https://eled.uowm.gr/wp-json/wp/v2/media?parent=42&_fields=source_url%2Ctitle',
+    );
   });
 });
