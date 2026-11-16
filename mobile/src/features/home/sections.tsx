@@ -14,12 +14,15 @@ import {
 import { AnnouncementCard } from '@/features/announcements/AnnouncementCard';
 import { useAnnouncements } from '@/features/announcements/useAnnouncements';
 import { formatDayHeading, formatTimeRange } from '@/features/schedules/agenda';
-import { nextExam } from '@/features/schedules/nextExam';
+import { formatClassTime, weekdayLabel } from '@/features/schedules/timetable';
 import { useSchedule } from '@/features/schedules/useSchedule';
 import { useMenu, todayName } from '@/features/menu/useMenu';
+import { useSettings } from '@/features/settings/store';
 import type { Language } from '@/features/settings/store';
+import { useStudentCourses } from '@/features/universis/useStudentCourses';
 
 import { EmptyHint } from './EmptyHint';
+import { pickNextUp } from './nextUp';
 
 function Loading() {
   const { t } = useTranslation();
@@ -33,47 +36,104 @@ function Loading() {
   );
 }
 
+function Meta({ icon, text }: { icon: 'location' | 'department'; text: string }) {
+  const styles = useStyles();
+  return (
+    <View style={styles.meta}>
+      <Icon name={icon} size={14} color="textSubtle" />
+      <Text variant="caption" color="textMuted" numberOfLines={1} style={styles.metaText}>
+        {text}
+      </Text>
+    </View>
+  );
+}
+
+/**
+ * The student's next class or exam, whichever is sooner. The class comes from
+ * the weekly timetable, so there is one to show all term — not only in the
+ * weeks an exam schedule is out.
+ */
 export function NextUpSection({ scope }: { scope: string }) {
   const { t, i18n } = useTranslation();
+  const language = i18n.language as Language;
   const router = useRouter();
   const styles = useStyles();
-  const { data, isLoading } = useSchedule(scope, 'exams');
-  const exam = data ? nextExam(data.exams) : undefined;
+  const exams = useSchedule(scope, 'exams');
+  const timetable = useSchedule(scope, 'timetable');
+  const semester = useSettings((s) => s.semester);
+  const { courses } = useStudentCourses();
+
+  const next = pickNextUp({
+    classes: timetable.data?.classes ?? [],
+    exams: exams.data?.exams ?? [],
+    courses,
+    semester,
+  });
+
+  let body;
+  if (exams.isLoading || timetable.isLoading) {
+    body = <Loading />;
+  } else if (next.kind === 'class') {
+    const { session, daysAhead, inProgress } = next.upcoming;
+    const when = inProgress
+      ? t('home.nextUp.now')
+      : daysAhead === 0
+        ? t('home.nextUp.today')
+        : daysAhead === 1
+          ? t('home.nextUp.tomorrow')
+          : weekdayLabel(session.day ?? 1, language);
+    body = (
+      <Card
+        onPress={() => router.push({ pathname: '/schedule', params: { kind: 'timetable' } })}
+        accessibilityLabel={session.course}
+        style={styles.card}
+      >
+        <Text variant="label" color="primary">
+          {[when, formatClassTime(session)].filter(Boolean).join(' · ')}
+        </Text>
+        <Text variant="heading" numberOfLines={2}>
+          {session.course}
+        </Text>
+        {session.room ? <Meta icon="location" text={session.room} /> : null}
+        {session.teacher ? <Meta icon="department" text={session.teacher} /> : null}
+      </Card>
+    );
+  } else if (next.kind === 'exam') {
+    const { exam } = next;
+    body = (
+      <Card
+        onPress={() => router.push({ pathname: '/schedule', params: { kind: 'exams' } })}
+        accessibilityLabel={exam.course}
+        style={styles.card}
+      >
+        <Text variant="label" color="primary">
+          {[
+            t('home.nextUp.exam'),
+            exam.date ? formatDayHeading(exam.date, language) : null,
+            formatTimeRange(exam),
+          ]
+            .filter(Boolean)
+            .join(' · ')}
+        </Text>
+        <Text variant="heading" numberOfLines={2}>
+          {exam.course}
+        </Text>
+        {exam.room ? <Meta icon="location" text={exam.room} /> : null}
+      </Card>
+    );
+  } else {
+    body = (
+      <EmptyHint
+        icon="schedule"
+        text={next.personalised ? t('home.nextUp.empty') : t('home.nextUp.personalise')}
+      />
+    );
+  }
 
   return (
     <View>
       <SectionHeader title={t('home.nextUp.title')} />
-      {isLoading ? (
-        <Loading />
-      ) : exam ? (
-        <Card
-          onPress={() => router.push('/schedule')}
-          accessibilityLabel={exam.course}
-          style={styles.card}
-        >
-          <Text variant="label" color="primary">
-            {[
-              exam.date ? formatDayHeading(exam.date, i18n.language as Language) : null,
-              formatTimeRange(exam),
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-          </Text>
-          <Text variant="heading" numberOfLines={2}>
-            {exam.course}
-          </Text>
-          {exam.room ? (
-            <View style={styles.meta}>
-              <Icon name="location" size={14} color="textSubtle" />
-              <Text variant="caption" color="textMuted">
-                {exam.room}
-              </Text>
-            </View>
-          ) : null}
-        </Card>
-      ) : (
-        <EmptyHint icon="schedule" text={t('home.nextUp.empty')} />
-      )}
+      {body}
     </View>
   );
 }
@@ -157,6 +217,9 @@ const useStyles = createStyles((theme) => ({
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing[1],
+  },
+  metaText: {
+    flex: 1,
   },
   items: {
     gap: theme.spacing[1],

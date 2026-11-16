@@ -6,6 +6,8 @@ import type { ReactNode } from 'react';
 import '@/i18n';
 import * as api from '@/lib/api';
 import { todayName } from '@/features/menu/useMenu';
+import { useSettings } from '@/features/settings/store';
+import { useSavedCourses } from '@/features/universis/saved';
 
 import { LatestAnnouncementsSection, NextUpSection, TodayMenuSection } from '../sections';
 
@@ -31,21 +33,47 @@ async function renderSection(node: ReactNode) {
 beforeEach(() => {
   jest.clearAllMocks();
   (useRouter as jest.Mock).mockReturnValue({ push: jest.fn() });
+  useSettings.setState({ semester: null });
+  useSavedCourses.setState({ courses: null, updatedAt: null });
+});
+
+const schedule = (kind: 'exams' | 'timetable', items: object[]) => ({
+  dept: 'cs',
+  kind,
+  available: true,
+  document: null,
+  exams: kind === 'exams' ? items : [],
+  classes: kind === 'timetable' ? items : [],
+  original: [],
 });
 
 describe('NextUpSection', () => {
-  it('shows the next exam when one is coming', async () => {
-    const future = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const tomorrow = ((new Date().getDay() + 1) % 7) || 7;
+
+  it("shows the next class of the student's semester from the timetable", async () => {
+    useSettings.setState({ semester: 'Α΄' });
     respond({
-      '/api/exams': {
-        dept: 'cs',
-        kind: 'exams',
-        available: true,
-        document: null,
-        exams: [{ course: 'Αλγόριθμοι', date: future, startTime: '09:00', room: 'Α2' }],
-        classes: [],
-        original: [],
-      },
+      '/api/exams': schedule('exams', []),
+      '/api/timetable': schedule('timetable', [
+        { course: 'Φυσική', day: tomorrow, startTime: '11:00', endTime: '12:00', semester: 'Α΄', room: 'Μ.Αμφ.' },
+        { course: 'Μεταγλωττιστές', day: tomorrow, startTime: '09:00', endTime: '10:00', semester: 'Γ΄' },
+      ]),
+    });
+    await renderSection(<NextUpSection scope="cs" />);
+
+    expect(await screen.findByText('Φυσική')).toBeOnTheScreen();
+    expect(screen.getByText('Αύριο · 11:00 - 12:00')).toBeOnTheScreen();
+    expect(screen.queryByText('Μεταγλωττιστές')).not.toBeOnTheScreen();
+  });
+
+  it('shows an exam of the semester when it comes before any class', async () => {
+    useSettings.setState({ semester: 'Δ΄' });
+    const soon = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    respond({
+      '/api/exams': schedule('exams', [
+        { course: 'Αλγόριθμοι', date: soon, startTime: '09:00', room: 'Α2', semester: "Δ'" },
+      ]),
+      '/api/timetable': schedule('timetable', []),
     });
     await renderSection(<NextUpSection scope="cs" />);
 
@@ -53,22 +81,37 @@ describe('NextUpSection', () => {
     expect(screen.getByText('Α2')).toBeOnTheScreen();
   });
 
-  it('falls back to the placeholder when no exam is coming', async () => {
+  it("follows the student's Universis courses when they are linked", async () => {
+    useSavedCourses.setState({
+      courses: [{ name: 'ΦΥΣΙΚΗ', passed: false, registered: true }],
+      updatedAt: Date.now(),
+    });
     respond({
-      '/api/exams': {
-        dept: 'cs',
-        kind: 'exams',
-        available: true,
-        document: null,
-        exams: [{ course: 'Παλιό', date: '2020-01-01', startTime: '09:00' }],
-        classes: [],
-        original: [],
-      },
+      '/api/exams': schedule('exams', []),
+      '/api/timetable': schedule('timetable', [
+        { course: 'Ηλεκτρονική', day: tomorrow, startTime: '09:00', endTime: '10:00' },
+        { course: 'Φυσική', day: tomorrow, startTime: '11:00', endTime: '12:00' },
+      ]),
+    });
+    await renderSection(<NextUpSection scope="cs" />);
+
+    expect(await screen.findByText('Φυσική')).toBeOnTheScreen();
+    expect(screen.queryByText('Ηλεκτρονική')).not.toBeOnTheScreen();
+  });
+
+  it('asks the student to pick a semester when it cannot tell whose schedule it is', async () => {
+    respond({
+      '/api/exams': schedule('exams', []),
+      '/api/timetable': schedule('timetable', [
+        { course: 'Φυσική', day: tomorrow, startTime: '11:00', endTime: '12:00', semester: 'Α΄' },
+      ]),
     });
     await renderSection(<NextUpSection scope="cs" />);
 
     expect(
-      await screen.findByText('Το επόμενο μάθημα ή η επόμενη εξέτασή σου θα εμφανίζεται εδώ.'),
+      await screen.findByText(
+        'Διάλεξε εξάμηνο στο Ωρολόγιο ή σύνδεσε το Universis, για να βλέπεις εδώ το επόμενο μάθημά σου.',
+      ),
     ).toBeOnTheScreen();
   });
 });
