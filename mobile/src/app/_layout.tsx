@@ -85,6 +85,7 @@ export default function RootLayout() {
                 <Stack.Screen name="announcement/[id]" />
                 <Stack.Screen name="settings/department" />
                 <Stack.Screen name="universis-login" options={{ presentation: 'modal' }} />
+                <Stack.Screen name="grades" />
                 <Stack.Screen name="design-system" />
               </Stack.Protected>
             </Stack>

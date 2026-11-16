@@ -1,5 +1,6 @@
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
+import type { Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, View } from 'react-native';
 
@@ -45,6 +46,18 @@ export default function MoreScreen() {
             trailing="chevron"
             onPress={() => router.push('/settings/department')}
             testID="more-department"
+          />
+        </Card>
+
+        <SectionHeader title={t('more.studies.section')} />
+        <Card padded={false} style={styles.card}>
+          <ListRow
+            icon="schedule"
+            title={t('universis.grades.title')}
+            subtitle={t('more.studies.gradesHint')}
+            trailing="chevron"
+            onPress={() => router.push('/grades' as Href)}
+            testID="more-grades"
           />
         </Card>
 
