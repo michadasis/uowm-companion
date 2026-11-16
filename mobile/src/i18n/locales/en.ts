@@ -74,6 +74,7 @@ export const en: Messages = {
     title: 'Announcements',
     search: 'Search announcements',
     viewOnWebsite: 'View on website',
+    titleOnly: 'The department posted only the title here. The details are on its website.',
     feeds: {
       department: 'Department',
       university: 'University',

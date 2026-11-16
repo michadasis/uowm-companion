@@ -2,7 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, View } from 'react-native';
 
-import { createStyles, Icon, NavBar, Screen, StateView, Text } from '@/design';
+import { Button, createStyles, Icon, NavBar, Screen, StateView, Text } from '@/design';
 import { formatDate } from '@/features/announcements/format';
 import {
   findById,
@@ -80,7 +80,22 @@ export default function AnnouncementReaderScreen() {
           {announcement.title}
         </Text>
         <View style={styles.body}>
-          <BlockRenderer blocks={announcement.body} onLinkPress={onLinkPress} />
+          {announcement.body.length > 0 ? (
+            <BlockRenderer blocks={announcement.body} onLinkPress={onLinkPress} />
+          ) : (
+            // Some departments post only a title here & the rest elsewhere.
+            <View style={styles.titleOnly}>
+              <Text variant="body" color="textMuted">
+                {t('announcements.titleOnly')}
+              </Text>
+              <Button
+                label={t('announcements.viewOnWebsite')}
+                variant="secondary"
+                icon="externalLink"
+                onPress={() => openExternal(announcement.sourceUrl)}
+              />
+            </View>
+          )}
         </View>
       </ScrollView>
     </Screen>
@@ -101,5 +116,9 @@ const useStyles = createStyles((theme) => ({
   },
   body: {
     paddingTop: theme.spacing[2],
+  },
+  titleOnly: {
+    gap: theme.spacing[3],
+    alignItems: 'flex-start',
   },
 }));
