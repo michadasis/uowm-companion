@@ -1,6 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
-import { focusManager, onlineManager, QueryClient } from '@tanstack/react-query';
+import {
+  defaultShouldDehydrateQuery,
+  focusManager,
+  onlineManager,
+  QueryClient,
+} from '@tanstack/react-query';
 import type { PersistQueryClientProviderProps } from '@tanstack/react-query-persist-client';
 import Constants from 'expo-constants';
 import * as Network from 'expo-network';
@@ -29,11 +34,19 @@ export const queryClient = new QueryClient({
  * on the next launch, with or without a connection. A new app version starts
  * from an empty cache: what an old version saved may no longer match what
  * the new one expects.
+ *
+ * Nothing read from the student's own Universis account is saved here. That
+ * cache is plain storage; the little of it the app keeps goes through its own
+ * store, stripped down to what the schedule needs.
  */
 export const persistOptions: PersistQueryClientProviderProps['persistOptions'] = {
   persister: createAsyncStoragePersister({ storage: AsyncStorage, key: 'query-cache' }),
   maxAge: 7 * day,
   buster: Constants.expoConfig?.version ?? 'unknown',
+  dehydrateOptions: {
+    shouldDehydrateQuery: (query) =>
+      defaultShouldDehydrateQuery(query) && query.queryKey[0] !== 'universis',
+  },
 };
 
 /**

@@ -3,6 +3,7 @@ import {
   byWeekday,
   formatClassTime,
   minutesOf,
+  nextClass,
   nowAndNext,
   semestersOf,
   todayWeekday,
@@ -44,6 +45,37 @@ describe('semestersOf', () => {
         { course: 'Δ', day: 3 },
       ]),
     ).toEqual(['Γ΄', 'Α΄']);
+  });
+});
+
+describe('semestersOf with the teaching-proficiency programme', () => {
+  it('offers the ΠΔΕ classes as a group of their own, after the semesters', () => {
+    expect(
+      semestersOf([
+        { course: 'Διδακτική', day: 2, track: 'pde' },
+        { course: 'Α', day: 1, semester: 'Α΄' },
+        { course: 'Β', day: 1, semester: 'Ζ΄' },
+      ]),
+    ).toEqual(['Α΄', 'Ζ΄', 'pde']);
+  });
+});
+
+describe('nextClass', () => {
+  // Monday 19 January 2026, 11:30.
+  const monday = new Date('2026-01-19T11:30:00');
+
+  it('finds the class in progress, then the next to start', () => {
+    const classes = [
+      { course: 'Τώρα', day: 1, startTime: '11:00', endTime: '12:00' },
+      { course: 'Μετά', day: 1, startTime: '13:00', endTime: '14:00' },
+    ];
+    expect(nextClass(classes, monday)).toMatchObject({ session: { course: 'Τώρα' }, inProgress: true });
+    expect(nextClass(classes.slice(1), monday)).toMatchObject({ daysAhead: 0, inProgress: false });
+  });
+
+  it('wraps round the week to a class already over today', () => {
+    const over = [{ course: 'Πρωί', day: 1, startTime: '09:00', endTime: '10:00' }];
+    expect(nextClass(over, monday)?.daysAhead).toBe(7);
   });
 });
 

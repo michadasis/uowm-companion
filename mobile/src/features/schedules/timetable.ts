@@ -6,12 +6,29 @@ export interface WeekdayClasses {
   classes: ClassSession[];
 }
 
-/** The semesters present in a set of classes, in the order they first appear. */
+/**
+ * The group the teaching-proficiency programme (ΠΔΕ) gets in the semester
+ * picker. Its classes have no semester of their own, so it is offered as a
+ * group of its own, after the last semester.
+ */
+export const PDE_GROUP = 'pde';
+
+/** The picker group a class belongs to: its semester, or the ΠΔΕ group. */
+export function groupOf(session: ClassSession): string | undefined {
+  return session.track === 'pde' ? PDE_GROUP : session.semester;
+}
+
+/**
+ * The semesters present in a set of classes, in the order they first appear,
+ * with the ΠΔΕ group last when any of its classes are there.
+ */
 export function semestersOf(classes: ClassSession[]): string[] {
   const seen: string[] = [];
   for (const session of classes) {
+    if (session.track === 'pde') continue;
     if (session.semester && !seen.includes(session.semester)) seen.push(session.semester);
   }
+  if (classes.some((session) => session.track === 'pde')) seen.push(PDE_GROUP);
   return seen;
 }
 
@@ -72,6 +89,44 @@ export function weekdayShort(day: number, language: string): string {
 export function formatClassTime(session: ClassSession): string | null {
   if (!session.startTime) return null;
   return session.endTime ? `${session.startTime} - ${session.endTime}` : session.startTime;
+}
+
+export interface UpcomingClass {
+  session: ClassSession;
+  /** Whole days from today to the class: 0 is today, 1 tomorrow. */
+  daysAhead: number;
+  /** Minutes from now until it starts; zero or less while it is in progress. */
+  minutesUntil: number;
+  inProgress: boolean;
+}
+
+/**
+ * The class that is on now or, failing that, the next one to start. The
+ * timetable repeats weekly, so the search runs a week ahead: a class already
+ * over today comes round again in seven days.
+ */
+export function nextClass(
+  classes: ClassSession[],
+  now: Date = new Date(),
+): UpcomingClass | undefined {
+  const today = todayWeekday(now);
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+  let best: UpcomingClass | undefined;
+  for (const session of classes) {
+    const start = minutesOf(session.startTime);
+    if (start === null || !session.day) continue;
+    const end = minutesOf(session.endTime) ?? start + 60;
+
+    let daysAhead = (session.day - today + 7) % 7;
+    if (daysAhead === 0 && nowMinutes >= end) daysAhead = 7;
+    const minutesUntil = daysAhead * 24 * 60 + start - nowMinutes;
+
+    if (!best || minutesUntil < best.minutesUntil) {
+      best = { session, daysAhead, minutesUntil, inProgress: minutesUntil <= 0 };
+    }
+  }
+  return best;
 }
 
 /**

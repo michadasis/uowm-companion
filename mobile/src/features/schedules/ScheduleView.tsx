@@ -19,10 +19,9 @@ import { BlockRenderer } from '@/features/content/BlockRenderer';
 import { openExternal } from '@/features/content/links';
 import { useSettings } from '@/features/settings/store';
 import type { Language } from '@/features/settings/store';
-import { useUniversisAuth } from '@/features/universis/auth';
 import { CourseFilterBar } from '@/features/universis/CourseFilterBar';
 import { filterByCourses, selectedCourseKeys } from '@/features/universis/match';
-import { useStudentCourses } from '@/features/universis/useStudentCourses';
+import { disconnectUniversis, useStudentCourses } from '@/features/universis/useStudentCourses';
 
 import { ExamsAgenda } from './ExamsAgenda';
 import type { ScheduleKind } from './schema';
@@ -50,20 +49,31 @@ export function ScheduleView({ scope, kind }: ScheduleViewProps) {
   );
   const offline = fetchStatus === 'paused';
 
-  const linked = useUniversisAuth((s) => s.token !== null);
   const courseFilter = useSettings((s) => s.courseFilter);
   const setCourseFilter = useSettings((s) => s.setCourseFilter);
-  const { data: courses } = useStudentCourses();
-  // Only narrow once the student has linked & their courses are in; otherwise
-  // the whole schedule shows.
-  const courseKeys = linked ? selectedCourseKeys(courses ?? [], courseFilter) : null;
+  const student = useStudentCourses();
+  // Only narrow once there are courses to narrow by. A read still in flight, or
+  // one that failed, leaves the whole schedule showing — never an empty one.
+  const courseKeys = student.courses ? selectedCourseKeys(student.courses, courseFilter) : null;
 
   const courseFilterBar = (
     <CourseFilterBar
-      linked={linked}
+      status={
+        student.courses
+          ? 'ready'
+          : !student.connected
+            ? 'disconnected'
+            : student.isError
+              ? 'error'
+              : 'loading'
+      }
+      expired={student.expired}
+      updatedAt={student.updatedAt}
       filter={courseFilter}
       onFilter={setCourseFilter}
       onConnect={() => router.push('/universis-login' as Href)}
+      onRetry={student.refetch}
+      onDisconnect={() => void disconnectUniversis()}
     />
   );
 
@@ -159,6 +169,7 @@ export function ScheduleView({ scope, kind }: ScheduleViewProps) {
     return (
       <TimetableView
         classes={filterByCourses(data.classes, courseKeys)}
+        personalised={courseKeys !== null}
         refreshControl={refreshControl}
         header={structuredHeader}
       />

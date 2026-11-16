@@ -54,6 +54,12 @@ export const en: Messages = {
     nextUp: {
       title: 'Next up',
       empty: 'Your next class or exam will show up here.',
+      personalise:
+        'Pick a semester in the Timetable or connect Universis to see your next class here.',
+      today: 'Today',
+      tomorrow: 'Tomorrow',
+      now: 'Now',
+      exam: 'Exam',
     },
     menuToday: {
       title: 'At the restaurant today',
@@ -102,6 +108,7 @@ export const en: Messages = {
       now: 'Now',
       next: 'Next',
       allSemesters: 'All',
+      pde: 'Teaching cert.',
       noClasses: 'No classes on this day.',
       types: {
         lab: 'Lab',
@@ -124,6 +131,24 @@ export const en: Messages = {
     },
   },
   universis: {
+    grades: {
+      title: 'Grades',
+      average: 'Average',
+      passed: 'Passed',
+      updated: 'Updated {{time}}',
+      semester: 'Semester {{letter}}',
+      noSemester: 'No semester',
+      none: 'No courses here.',
+      error: 'Your grades could not be loaded from Universis.',
+      connectTitle: 'Your grades, always with you',
+      connectMessage:
+        'Sign in to Universis once; your grades are saved on this device and open even without a connection.',
+      show: {
+        all: 'All',
+        passed: 'Passed',
+        owed: 'Owed',
+      },
+    },
     link: {
       title: 'Connect Universis',
       hint: 'Connect Universis so the schedule shows only your courses.',
@@ -137,7 +162,16 @@ export const en: Messages = {
     },
     linked: 'Connected',
     signOut: 'Disconnect',
-    loading: 'Loading Universis…',
+    loading: 'Loading your courses from Universis…',
+    error: 'Your courses could not be loaded from Universis. Showing the whole schedule.',
+    expired: {
+      title: 'Your Universis connection has expired',
+      detail:
+        'You are seeing your courses and grades as they were on {{time}}. Sign in again for the latest, such as new grades or a new declaration.',
+      detailUndated:
+        'You are seeing saved courses and grades. Sign in again for the latest, such as new grades or a new declaration.',
+      cta: 'Sign in again',
+    },
   },
   menu: {
     title: 'Menu',
@@ -167,6 +201,10 @@ export const en: Messages = {
   },
   more: {
     title: 'More',
+    studies: {
+      section: 'Studies',
+      gradesHint: 'From Universis · saved on this device',
+    },
     department: {
       section: 'My department',
       change: 'Change department',

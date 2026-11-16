@@ -23,7 +23,7 @@ const applicationId = `io.github.michadasis.uowmcompanion${idSuffix[variant]}`;
 const config: ExpoConfig = {
   name: names[variant],
   slug: 'uowm-companion',
-  version: '0.1.0',
+  version: '0.1.1',
   scheme: 'uowmcompanion',
   orientation: 'portrait',
   userInterfaceStyle: 'automatic',

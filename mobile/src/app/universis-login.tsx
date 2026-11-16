@@ -8,6 +8,7 @@ import type { WebViewMessageEvent } from 'react-native-webview';
 import { createStyles, NavBar, Screen, Text, useTheme } from '@/design';
 import { useUniversisAuth } from '@/features/universis/auth';
 import { INJECTED_TOKEN_HOOK, parseTokenMessage } from '@/features/universis/login';
+import { refreshStudentCourses } from '@/features/universis/useStudentCourses';
 
 /** The Universis sign-in: the real web app in a WebView, token read on success. */
 export default function UniversisLoginScreen() {
@@ -23,7 +24,11 @@ export default function UniversisLoginScreen() {
   const onMessage = (event: WebViewMessageEvent) => {
     const token = parseTokenMessage(event.nativeEvent.data);
     if (!token) return;
-    void signIn(token).then(goBack);
+    void signIn(token).then(() => {
+      // A fresh token means a fresh read, even if a saved copy is on hand.
+      refreshStudentCourses();
+      goBack();
+    });
   };
 
   return (

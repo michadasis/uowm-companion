@@ -3,31 +3,56 @@ import { ScrollView, View } from 'react-native';
 
 import { Button, Chip, createStyles, Icon, Text } from '@/design';
 
+import { ExpiredNotice } from './ExpiredNotice';
 import type { CourseFilter } from './types';
 
+/**
+ * Where the student's Universis link stands:
+ * - `disconnected` — never linked, nothing to filter by;
+ * - `loading` — linked, reading the courses for the first time;
+ * - `error` — linked, but the read failed & there is no saved copy;
+ * - `ready` — there are courses to filter by, fresh or saved.
+ */
+export type CourseFilterStatus = 'disconnected' | 'loading' | 'error' | 'ready';
+
 export interface CourseFilterBarProps {
-  /** True once the student has linked their Universis account. */
-  linked: boolean;
+  status: CourseFilterStatus;
+  /** Ready from the saved copy only: the token ran out & can't refresh it. */
+  expired?: boolean;
+  /** When the saved copy was read, for the expired notice. */
+  updatedAt?: number | null;
   filter: CourseFilter;
   onFilter: (filter: CourseFilter) => void;
   onConnect: () => void;
+  onRetry?: () => void;
+  onDisconnect?: () => void;
 }
 
 const filters: CourseFilter[] = ['all', 'owed', 'registered'];
 
 /**
  * The course filter for the schedule: a prompt to link Universis when the
- * student has not, or chips to narrow the schedule to their courses once they
- * have.
+ * student has not, & chips to narrow the schedule to their courses once they
+ * have. When the link has lapsed the chips stay, working from the saved
+ * courses, with a way to refresh them.
  */
-export function CourseFilterBar({ linked, filter, onFilter, onConnect }: CourseFilterBarProps) {
+export function CourseFilterBar({
+  status,
+  expired = false,
+  updatedAt = null,
+  filter,
+  onFilter,
+  onConnect,
+  onRetry,
+  onDisconnect,
+}: CourseFilterBarProps) {
   const { t } = useTranslation();
   const styles = useStyles();
 
-  if (!linked) {
+  if (status === 'disconnected') {
     return (
       <View style={styles.prompt}>
-        <Text variant="caption" color="textMuted" style={styles.hint}>
+        <Text variant="caption" color="textMuted" style={styles.grow}>
           {t('universis.link.hint')}
         </Text>
         <Button
@@ -40,15 +65,51 @@ export function CourseFilterBar({ linked, filter, onFilter, onConnect }: CourseF
     );
   }
 
-  return (
-    <View style={styles.bar}>
-      <View style={styles.linked}>
-        <Icon name="check" size={13} color="primary" />
-        <Text variant="caption" color="textSubtle">
-          {t('universis.linked')}
+  if (status === 'loading') {
+    return (
+      <View style={styles.prompt}>
+        <Text variant="caption" color="textMuted" style={styles.grow}>
+          {t('universis.loading')}
         </Text>
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+    );
+  }
+
+  if (status === 'error') {
+    return (
+      <View style={styles.prompt}>
+        <Text variant="caption" color="textMuted" style={styles.grow}>
+          {t('universis.error')}
+        </Text>
+        {onRetry ? (
+          <Button label={t('states.error.retry')} variant="ghost" icon="retry" onPress={onRetry} />
+        ) : null}
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.bar}>
+      {expired ? (
+        <ExpiredNotice updatedAt={updatedAt} onReconnect={onConnect} />
+      ) : (
+        <View style={styles.top}>
+          <View style={styles.linked}>
+            <Icon name="check" size={13} color="primary" />
+            <Text variant="caption" color="textSubtle">
+              {t('universis.linked')}
+            </Text>
+          </View>
+          {onDisconnect ? (
+            <Button label={t('universis.signOut')} variant="ghost" onPress={onDisconnect} />
+          ) : null}
+        </View>
+      )}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.chips}
+      >
         {filters.map((value) => (
           <Chip
             key={value}
@@ -72,11 +133,16 @@ const useStyles = createStyles((theme) => ({
     borderRadius: theme.radius.md,
     padding: theme.spacing[3],
   },
-  hint: {
+  grow: {
     flex: 1,
   },
   bar: {
     gap: theme.spacing[2],
+  },
+  top: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   linked: {
     flexDirection: 'row',

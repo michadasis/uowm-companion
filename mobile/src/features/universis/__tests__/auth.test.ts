@@ -1,6 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 
-import { hydrateUniversisAuth, useUniversisAuth } from '../auth';
+import { hydrateUniversisAuth, isTokenExpired, useUniversisAuth } from '../auth';
 
 beforeEach(async () => {
   await SecureStore.deleteItemAsync('universis_access_token');
@@ -35,5 +35,20 @@ describe('universis auth', () => {
   it('hydrates to no token when the keychain is empty', async () => {
     await hydrateUniversisAuth();
     expect(useUniversisAuth.getState()).toMatchObject({ token: null, hydrated: true });
+  });
+});
+
+describe('isTokenExpired', () => {
+  const jwt = (exp: number) =>
+    ['h', btoa(JSON.stringify({ exp })).replace(/=+$/, ''), 's'].join('.');
+  const now = 1_800_000_000_000;
+
+  it('reads the expiry a JWT carries', () => {
+    expect(isTokenExpired(jwt(now / 1000 - 60), now)).toBe(true);
+    expect(isTokenExpired(jwt(now / 1000 + 3600), now)).toBe(false);
+  });
+
+  it('treats a token it cannot read as live', () => {
+    expect(isTokenExpired('opaque-token', now)).toBe(false);
   });
 });

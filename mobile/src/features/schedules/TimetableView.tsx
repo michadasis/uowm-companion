@@ -11,7 +11,9 @@ import type { ClassSession } from './schema';
 import {
   byWeekday,
   formatClassTime,
+  groupOf,
   nowAndNext,
+  PDE_GROUP,
   semestersOf,
   todayWeekday,
   weekdayShort,
@@ -19,6 +21,12 @@ import {
 
 export interface TimetableViewProps {
   classes: ClassSession[];
+  /**
+   * True when the classes are already narrowed to the student's own courses.
+   * The semester filter then steps aside: it would be redundant, & would hide
+   * a course the student owes from another semester.
+   */
+  personalised?: boolean;
   /** Rendered above the day selector, e.g. the link to the source document. */
   header?: ReactElement;
   refreshControl?: ReactElement<RefreshControlProps>;
@@ -58,7 +66,11 @@ function ClassCard({ session, status }: { session: ClassSession; status: Status 
           </Text>
         ) : null}
         <View style={styles.cardTopRight}>
-          {session.semester ? (
+          {session.track === 'pde' ? (
+            <Text variant="caption" color="textSubtle">
+              {t('schedule.timetableView.pde')}
+            </Text>
+          ) : session.semester ? (
             <Text variant="caption" color="textSubtle">
               {t('schedule.semester', { semester: session.semester })}
             </Text>
@@ -99,7 +111,13 @@ function ClassCard({ session, status }: { session: ClassSession; status: Status 
 }
 
 /** The timetable as a day at a time, with a chip per weekday that has classes. */
-export function TimetableView({ classes, header, refreshControl, now = new Date() }: TimetableViewProps) {
+export function TimetableView({
+  classes,
+  personalised = false,
+  header,
+  refreshControl,
+  now = new Date(),
+}: TimetableViewProps) {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const styles = useStyles();
@@ -112,9 +130,9 @@ export function TimetableView({ classes, header, refreshControl, now = new Date(
   // Keep to the saved semester only while it is one these classes offer, so a
   // stale pick from another department does not empty the screen.
   const activeSemester =
-    savedSemester && semesters.includes(savedSemester) ? savedSemester : null;
+    !personalised && savedSemester && semesters.includes(savedSemester) ? savedSemester : null;
   const shown = useMemo(
-    () => (activeSemester ? classes.filter((c) => c.semester === activeSemester) : classes),
+    () => (activeSemester ? classes.filter((c) => groupOf(c) === activeSemester) : classes),
     [classes, activeSemester],
   );
 
@@ -151,7 +169,7 @@ export function TimetableView({ classes, header, refreshControl, now = new Date(
       }
     >
       {header}
-      {semesters.length > 1 ? (
+      {!personalised && semesters.length > 1 ? (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -166,7 +184,11 @@ export function TimetableView({ classes, header, refreshControl, now = new Date(
           {semesters.map((semester) => (
             <Chip
               key={semester}
-              label={t('schedule.semester', { semester })}
+              label={
+                semester === PDE_GROUP
+                  ? t('schedule.timetableView.pde')
+                  : t('schedule.semester', { semester })
+              }
               selected={activeSemester === semester}
               onPress={() => setSemester(semester)}
               testID={`timetable-semester-${semester}`}
