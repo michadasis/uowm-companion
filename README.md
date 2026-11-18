@@ -1,16 +1,16 @@
 # UoWM Companion
 
-A native app for students of the University of Western Macedonia: announcements,
-exam schedules, timetables and the student restaurant menu for all 22 departments,
+A native app for students of the University of Western Macedonia that compiles announcements,
+exam schedules, timetables, the student restaurant menu and student grades for all 22 departments,
 in one place. It takes the idea of
 [myCS](https://github.com/ieeesbkastoria/My-UoWM), the web app the IEEE Student
 Branch of UoWM Kastoria built for the Informatics department alone, and extends it
 to the whole university while showing the content natively rather than linking out
 to department websites.
 
-It is unofficial and not affiliated with the University of Western Macedonia.
+It is unofficial and not affiliated with the University of Western Macedonia and for now remains a hobby project.
 
-## The one rule: everything is shown inside the app
+## The one rule, everything is shown inside the app
 
 Nothing opens as a file and nothing opens in a browser to be read. The backend turns
 announcement HTML, web pages and the documents departments publish (DOCX, DOC, PDF,
@@ -26,32 +26,13 @@ emails, directions, the share sheet and an explicit "View on website" action.
 This is a monorepo with two packages:
 
 - `mobile/` — the Expo app (React Native, TypeScript, Expo Router).
-- `backend/` — the serverless API (Vercel functions, TypeScript). Only the backend
+- `backend/` — the serverless API (TypeScript). Only the backend
   ever talks to university sites; the app talks only to the backend, and falls back
   to what it bundles and what it has cached.
 
 The app never scrapes or polls university sites. The backend fetches each source at
 most every ten minutes, identifies itself with a User-Agent that names the app and
 links this repo, respects robots.txt, and keeps each item's source URL as attribution.
-
-## Status
-
-Phases 1 and 2 are done: the skeleton, the design system, the department registry,
-and announcements with the native content renderer.
-
-- The design system, with a light and a dark theme tuned on their own, built from
-  colour, type, spacing and motion tokens, with a loading, empty, offline and error
-  state for every screen.
-- Onboarding: pick your department, grouped by school and city, searchable in Greek
-  and in Greeklish.
-- Announcements for every department and the university, shown natively. The backend
-  turns each post's HTML into a typed block model (headings, text with inline marks
-  and links, lists, tables, images, quotes, dividers and the documents it links); the
-  app renders it with its own components, including tables that scroll sideways with a
-  frozen first column. The feed searches, pulls to refresh and reads from the cache
-  offline; tapping a link to another announcement opens it in the app.
-
-Exam schedules, the menu and push notifications come in later phases.
 
 ## Source coverage
 
@@ -105,7 +86,7 @@ App:
 ```
 cd mobile
 npm install
-EXPO_PUBLIC_API_URL=http://<your-computer-ip>:3000 npx expo start --dev-client
+EXPO_PUBLIC_API_URL=http://localhost:3000 npx expo start
 ```
 
 The app runs in a development build, not Expo Go, because it uses native modules.
@@ -126,6 +107,6 @@ GitHub Actions runs both on every push and pull request.
 
 The first-year guides, FAQ and useful links reused in later phases come from
 [myCS](https://github.com/ieeesbkastoria/My-UoWM) by the IEEE Student Branch of UoWM
-Kastoria, itself a fork of [myUoM](https://github.com/Open-Source-UoM/MyUoM) by Open
+Kastoria, which itself a fork of [myUoM](https://github.com/Open-Source-UoM/MyUoM) by Open
 Source UoM. The content is MIT licensed; the licence notice (Open Source UoM) will be
 kept in `THIRD_PARTY_NOTICES.md` when that content is included.
