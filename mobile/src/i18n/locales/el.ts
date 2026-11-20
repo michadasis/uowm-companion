@@ -49,6 +49,8 @@ export const el = {
   },
   home: {
     departmentLine: 'Τμήμα {{name}}, {{city}}',
+    departmentLineMale: 'Φοιτητής Τμήματος {{name}}, {{city}}',
+    departmentLineFemale: 'Φοιτήτρια Τμήματος {{name}}, {{city}}',
     greeting: {
       morning: 'Καλημέρα',
       afternoon: 'Καλησπέρα',

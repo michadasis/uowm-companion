@@ -1,4 +1,4 @@
-import { greetingName, vocative } from '../greekName';
+import { genderOf, greetingName, vocative } from '../greekName';
 
 describe('greetingName', () => {
   it('gives a name Universis keeps in capitals its accents & its vocative', () => {
@@ -38,5 +38,14 @@ describe('vocative, counting syllables', () => {
     expect(vocative('Παύλος')).toBe('Παύλο');
     expect(vocative('Μάριος')).toBe('Μάριε');
     expect(vocative('Δημήτριος')).toBe('Δημήτριε');
+  });
+});
+
+describe('genderOf', () => {
+  it('tells a man’s name from a woman’s, & says neither for one it does not know', () => {
+    expect(genderOf('ΙΩΑΝΝΗΣ')).toBe('male');
+    expect(genderOf('ΜΑΡΙΑ-ΕΛΕΝΗ')).toBe('female');
+    expect(genderOf('ΧΑΡΙΛΑΟΣ')).toBeNull();
+    expect(genderOf(null)).toBeNull();
   });
 });

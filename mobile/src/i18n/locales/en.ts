@@ -51,6 +51,8 @@ export const en: Messages = {
   },
   home: {
     departmentLine: '{{name}}, {{city}}',
+    departmentLineMale: '{{name}} student, {{city}}',
+    departmentLineFemale: '{{name}} student, {{city}}',
     greeting: {
       morning: 'Good morning',
       afternoon: 'Good afternoon',

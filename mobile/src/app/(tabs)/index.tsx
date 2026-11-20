@@ -12,6 +12,8 @@ import { GradesSection } from '@/features/home/GradesSection';
 import { toneOfDay, TodayHero, useToday } from '@/features/home/TodayHero';
 import { useSettings } from '@/features/settings/store';
 import type { Language } from '@/features/settings/store';
+import { useSavedCourses } from '@/features/universis/saved';
+import { genderOf } from '@/lib/greekName';
 import { usePreviewNow } from '@/lib/usePreviewNow';
 
 export default function HomeScreen() {
@@ -22,6 +24,8 @@ export default function HomeScreen() {
   const departmentId = useSettings((settings) => settings.departmentId);
   const department = findDepartment(directory, departmentId);
   const now = usePreviewNow();
+  // "Φοιτητής" or "Φοιτήτρια" only when the name tells; otherwise just the department.
+  const gender = genderOf(useSavedCourses((s) => s.givenName));
   const today = useToday(now, department?.city ?? null);
 
   return (
@@ -32,12 +36,20 @@ export default function HomeScreen() {
           today={today}
           departmentLine={
             department
-              ? t('home.departmentLine', {
-                  name: department.shortName[language],
-                  city:
-                    directory.cities.find((city) => city.id === department.city)?.name[language] ??
-                    '',
-                })
+              ? t(
+                  gender === 'female'
+                    ? 'home.departmentLineFemale'
+                    : gender === 'male'
+                      ? 'home.departmentLineMale'
+                      : 'home.departmentLine',
+                  {
+                    name: department.shortName[language],
+                    city:
+                      directory.cities.find((city) => city.id === department.city)?.name[
+                        language
+                      ] ?? '',
+                  },
+                )
               : undefined
           }
         />

@@ -1,8 +1,7 @@
 // Common Greek first names as they are spelt, with their accents. Universis
 // keeps names in capitals, which drop the accent — "ΙΩΑΝΝΗΣ" — & a greeting
 // should not read "Καλησπέρα, Ιωαννη".
-const names = [
-  // men
+const men = [
   'Αδάμ',
   'Αθανάσιος',
   'Αλέξανδρος',
@@ -89,7 +88,9 @@ const names = [
   'Χρήστος',
   'Χρίστος',
   'Χρύσανθος',
-  // women
+];
+
+const women = [
   'Αγγελική',
   'Αθανασία',
   'Αικατερίνη',
@@ -172,7 +173,9 @@ const names = [
 const fold = (text: string): string =>
   text.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/Σ\b/gu, 'Σ');
 
-const byFolded = new Map(names.map((name) => [fold(name), name]));
+const byFolded = new Map([...men, ...women].map((name) => [fold(name), name]));
+const womenFolded = new Set(women.map(fold));
+const menFolded = new Set(men.map(fold));
 
 /** Syllables, as vowels counted one by one but a diphthong (αι, ει, οι, ου, αυ, ευ) as one. */
 function syllables(name: string): number {
@@ -217,4 +220,18 @@ export function greetingName(givenName: string | null | undefined): string | nul
   if (first !== first.toUpperCase()) return vocative(first);
   const known = byFolded.get(fold(first));
   return known ? vocative(known) : null;
+}
+
+/**
+ * Whether a given name is a man's or a woman's, from the list of Greek names —
+ * for "Φοιτητής" or "Φοιτήτρια". Null for a name not on it: better to say
+ * neither than to guess wrong.
+ */
+export function genderOf(givenName: string | null | undefined): 'male' | 'female' | null {
+  const first = givenName?.trim().split(/[\s-]+/u)[0];
+  if (!first) return null;
+  const folded = fold(first);
+  if (womenFolded.has(folded)) return 'female';
+  if (menFolded.has(folded)) return 'male';
+  return null;
 }
