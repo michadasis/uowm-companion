@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 
-import { Button, createStyles, Icon, Text, useTheme } from '@/design';
+import { createStyles, Icon, PressableScale, Text, useTheme } from '@/design';
 import { formatUpdatedAt } from '@/features/announcements/format';
 
 export interface ExpiredNoticeProps {
@@ -36,12 +36,18 @@ export function ExpiredNotice({ updatedAt, onReconnect }: ExpiredNoticeProps) {
           </Text>
         </View>
       </View>
-      <Button
-        label={t('universis.expired.cta')}
-        variant="secondary"
-        icon="retry"
+      <PressableScale
+        accessibilityRole="button"
+        accessibilityLabel={t('universis.expired.cta')}
+        hitSlop={8}
         onPress={onReconnect}
-      />
+        style={styles.action}
+      >
+        <Icon name="retry" size={16} color="accent" />
+        <Text variant="label" color="accent">
+          {t('universis.expired.cta')}
+        </Text>
+      </PressableScale>
     </View>
   );
 }
@@ -51,7 +57,7 @@ const useStyles = createStyles((theme) => ({
     padding: theme.spacing[3],
     borderRadius: theme.radius.md,
     backgroundColor: theme.colors.accentMuted,
-    gap: theme.spacing[3],
+    gap: theme.spacing[2],
   },
   row: {
     flexDirection: 'row',
@@ -61,5 +67,14 @@ const useStyles = createStyles((theme) => ({
   text: {
     flex: 1,
     gap: theme.spacing[0.5],
+  },
+  // A link under the text, lined up with it, rather than a second button-shaped
+  // colour inside the notice's own.
+  action: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: theme.spacing[1],
+    marginLeft: theme.size.icon.sm + theme.spacing[2],
   },
 }));

@@ -168,6 +168,7 @@ export default function GradesScreen() {
                     )
                   : t('universis.grades.noSemester')
               }
+              style={styles.groupHeader}
             />
             <Card padded={false}>
               {group.courses.map((course) => (
@@ -218,6 +219,10 @@ const useStyles = createStyles((theme) => ({
   },
   group: {
     gap: theme.spacing[1],
+  },
+  // The screen already sets the side margins.
+  groupHeader: {
+    paddingHorizontal: 0,
   },
   empty: {
     paddingVertical: theme.spacing[6],

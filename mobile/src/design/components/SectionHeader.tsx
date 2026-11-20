@@ -1,4 +1,5 @@
 import { View } from 'react-native';
+import type { StyleProp, ViewStyle } from 'react-native';
 
 import { createStyles } from '../theme';
 
@@ -11,16 +12,18 @@ export interface SectionHeaderProps {
   detail?: string;
   /** A link at the end of the line, such as "See all". Wins over `detail`. */
   action?: { label: string; onPress: () => void };
+  /** For a header inside a container that already sets the side margins. */
+  style?: StyleProp<ViewStyle>;
 }
 
 /**
  * Heads a group of content in plain sentence case, a step above body text.
  * Spaced-out capitals read as shouting in Greek, & strip its accents.
  */
-export function SectionHeader({ title, detail, action }: SectionHeaderProps) {
+export function SectionHeader({ title, detail, action, style }: SectionHeaderProps) {
   const styles = useStyles();
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, style]}>
       <Text variant="subheading" accessibilityRole="header" style={styles.title}>
         {title}
       </Text>

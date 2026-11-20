@@ -17,6 +17,8 @@ export function formatUpdatedAt(timestamp: number, language: string): string {
     month: 'short',
     hour: '2-digit',
     minute: '2-digit',
+    // "09:09", not "09:09 π.μ.", whose own full stop ends up doubled in a sentence.
+    hourCycle: 'h23',
   }).format(new Date(timestamp));
 }
 
