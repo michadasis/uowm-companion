@@ -126,6 +126,18 @@ export const en: Messages = {
         message: 'Your department does not publish a timetable we can show.',
       },
     },
+    notYet: {
+      exams: {
+        title: 'No exam schedule yet',
+        message:
+          "The last exam period is over and your department hasn't posted the next one yet. It will show here as soon as it does.",
+      },
+      timetable: {
+        title: 'No timetable yet',
+        message:
+          "Your department hasn't posted this term's timetable yet. It will show here as soon as it does.",
+      },
+    },
     empty: {
       title: 'No schedule yet',
       message: "Your department's exam schedule and timetable will show up here.",

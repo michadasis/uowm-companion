@@ -145,6 +145,23 @@ describe('ScheduleView', () => {
     ).toBeOnTheScreen();
   });
 
+  it('says the next exam schedule is not out yet, not that there is none', async () => {
+    getJson.mockResolvedValue({
+      dept: 'cs',
+      kind: 'exams',
+      available: true,
+      document: null,
+      exams: [],
+      classes: [],
+      original: [],
+    });
+    await renderView();
+
+    expect(
+      await screen.findByRole('header', { name: 'Δεν έχει βγει ακόμα πρόγραμμα εξεταστικής' }),
+    ).toBeOnTheScreen();
+  });
+
   it('offers a retry when the schedule fails to load', async () => {
     getJson.mockRejectedValue(new Error('boom'));
     await renderView();

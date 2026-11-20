@@ -98,12 +98,15 @@ export function ScheduleView({ scope, kind }: ScheduleViewProps) {
   }
 
   if (!data.available || !data.document) {
+    // A department that publishes this schedule, but whose last one is from a
+    // term that is over, hasn't posted the next one yet.
+    const state = data.available ? 'notYet' : 'unavailable';
     return (
       <StateView
         kind="empty"
         icon="schedule"
-        title={t(`schedule.unavailable.${kind}.title`)}
-        message={t(`schedule.unavailable.${kind}.message`)}
+        title={t(`schedule.${state}.${kind}.title`)}
+        message={t(`schedule.${state}.${kind}.message`)}
       />
     );
   }
