@@ -8,7 +8,11 @@ import * as api from '@/lib/api';
 import { MenuView } from '../MenuView';
 import type { MenuResponse } from '../schema';
 
-jest.mock('@/lib/api', () => ({ apiUrl: 'https://backend.test', getJson: jest.fn() }));
+jest.mock('@/lib/api', () => ({
+  ...jest.requireActual<typeof import('@/lib/api')>('@/lib/api'),
+  apiUrl: 'https://backend.test',
+  getJson: jest.fn(),
+}));
 const getJson = api.getJson as jest.MockedFunction<typeof api.getJson>;
 
 const menu: MenuResponse = {

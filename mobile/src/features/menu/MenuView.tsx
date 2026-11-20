@@ -22,6 +22,7 @@ import { dayLabel } from './format';
 import type { Course, MealKind, Meal, MenuDay, MenuItem } from './schema';
 import { courses } from './schema';
 import { todayName, useMenu } from './useMenu';
+import { isNetworkError } from '@/lib/api';
 
 function itemText(item: MenuItem, language: Language): string {
   return language === 'en' ? item.en || item.el : item.el;
@@ -162,8 +163,9 @@ export function MenuView({ now = new Date() }: { now?: Date }) {
   const { t, i18n } = useTranslation();
   const language = i18n.language as Language;
   const styles = useStyles();
-  const { data, isLoading, isError, fetchStatus, refetch } = useMenu();
-  const offline = fetchStatus === 'paused';
+  const { data, isLoading, isError, fetchStatus, refetch, error } = useMenu();
+  // No network at all, or a request that tried & could not get through.
+  const offline = fetchStatus === 'paused' || isNetworkError(error);
 
   const days = data?.days ?? [];
   const defaultDay = days.find((d) => d.day === todayName(now))?.day ?? days[0]?.day;

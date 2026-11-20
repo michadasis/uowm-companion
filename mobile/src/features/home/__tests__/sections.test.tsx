@@ -12,7 +12,11 @@ import { useSavedCourses } from '@/features/universis/saved';
 import { LatestAnnouncementsSection, NextUpSection, TodayMenuSection } from '../sections';
 
 jest.mock('expo-router', () => ({ useRouter: jest.fn() }));
-jest.mock('@/lib/api', () => ({ apiUrl: 'https://backend.test', getJson: jest.fn() }));
+jest.mock('@/lib/api', () => ({
+  ...jest.requireActual<typeof import('@/lib/api')>('@/lib/api'),
+  apiUrl: 'https://backend.test',
+  getJson: jest.fn(),
+}));
 
 const getJson = api.getJson as jest.MockedFunction<typeof api.getJson>;
 

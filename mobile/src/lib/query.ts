@@ -59,9 +59,12 @@ export function connectQueryClientToDevice(): () => void {
 
   onlineManager.setEventListener((setOnline) => {
     const subscription = Network.addNetworkStateListener((state) => {
-      // `isInternetReachable` is unknown for a moment after a change; treat
-      // unknown as online rather than pausing every query.
-      setOnline(state.isInternetReachable ?? state.isConnected ?? true);
+      // Offline means no network at all. Android's "internet reachable" flag
+      // comes from a probe of its own that fails on a slow connection, & going
+      // by it paused every query & showed "offline" while the phone was
+      // online & the backend merely slow. A request that truly can't get
+      // through fails, & the screen says so then.
+      setOnline(state.isConnected ?? true);
     });
     return () => subscription.remove();
   });

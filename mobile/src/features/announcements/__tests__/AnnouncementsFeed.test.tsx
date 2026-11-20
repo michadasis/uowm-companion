@@ -12,6 +12,7 @@ import type { AnnouncementsResponse } from '../schema';
 jest.mock('expo-router', () => ({ useRouter: jest.fn() }));
 
 jest.mock('@/lib/api', () => ({
+  ...jest.requireActual<typeof import('@/lib/api')>('@/lib/api'),
   apiUrl: 'https://backend.test',
   getJson: jest.fn(),
 }));

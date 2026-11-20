@@ -21,6 +21,7 @@ import { formatUpdatedAt } from './format';
 import type { Announcement } from './schema';
 import { useAnnouncements } from './useAnnouncements';
 import type { Scope } from './useAnnouncements';
+import { isNetworkError } from '@/lib/api';
 
 export interface AnnouncementsFeedProps {
   scope: Scope;
@@ -39,9 +40,10 @@ export function AnnouncementsFeed({ scope }: AnnouncementsFeedProps) {
   const router = useRouter();
   const [query, setQuery] = useState('');
 
-  const { data, isLoading, isRefetching, refetch, fetchStatus, dataUpdatedAt } =
+  const { data, isLoading, isRefetching, refetch, fetchStatus, dataUpdatedAt, error } =
     useAnnouncements(scope);
-  const offline = fetchStatus === 'paused';
+  // No network at all, or a request that tried & could not get through.
+  const offline = fetchStatus === 'paused' || isNetworkError(error);
 
   if (isLoading) {
     return (

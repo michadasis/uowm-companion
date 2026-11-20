@@ -23,6 +23,11 @@ export class ApiError extends Error {
   }
 }
 
+/** Whether a request failed for want of a connection, rather than a bad reply. */
+export function isNetworkError(error: unknown): boolean {
+  return error instanceof ApiError && error.kind === 'network';
+}
+
 /**
  * Fetches a backend endpoint and checks the response against a schema, so a
  * malformed payload fails here, with a clear error, instead of somewhere
