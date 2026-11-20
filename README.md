@@ -75,7 +75,7 @@ WordPress site: 20 serve announcements through the REST API, two through their
 category archive page. Exam schedules and timetables have no common home, so a
 feature is listed only where there is a dependable source for it.
 
-Departments: 22, announcements 22, exam schedules 22, timetables 22, staff 22.
+Departments: 22, announcements 22, exam schedules 22, timetables 22.
 
 Timetables and exam schedules are read from whatever the department publishes:
 a page, a PDF, a Word file (DOCX or the older DOC) or a spreadsheet. Tables are
@@ -87,30 +87,30 @@ has published none since spring 2024-25, so the app says there is none yet. A
 few documents are laid out in ways no parser reads yet (Mechanical and Mineral
 Resources Engineering's exam schedules); those are shown as written.
 
-| Department | City | Announcements | Exams | Timetable | Staff |
-| --- | --- | :-: | :-: | :-: | :-: |
-| Electrical and Computer Engineering | Kozani | yes | yes | yes | yes |
-| Mechanical Engineering | Kozani | yes | yes | yes | yes |
-| Chemical Engineering | Kozani | yes | yes | yes | yes |
-| Mineral Resources Engineering | Kozani | yes | yes | yes | yes |
-| Product and Systems Design Engineering | Kozani | yes | yes | yes | yes |
-| International and European Economic Studies | Kozani | yes | yes | yes | yes |
-| Management Science and Technology | Kozani | yes | yes | yes | yes |
-| Accounting and Finance | Kozani | yes | yes | yes | yes |
-| Regional and Cross-Border Development Studies | Kozani | yes | yes | yes | yes |
-| Economics | Kastoria | yes | yes | yes | yes |
-| Business Administration | Grevena | yes | yes | yes | yes |
-| Statistics | Grevena | yes | yes | yes | yes |
-| Primary Education | Florina | yes | yes | yes | yes |
-| Early Childhood Education | Florina | yes | yes | yes | yes |
-| Psychology | Florina | yes | yes | yes | yes |
-| Communication and Digital Media | Kastoria | yes | yes | yes | yes |
-| Mathematics | Kastoria | yes | yes | yes | yes |
-| Informatics | Kastoria | yes | yes | yes | yes |
-| Occupational Therapy | Ptolemaida | yes | yes | yes | yes |
-| Midwifery | Ptolemaida | yes | yes | yes | yes |
-| Fine and Applied Arts | Florina | yes | yes | yes | yes |
-| Agriculture | Florina | yes | yes | yes | yes |
+| Department | City | Announcements | Exams | Timetable |
+| --- | --- | :-: | :-: | :-: |
+| Electrical and Computer Engineering | Kozani | yes | yes | yes |
+| Mechanical Engineering | Kozani | yes | yes | yes |
+| Chemical Engineering | Kozani | yes | yes | yes |
+| Mineral Resources Engineering | Kozani | yes | yes | yes |
+| Product and Systems Design Engineering | Kozani | yes | yes | yes |
+| International and European Economic Studies | Kozani | yes | yes | yes |
+| Management Science and Technology | Kozani | yes | yes | yes |
+| Accounting and Finance | Kozani | yes | yes | yes |
+| Regional and Cross-Border Development Studies | Kozani | yes | yes | yes |
+| Economics | Kastoria | yes | yes | yes |
+| Business Administration | Grevena | yes | yes | yes |
+| Statistics | Grevena | yes | yes | yes |
+| Primary Education | Florina | yes | yes | yes |
+| Early Childhood Education | Florina | yes | yes | yes |
+| Psychology | Florina | yes | yes | yes |
+| Communication and Digital Media | Kastoria | yes | yes | yes |
+| Mathematics | Kastoria | yes | yes | yes |
+| Informatics | Kastoria | yes | yes | yes |
+| Occupational Therapy | Ptolemaida | yes | yes | yes |
+| Midwifery | Ptolemaida | yes | yes | yes |
+| Fine and Applied Arts | Florina | yes | yes | yes |
+| Agriculture | Florina | yes | yes | yes |
 
 ## Running it locally
 

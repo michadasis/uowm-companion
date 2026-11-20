@@ -28,13 +28,7 @@ export interface Directory {
   departments: DirectoryDepartment[];
 }
 
-const featureOrder: readonly SourceKind[] = [
-  'announcements',
-  'exams',
-  'timetable',
-  'staff',
-  'secretariat',
-];
+const featureOrder: readonly SourceKind[] = ['announcements', 'exams', 'timetable'];
 
 function toDirectoryDepartment(department: Department): DirectoryDepartment {
   return {

@@ -14,7 +14,7 @@ import type { AnnouncementsSource, Department, ScheduleSource } from '../src/reg
 const greek = /[Ͱ-Ͽ]/;
 
 function sourceUrls(department: Department): string[] {
-  const { announcements, exams, timetable, staff, secretariat } = department.sources;
+  const { announcements, exams, timetable } = department.sources;
   const schedule = (source: ScheduleSource | undefined) =>
     source
       ? [
@@ -29,8 +29,6 @@ function sourceUrls(department: Department): string[] {
     announcements.adapter === 'wordpress-rest' ? announcements.apiRoot : announcements.listingUrl,
     ...schedule(exams),
     ...schedule(timetable),
-    ...(staff ?? []).map((source) => source.url),
-    ...(secretariat ? [secretariat.url] : []),
   ];
 }
 
@@ -144,8 +142,6 @@ describe('departments', () => {
     expect(Object.keys(informatics?.sources ?? {}).sort()).toEqual([
       'announcements',
       'exams',
-      'secretariat',
-      'staff',
       'timetable',
     ]);
   });

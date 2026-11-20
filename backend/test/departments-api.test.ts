@@ -34,7 +34,7 @@ describe('GET /api/departments', () => {
       school: 'sciences',
       city: 'kastoria',
       website: 'https://cs.uowm.gr',
-      features: ['announcements', 'exams', 'timetable', 'staff', 'secretariat'],
+      features: ['announcements', 'exams', 'timetable'],
     });
   });
 

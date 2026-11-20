@@ -82,17 +82,10 @@ export type ScheduleSource =
   | { adapter: 'listing-posts'; listingUrl: string; pages?: number }
   | { adapter: 'wordpress-media'; apiRoot: string; search: string };
 
-export interface PageSource {
-  adapter: 'html-page';
-  url: string;
-}
-
 export interface DepartmentSources {
   announcements: AnnouncementsSource;
   exams?: ScheduleSource;
   timetable?: ScheduleSource;
-  staff?: PageSource[];
-  secretariat?: PageSource;
 }
 
 export type SourceKind = keyof DepartmentSources;

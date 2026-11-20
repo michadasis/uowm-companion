@@ -1,6 +1,5 @@
 import type {
   Department,
-  PageSource,
   ScheduleSource,
   UniversitySources,
   WordPressRestSource,
@@ -17,10 +16,6 @@ function wordpress(id: string, categories: number[]): WordPressRestSource {
 /** A schedule posted to the department's WordPress, found by its title. */
 function posts(id: string, search: string): ScheduleSource {
   return { adapter: 'wordpress-posts', apiRoot: `${site(id)}/wp-json/`, search };
-}
-
-function page(url: string): PageSource {
-  return { adapter: 'html-page', url };
 }
 
 /**
@@ -51,12 +46,6 @@ export const departments: readonly Department[] = [
         apiRoot: `${site('ece')}/wp-json/`,
         category: 89,
       },
-      staff: [
-        page(`${site('ece')}/μελη-δεπ/`),
-        page(`${site('ece')}/εκτακτοι-διδασκοντεσ/`),
-        page(`${site('ece')}/διοικητικο-προσωπικο/`),
-      ],
-      secretariat: page(`${site('ece')}/επικοινωνήστε-μαζί-μας/`),
     },
   },
   {
@@ -71,12 +60,6 @@ export const departments: readonly Department[] = [
       announcements: wordpress('mech', [5, 7, 8]),
       exams: posts('mech', 'εξετ'),
       timetable: { adapter: 'menu-link', pageUrl: `${site('mech')}/`, label: 'Ωρολόγιο Πρόγραμμα' },
-      staff: [
-        page(`${site('mech')}/dep/`),
-        page(`${site('mech')}/ektaktoi/`),
-        page(`${site('mech')}/dioikitikoi/`),
-      ],
-      secretariat: page(`${site('mech')}/epikoinwnia/`),
     },
   },
   {
@@ -99,12 +82,6 @@ export const departments: readonly Department[] = [
         apiRoot: `${site('chemeng')}/wp-json/`,
         category: 52,
       },
-      staff: [
-        page(`${site('chemeng')}/meli-dep/`),
-        page(`${site('chemeng')}/edip/`),
-        page(`${site('chemeng')}/etep/`),
-      ],
-      secretariat: page(`${site('chemeng')}/dioikitikoi-ypalliloi/`),
     },
   },
   {
@@ -122,11 +99,6 @@ export const departments: readonly Department[] = [
       announcements: wordpress('mre', [54]),
       exams: posts('mre', 'εξετ'),
       timetable: { adapter: 'menu-link', pageUrl: `${site('mre')}/`, label: 'Ωρολόγιο Πρόγραμμα' },
-      staff: [
-        page(`${site('mre')}/to-tmima/prosopiko-2/prosopiko/`),
-        page(`${site('mre')}/ektaktoi-didaskontes/`),
-      ],
-      secretariat: page(`${site('mre')}/to-tmima/prosopiko-2/grammateia-tmimatos/`),
     },
   },
   {
@@ -147,8 +119,6 @@ export const departments: readonly Department[] = [
       announcements: wordpress('ide', [3]),
       timetable: posts('ide', 'ωρολόγιο'),
       exams: posts('ide', 'εξεταστικ'),
-      staff: [page(`${site('ide')}/prosopiko/`), page(`${site('ide')}/ektakto-prosopiko/`)],
-      secretariat: page(`${site('ide')}/epikoinonia/`),
     },
   },
   {
@@ -169,11 +139,6 @@ export const departments: readonly Department[] = [
       announcements: wordpress('iees', [15]),
       timetable: posts('iees', 'ωρολόγιο'),
       exams: posts('iees', 'εξεταστικ'),
-      staff: [
-        page(`${site('iees')}/prosopiko/didaktiko/`),
-        page(`${site('iees')}/prosopiko/dioikitiko/`),
-      ],
-      secretariat: page(`${site('iees')}/epikoinonia/`),
     },
   },
   {
@@ -207,12 +172,6 @@ export const departments: readonly Department[] = [
         pages: 5,
       },
       timetable: { adapter: 'listing-posts', listingUrl: `${site('mst')}/` },
-      staff: [
-        page(`${site('mst')}/meli-dep/`),
-        page(`${site('mst')}/ektakto-epistimoniko-prosopiko/`),
-        page(`${site('mst')}/dioikitiko-prosopiko/`),
-      ],
-      secretariat: page(`${site('mst')}/epikoinonia/`),
     },
   },
   {
@@ -241,11 +200,6 @@ export const departments: readonly Department[] = [
         pageUrl: `${site('accfin')}/`,
         label: 'Πρόγραμμα Διδασκαλίας',
       },
-      staff: [
-        page(`${site('accfin')}/meli-d-e-p/`),
-        page(`${site('accfin')}/dioikitiko-prosopiko/`),
-      ],
-      secretariat: page(`${site('accfin')}/contact/`),
     },
   },
   {
@@ -279,8 +233,6 @@ export const departments: readonly Department[] = [
         listingUrl: `${site('rdcbs')}/category/anakoinoseis/`,
         pages: 5,
       },
-      staff: [page(`${site('rdcbs')}/?page_id=1093`)],
-      secretariat: page(`${site('rdcbs')}/epikoinonia/`),
     },
   },
   {
@@ -295,8 +247,6 @@ export const departments: readonly Department[] = [
       announcements: wordpress('econ', [2]),
       exams: posts('econ', 'εξετ'),
       timetable: { adapter: 'menu-link', pageUrl: `${site('econ')}/`, label: 'Ωρολόγιο Πρόγραμμα' },
-      staff: [page(`${site('econ')}/anthopino-dynamiko/`)],
-      secretariat: page(`${site('econ')}/epikoinonia/`),
     },
   },
   {
@@ -319,12 +269,6 @@ export const departments: readonly Department[] = [
         apiRoot: `${site('ba')}/wp-json/`,
         search: 'ωρολόγιο',
       },
-      staff: [
-        page(`${site('ba')}/προσωπικό/didaktiko-prosopiko/d-e-p/`),
-        page(`${site('ba')}/προσωπικό/didaktiko-prosopiko/e-di-p/`),
-        page(`${site('ba')}/προσωπικό/dioikhtiko/`),
-      ],
-      secretariat: page(`${site('ba')}/epikoinonia/`),
     },
   },
   {
@@ -339,12 +283,6 @@ export const departments: readonly Department[] = [
       announcements: wordpress('stat', [9]),
       exams: { adapter: 'menu-link', pageUrl: `${site('stat')}/`, label: 'Πρόγραμμα Εξεταστικής' },
       timetable: { adapter: 'menu-link', pageUrl: `${site('stat')}/`, label: 'Ωρολόγιο Πρόγραμμα' },
-      staff: [
-        page(`${site('stat')}/dep/`),
-        page(`${site('stat')}/ektakto-epistimoniko-prosopiko/`),
-        page(`${site('stat')}/dioikitiko-prosopiko/`),
-      ],
-      secretariat: page(`${site('stat')}/epikoinonia/`),
     },
   },
   {
@@ -367,12 +305,6 @@ export const departments: readonly Department[] = [
         search: 'εξεταστικ',
       },
       timetable: { adapter: 'menu-link', pageUrl: `${site('eled')}/`, label: 'Ωρολόγιο Πρόγραμμα' },
-      staff: [
-        page(`${site('eled')}/prosopiko/didaktiko-erevnitiko-prosopiko-dep/`),
-        page(`${site('eled')}/prosopiko/ergastiriako-didaktiko-prosopiko-e-di-p/`),
-        page(`${site('eled')}/prosopiko/idiko-ekpedeftiko-prosopiko-e-e-p/`),
-      ],
-      secretariat: page(`${site('eled')}/prosopiko/diikitiko-prosopiko-grammatia/`),
     },
   },
   {
@@ -398,12 +330,6 @@ export const departments: readonly Department[] = [
         apiRoot: `${site('nured')}/wp-json/`,
         search: 'ωρολόγιο',
       },
-      staff: [
-        page(`${site('nured')}/didaktiko-erevnitiko-prosopiko-d-e-p/`),
-        page(`${site('nured')}/edip/`),
-        page(`${site('nured')}/ektakto-didaktiko-prosopiko/`),
-      ],
-      secretariat: page(`${site('nured')}/διοικητικό-προσωπικό-τμήματος/`),
     },
   },
   {
@@ -425,12 +351,6 @@ export const departments: readonly Department[] = [
         search: 'εξεταστικής',
       },
       timetable: { adapter: 'menu-link', pageUrl: `${site('psy')}/`, label: 'Ωρολόγιο Πρόγραμμα' },
-      staff: [
-        page(`${site('psy')}/didaktiko-erevnitiko-prosopiko-d-e-p/`),
-        page(`${site('psy')}/prosopiko/idiko-didaktiko-prosopiko-tmimatos-e-di-p/`),
-        page(`${site('psy')}/prosopiko/ektakto-prosopiko/`),
-      ],
-      secretariat: page(`${site('psy')}/prosopiko/diikitiko-prosopiko/`),
     },
   },
   {
@@ -448,12 +368,6 @@ export const departments: readonly Department[] = [
       announcements: wordpress('cdm', [123]),
       exams: { adapter: 'embedded-sheet', pageUrl: `${site('cdm')}/programma-exetastikis/` },
       timetable: { adapter: 'embedded-sheet', pageUrl: `${site('cdm')}/programma-mathimaton/` },
-      staff: [
-        page(`${site('cdm')}/meli-dep/`),
-        page(`${site('cdm')}/ektaktoi-didaskontes/`),
-        page(`${site('cdm')}/dioikitiko-prosopiko/`),
-      ],
-      secretariat: page(`${site('cdm')}/contact/`),
     },
   },
   {
@@ -477,12 +391,6 @@ export const departments: readonly Department[] = [
         // The exam rules are linked first; the term's timetable is the newest.
         pick: 'newest-upload',
       },
-      staff: [
-        page(`${site('math')}/meli-dep-2/`),
-        page(`${site('math')}/ektakto-didaktiko-prosopiko/`),
-        page(`${site('math')}/dioikitiko-prosopiko/`),
-      ],
-      secretariat: page(`${site('math')}/epikoinonia/`),
     },
   },
   {
@@ -505,11 +413,6 @@ export const departments: readonly Department[] = [
         pageUrl: `${site('cs')}/archiki-selida/orologio-programma-mathimaton/`,
         pick: 'newest-upload',
       },
-      staff: [
-        page(`${site('cs')}/archiki-selida/prosopiko/`),
-        page(`${site('cs')}/dioikitiko-prosopiko/`),
-      ],
-      secretariat: page(`${site('cs')}/archiki-selida/contact/`),
     },
   },
   {
@@ -524,8 +427,6 @@ export const departments: readonly Department[] = [
       announcements: wordpress('ot', [3]),
       exams: { adapter: 'menu-link', pageUrl: `${site('ot')}/`, label: 'Πρόγραμμα εξεταστικής' },
       timetable: { adapter: 'menu-link', pageUrl: `${site('ot')}/`, label: 'Ωρολόγιο Πρόγραμμα' },
-      staff: [page(`${site('ot')}/meli-dep/`), page(`${site('ot')}/ektaktoi-didaskontes/`)],
-      secretariat: page(`${site('ot')}/grammateia/`),
     },
   },
   {
@@ -540,12 +441,6 @@ export const departments: readonly Department[] = [
       announcements: wordpress('mw', [52]),
       timetable: posts('mw', 'ωρολόγιο'),
       exams: posts('mw', 'εξεταστικ'),
-      staff: [
-        page(`${site('mw')}/meli-dep/`),
-        page(`${site('mw')}/didaskontes-a-y-407/`),
-        page(`${site('mw')}/dioikitiko-prosopiko/`),
-      ],
-      secretariat: page(`${site('mw')}/grammateia/grammateia/`),
     },
   },
   {
@@ -563,12 +458,6 @@ export const departments: readonly Department[] = [
       announcements: wordpress('eetf', [7]),
       timetable: posts('eetf', 'ωρολόγιο'),
       exams: posts('eetf', 'εξεταστικ'),
-      staff: [
-        page(`${site('eetf')}/prosopiko/didaktiko-erevnitiko-prosopiko-d-e-p/`),
-        page(`${site('eetf')}/prosopiko/didaskontes-tou-p-d-40780/`),
-        page(`${site('eetf')}/prosopiko/diikitiko-prosopiko/`),
-      ],
-      secretariat: page(`${site('eetf')}/tmima/grammatia/`),
     },
   },
   {
@@ -588,12 +477,6 @@ export const departments: readonly Department[] = [
         apiRoot: `${site('agro')}/wp-json/`,
         search: 'ωρολόγιο',
       },
-      staff: [
-        page(`${site('agro')}/διδακτικό-ερευνητικό-προσωπικό/`),
-        page(`${site('agro')}/εργαστηριακό-διδακτικό-προσωπικό/`),
-        page(`${site('agro')}/διοικητικό-προσωπικό/`),
-      ],
-      secretariat: page(`${site('agro')}/επικοινωνία/`),
     },
   },
 ];
