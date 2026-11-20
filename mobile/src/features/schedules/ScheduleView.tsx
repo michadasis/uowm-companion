@@ -22,9 +22,11 @@ import { openExternal } from '@/features/content/links';
 import { findDepartment, useDirectory } from '@/features/departments/useDirectory';
 import { useSettings } from '@/features/settings/store';
 import type { Language } from '@/features/settings/store';
-import { CourseFilterBar } from '@/features/universis/CourseFilterBar';
+import { CourseChips, CourseFilterBar } from '@/features/universis/CourseFilterBar';
+import type { CourseFilterStatus } from '@/features/universis/CourseFilterBar';
+import { ExpiredNotice } from '@/features/universis/ExpiredNotice';
 import { filterByCourses, selectedCourseKeys } from '@/features/universis/match';
-import { disconnectUniversis, useStudentCourses } from '@/features/universis/useStudentCourses';
+import { useStudentCourses } from '@/features/universis/useStudentCourses';
 import { usePreviewNow } from '@/lib/usePreviewNow';
 
 import { ExamsAgenda } from './ExamsAgenda';
@@ -64,26 +66,25 @@ export function ScheduleView({ scope, kind }: ScheduleViewProps) {
   // one that failed, leaves the whole schedule showing — never an empty one.
   const courseKeys = student.courses ? selectedCourseKeys(student.courses, courseFilter) : null;
 
+  const chipProps = {
+    status: (student.courses
+      ? 'ready'
+      : !student.connected
+        ? 'disconnected'
+        : student.isError
+          ? 'error'
+          : 'loading') as CourseFilterStatus,
+    filter: courseFilter,
+    onFilter: setCourseFilter,
+    onConnect: () => router.push('/universis-login' as Href),
+    onRetry: student.refetch,
+  };
   const courseFilterBar = (
-    <CourseFilterBar
-      status={
-        student.courses
-          ? 'ready'
-          : !student.connected
-            ? 'disconnected'
-            : student.isError
-              ? 'error'
-              : 'loading'
-      }
-      expired={student.expired}
-      updatedAt={student.updatedAt}
-      filter={courseFilter}
-      onFilter={setCourseFilter}
-      onConnect={() => router.push('/universis-login' as Href)}
-      onRetry={student.refetch}
-      onDisconnect={() => void disconnectUniversis()}
-    />
+    <CourseFilterBar {...chipProps} expired={student.expired} updatedAt={student.updatedAt} />
   );
+  const expiredNotice = student.expired ? (
+    <ExpiredNotice updatedAt={student.updatedAt} onReconnect={chipProps.onConnect} />
+  ) : null;
 
   if (isLoading) {
     return (
@@ -163,23 +164,23 @@ export function ScheduleView({ scope, kind }: ScheduleViewProps) {
     </PressableScale>
   );
 
-  // When the document parsed into structured items, those are the screen; the
-  // source document stays one tap away at the top. Otherwise the document
+  // When the document parsed into structured items, those are the screen &
+  // the source document waits at the end of them. Otherwise the document
   // itself, rendered natively, is the screen.
-  const structuredHeader = (
-    <View style={styles.agendaHeader}>
-      {offlineNotice}
-      {documentCard}
-      {courseFilterBar}
-    </View>
-  );
+  const documentFooter = <View style={styles.footer}>{documentCard}</View>;
 
   if (kind === 'exams' && data.exams.length > 0) {
     return (
       <ExamsAgenda
         exams={filterByCourses(data.exams, courseKeys)}
         refreshControl={refreshControl}
-        header={structuredHeader}
+        header={
+          <View style={styles.agendaHeader}>
+            {offlineNotice}
+            {courseFilterBar}
+          </View>
+        }
+        footer={documentFooter}
       />
     );
   }
@@ -190,7 +191,17 @@ export function ScheduleView({ scope, kind }: ScheduleViewProps) {
         classes={filterByCourses(data.classes, courseKeys)}
         personalised={courseKeys !== null}
         refreshControl={refreshControl}
-        header={structuredHeader}
+        header={
+          offlineNotice || expiredNotice ? (
+            <View style={styles.agendaHeader}>
+              {offlineNotice}
+              {expiredNotice}
+            </View>
+          ) : undefined
+        }
+        filterChips={<CourseChips {...chipProps} />}
+        onBrowseAll={() => setCourseFilter('all')}
+        footer={documentFooter}
         dayOff={calendar ? (date) => dayOffReason(calendar, date, city, t) : undefined}
         now={now}
       />
@@ -229,8 +240,12 @@ const useStyles = createStyles((theme) => ({
   },
   agendaHeader: {
     paddingHorizontal: theme.spacing[4],
-    paddingTop: theme.spacing[2],
+    paddingTop: theme.spacing[3],
     gap: theme.spacing[3],
+  },
+  footer: {
+    paddingHorizontal: theme.spacing[4],
+    paddingTop: theme.spacing[4],
   },
   source: {
     flexDirection: 'row',

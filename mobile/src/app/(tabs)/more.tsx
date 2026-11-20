@@ -2,7 +2,7 @@ import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import {
   Card,
@@ -18,6 +18,7 @@ import { describeDepartment } from '@/features/departments/describe';
 import { findDepartment, useDirectory } from '@/features/departments/useDirectory';
 import { useSettings } from '@/features/settings/store';
 import type { Language } from '@/features/settings/store';
+import { disconnectUniversis, useStudentCourses } from '@/features/universis/useStudentCourses';
 import { showDeveloperTools } from '@/lib/env';
 
 export default function MoreScreen() {
@@ -31,6 +32,7 @@ export default function MoreScreen() {
   const setTheme = useSettings((settings) => settings.setTheme);
   const setLanguage = useSettings((settings) => settings.setLanguage);
   const department = findDepartment(directory, departmentId);
+  const universis = useStudentCourses();
 
   return (
     <Screen testID="more-screen">
@@ -59,6 +61,27 @@ export default function MoreScreen() {
             onPress={() => router.push('/grades' as Href)}
             testID="more-grades"
           />
+          <View style={styles.divider} />
+          {/* The link lives here, out of the way, rather than on the schedule. */}
+          {universis.connected ? (
+            <ListRow
+              icon="department"
+              title={t('more.studies.universisLinked')}
+              subtitle={t('more.studies.universisLinkedHint')}
+              value={t('universis.signOut')}
+              onPress={() => void disconnectUniversis()}
+              testID="more-universis-signout"
+            />
+          ) : (
+            <ListRow
+              icon="department"
+              title={t('universis.link.title')}
+              subtitle={t('universis.link.hint')}
+              trailing="chevron"
+              onPress={() => router.push('/universis-login' as Href)}
+              testID="more-universis-connect"
+            />
+          )}
         </Card>
 
         <SectionHeader title={t('more.appearance.section')} />
@@ -135,6 +158,11 @@ const useStyles = createStyles((theme) => ({
   card: {
     marginHorizontal: theme.spacing[4],
     gap: theme.spacing[4],
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    marginLeft: theme.spacing[4],
+    backgroundColor: theme.colors.border,
   },
   setting: {
     gap: theme.spacing[2],

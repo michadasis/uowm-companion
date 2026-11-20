@@ -1,7 +1,8 @@
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, View } from 'react-native';
 
-import { Button, Chip, createStyles, Icon, PressableScale, Text } from '@/design';
+import { Chip, createStyles, Text } from '@/design';
 
 import { ExpiredNotice } from './ExpiredNotice';
 import type { CourseFilter } from './types';
@@ -15,146 +16,121 @@ import type { CourseFilter } from './types';
  */
 export type CourseFilterStatus = 'disconnected' | 'loading' | 'error' | 'ready';
 
-export interface CourseFilterBarProps {
+export interface CourseChipsProps {
   status: CourseFilterStatus;
-  /** Ready from the saved copy only: the token ran out & can't refresh it. */
-  expired?: boolean;
-  /** When the saved copy was read, for the expired notice. */
-  updatedAt?: number | null;
   filter: CourseFilter;
   onFilter: (filter: CourseFilter) => void;
   onConnect: () => void;
   onRetry?: () => void;
-  onDisconnect?: () => void;
+  /** Adds the "all" chip; leave it out where the row has its own, as the timetable's. */
+  includeAll?: boolean;
 }
 
-const filters: CourseFilter[] = ['all', 'owed', 'registered'];
-
 /**
- * The course filter for the schedule: a prompt to link Universis when the
- * student has not, & chips to narrow the schedule to their courses once they
- * have. When the link has lapsed the chips stay, working from the saved
- * courses, with a way to refresh them.
+ * The course filter as chips, to share one row with the schedule's other
+ * filters: the student's declared & owed courses once Universis is linked, a
+ * chip to link it until then — never a second row or a banner of its own.
  */
-export function CourseFilterBar({
+export function CourseChips({
   status,
-  expired = false,
-  updatedAt = null,
   filter,
   onFilter,
   onConnect,
   onRetry,
-  onDisconnect,
-}: CourseFilterBarProps) {
+  includeAll = false,
+}: CourseChipsProps) {
   const { t } = useTranslation();
   const styles = useStyles();
 
   if (status === 'disconnected') {
     return (
-      <PressableScale
-        accessibilityRole="button"
-        accessibilityLabel={`${t('universis.link.cta')}: ${t('universis.link.hint')}`}
+      <Chip
+        label={t('universis.link.mine')}
+        icon="department"
         onPress={onConnect}
-        style={styles.prompt}
-      >
-        <Icon name="department" size={18} color="accent" />
-        <Text variant="caption" color="textMuted" style={styles.grow}>
-          {t('universis.link.hint')}
-        </Text>
-        <Text variant="label" color="primary">
-          {t('universis.link.cta')}
-        </Text>
-      </PressableScale>
+        testID="course-filter-connect"
+      />
     );
   }
-
   if (status === 'loading') {
     return (
-      <View style={styles.prompt}>
-        <Text variant="caption" color="textMuted" style={styles.grow}>
-          {t('universis.loading')}
-        </Text>
-      </View>
+      <Text variant="caption" color="textSubtle" style={styles.status}>
+        {t('universis.loadingShort')}
+      </Text>
     );
   }
-
   if (status === 'error') {
-    return (
-      <View style={styles.prompt}>
-        <Text variant="caption" color="textMuted" style={styles.grow}>
-          {t('universis.error')}
-        </Text>
-        {onRetry ? (
-          <Button label={t('states.error.retry')} variant="ghost" icon="retry" onPress={onRetry} />
-        ) : null}
-      </View>
-    );
+    return onRetry ? (
+      <Chip
+        label={t('universis.retryShort')}
+        icon="retry"
+        onPress={onRetry}
+        testID="course-filter-retry"
+      />
+    ) : null;
   }
 
+  const shown: CourseFilter[] = includeAll ? ['registered', 'owed', 'all'] : ['registered', 'owed'];
+  return (
+    <>
+      {shown.map((value) => (
+        <Chip
+          key={value}
+          label={t(`universis.filter.${value}`)}
+          selected={filter === value}
+          onPress={() => onFilter(value)}
+          testID={`course-filter-${value}`}
+        />
+      ))}
+    </>
+  );
+}
+
+export interface CourseFilterBarProps extends Omit<CourseChipsProps, 'includeAll'> {
+  /** Ready from the saved copy only: the token ran out & can't refresh it. */
+  expired?: boolean;
+  /** When the saved copy was read, for the expired notice. */
+  updatedAt?: number | null;
+  /** More chips for the same row, after the course filter's. */
+  children?: ReactNode;
+}
+
+/**
+ * The course filter in a row of its own, for a schedule with no other
+ * filters: the exams, or a document shown as written. When the link has
+ * lapsed, a notice says the courses are the saved copy, with a way to refresh.
+ */
+export function CourseFilterBar({
+  expired = false,
+  updatedAt = null,
+  children,
+  ...chips
+}: CourseFilterBarProps) {
+  const styles = useStyles();
   return (
     <View style={styles.bar}>
-      {expired ? (
-        <ExpiredNotice updatedAt={updatedAt} onReconnect={onConnect} />
-      ) : (
-        <View style={styles.top}>
-          <View style={styles.linked}>
-            <Icon name="check" size={13} color="primary" />
-            <Text variant="caption" color="textSubtle">
-              {t('universis.linked')}
-            </Text>
-          </View>
-          {onDisconnect ? (
-            <Button label={t('universis.signOut')} variant="ghost" onPress={onDisconnect} />
-          ) : null}
-        </View>
-      )}
+      {expired ? <ExpiredNotice updatedAt={updatedAt} onReconnect={chips.onConnect} /> : null}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.chips}
       >
-        {filters.map((value) => (
-          <Chip
-            key={value}
-            label={t(`universis.filter.${value}`)}
-            selected={filter === value}
-            onPress={() => onFilter(value)}
-            testID={`course-filter-${value}`}
-          />
-        ))}
+        <CourseChips {...chips} includeAll />
+        {children}
       </ScrollView>
     </View>
   );
 }
 
 const useStyles = createStyles((theme) => ({
-  prompt: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing[3],
-    minHeight: theme.size.touchTarget,
-    backgroundColor: theme.colors.accentMuted,
-    borderRadius: theme.radius.md,
-    paddingHorizontal: theme.spacing[3],
-    paddingVertical: theme.spacing[2],
-  },
-  grow: {
-    flex: 1,
-  },
   bar: {
     gap: theme.spacing[2],
   },
-  top: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  linked: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing[1],
-  },
   chips: {
     gap: theme.spacing[2],
+    alignItems: 'center',
+  },
+  status: {
+    alignSelf: 'center',
   },
 }));

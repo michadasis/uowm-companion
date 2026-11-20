@@ -18,6 +18,8 @@ export interface ExamsAgendaProps {
   exams: Exam[];
   /** Rendered above the list, e.g. the link to the source document. */
   header?: ReactElement;
+  /** Rendered after the list, e.g. the link to the source document. */
+  footer?: ReactElement;
   refreshControl?: ReactElement<RefreshControlProps>;
 }
 
@@ -66,7 +68,7 @@ function ExamCard({ exam }: { exam: Exam }) {
 }
 
 /** The exam schedule as an agenda grouped by day. */
-export function ExamsAgenda({ exams, header, refreshControl }: ExamsAgendaProps) {
+export function ExamsAgenda({ exams, header, footer, refreshControl }: ExamsAgendaProps) {
   const { t, i18n } = useTranslation();
   const styles = useStyles();
   const language = i18n.language as Language;
@@ -91,6 +93,7 @@ export function ExamsAgenda({ exams, header, refreshControl }: ExamsAgendaProps)
       keyExtractor={(row) => row.key}
       contentContainerStyle={styles.content}
       ListHeaderComponent={header}
+      ListFooterComponent={footer}
       refreshControl={refreshControl}
       renderItem={({ item }) =>
         item.kind === 'day' ? (

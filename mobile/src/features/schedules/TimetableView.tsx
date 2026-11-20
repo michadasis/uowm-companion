@@ -29,8 +29,17 @@ export interface TimetableViewProps {
    * a course the student owes from another semester.
    */
   personalised?: boolean;
-  /** Rendered above the day selector, e.g. the link to the source document. */
+  /** Rendered above the filters, e.g. a notice. */
   header?: ReactElement;
+  /** Rendered after the classes, e.g. the link to the source document. */
+  footer?: ReactElement;
+  /**
+   * Chips to lead the filter row, as the student's own courses: the row stays
+   * one, with a single choice across them & the semesters.
+   */
+  filterChips?: ReactElement;
+  /** Called when "all" or a semester is chosen, to drop a filter `filterChips` set. */
+  onBrowseAll?: () => void;
   refreshControl?: ReactElement<RefreshControlProps>;
   /** Injectable for tests; the current moment otherwise. */
   now?: Date;
@@ -122,6 +131,9 @@ export function TimetableView({
   classes,
   personalised = false,
   header,
+  footer,
+  filterChips,
+  onBrowseAll,
   refreshControl,
   now = new Date(),
   dayOff,
@@ -188,16 +200,20 @@ export function TimetableView({
       }
     >
       {header}
-      {!personalised && semesters.length > 1 ? (
+      {filterChips || semesters.length > 1 ? (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.days}
+          contentContainerStyle={styles.filters}
         >
+          {filterChips}
           <Chip
             label={t('schedule.timetableView.allSemesters')}
-            selected={activeSemester === null}
-            onPress={() => setSemester(null)}
+            selected={!personalised && activeSemester === null}
+            onPress={() => {
+              setSemester(null);
+              onBrowseAll?.();
+            }}
             testID="timetable-semester-all"
           />
           {semesters.map((semester) => (
@@ -208,8 +224,11 @@ export function TimetableView({
                   ? t('schedule.timetableView.pde')
                   : displayNumeral(t('schedule.semester', { semester }))
               }
-              selected={activeSemester === semester}
-              onPress={() => setSemester(semester)}
+              selected={!personalised && activeSemester === semester}
+              onPress={() => {
+                setSemester(semester);
+                onBrowseAll?.();
+              }}
               testID={`timetable-semester-${semester}`}
             />
           ))}
@@ -259,6 +278,7 @@ export function TimetableView({
           </Text>
         )}
       </View>
+      {footer}
     </ScrollView>
   );
 }
@@ -268,6 +288,12 @@ const useStyles = createStyles((theme) => ({
     paddingTop: theme.spacing[2],
     paddingBottom: theme.spacing[10],
     gap: theme.spacing[3],
+  },
+  filters: {
+    paddingHorizontal: theme.spacing[4],
+    paddingTop: theme.spacing[1],
+    gap: theme.spacing[2],
+    alignItems: 'center',
   },
   days: {
     paddingHorizontal: theme.spacing[4],
