@@ -220,3 +220,24 @@ describe('htmlToBlocks on a PDF viewer plugin', () => {
     });
   });
 });
+
+describe('htmlToBlocks on page machinery', () => {
+  it('drops plugin spinners, emoji, pixels & icons, & keeps the post’s own picture', () => {
+    const blocks = htmlToBlocks(
+      `<p>Κείμενο</p>
+       <img src="https://cdm.uowm.gr/wp-content/plugins/page-views-count/ajax-loader-2x.gif">
+       <img class="emoji" src="https://s.w.org/images/core/emoji/15.0.3/svg/1f4e2.svg">
+       <img src="https://x.test/pixel.gif" width="1" height="1">
+       <img src="https://x.test/icon.png" width="16" height="16">
+       <img src="https://cs.uowm.gr/wp-content/uploads/2026/10/IMG_0408-1024x768.jpg" width="1024" height="768" alt="Ομιλία">`,
+      'https://cs.uowm.gr/',
+    );
+    expect(blocks.filter((block) => block.type === 'image')).toEqual([
+      {
+        type: 'image',
+        src: 'https://cs.uowm.gr/wp-content/uploads/2026/10/IMG_0408-1024x768.jpg',
+        alt: 'Ομιλία',
+      },
+    ]);
+  });
+});

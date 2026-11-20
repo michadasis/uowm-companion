@@ -193,15 +193,25 @@ function pushImage(node: Element, out: Block[], baseUrl: string, altOverride?: s
   if (!rawSrc) return;
   const src = resolveUrl(rawSrc, baseUrl);
   if (!src) return;
-  // Tracking pixels & layout spacers carry no content.
-  if (
-    /width=['"]?1\b/.test(node.attribs['width'] ?? '') ||
-    /wp-smiley/.test(node.attribs['class'] ?? '')
-  ) {
-    return;
-  }
+  if (isDecoration(node, src)) return;
   const alt = altOverride ?? (textOf(node.attribs['alt']) || undefined);
   out.push({ type: 'image', src, ...(alt ? { alt } : {}) });
+}
+
+/**
+ * An image that is part of the page's machinery, not the post: a plugin's
+ * loading spinner (a view counter's sits in every post of some sites), the
+ * emoji WordPress swaps in, a tracking pixel, a spacer or a small icon.
+ */
+function isDecoration(node: Element, src: string): boolean {
+  if (src.startsWith('data:')) return true;
+  if (/\/wp-content\/plugins\/|\/wp-includes\/|s\.w\.org\/images\/core\/emoji/.test(src))
+    return true;
+  if (/(ajax-)?loader|loading|spinner/i.test(src.split('/').pop() ?? '')) return true;
+  if (/wp-smiley|emoji/.test(node.attribs['class'] ?? '')) return true;
+  const width = Number.parseInt(node.attribs['width'] ?? '', 10);
+  const height = Number.parseInt(node.attribs['height'] ?? '', 10);
+  return (width > 0 && width <= 24) || (height > 0 && height <= 24);
 }
 
 function pushAttachment(link: Element, out: Block[], baseUrl: string) {
