@@ -4,7 +4,8 @@ import { RefreshControl, ScrollView, View } from 'react-native';
 import type { RefreshControlProps } from 'react-native';
 
 import { displayNumeral } from '@/lib/greek';
-import { Card, Chip, createStyles, Icon, PressableScale, Text, useTheme } from '@/design';
+import { Card, Chip, createStyles, DayStripButton, Icon, Text, useTheme } from '@/design';
+import { weekDates } from '@/features/calendar/status';
 import type { Language } from '@/features/settings/store';
 import { useSettings } from '@/features/settings/store';
 
@@ -38,65 +39,6 @@ export interface TimetableViewProps {
    * calendar — a holiday, the exams — or null when they are held.
    */
   dayOff?: (date: Date) => string | null;
-}
-
-/**
- * The dates of the week the strip shows: this one, or the coming one from
- * Saturday on, when this week's classes are over.
- */
-export function weekDates(now: Date): Map<number, Date> {
-  const today = todayWeekday(now);
-  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (today - 1), 12);
-  if (today >= 6) monday.setDate(monday.getDate() + 7);
-  const dates = new Map<number, Date>();
-  for (let day = 1; day <= 7; day++) {
-    dates.set(
-      day,
-      new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + day - 1, 12),
-    );
-  }
-  return dates;
-}
-
-/** A day of the strip: its short name over its date, marked if it is today or off. */
-function DayButton({
-  label,
-  date,
-  selected,
-  today,
-  off,
-  onPress,
-  testID,
-}: {
-  label: string;
-  date?: Date;
-  selected: boolean;
-  today: boolean;
-  off: boolean;
-  onPress: () => void;
-  testID?: string;
-}) {
-  const styles = useStyles();
-  return (
-    <PressableScale
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      accessibilityLabel={date ? `${label} ${date.getDate()}` : label}
-      onPress={onPress}
-      style={[styles.dayButton, selected ? styles.daySelected : null]}
-      testID={testID}
-    >
-      <Text variant="caption" color={selected ? 'background' : off ? 'textDisabled' : 'textMuted'}>
-        {label}
-      </Text>
-      {date ? (
-        <Text variant="subheading" color={selected ? 'background' : off ? 'textDisabled' : 'text'}>
-          {date.getDate()}
-        </Text>
-      ) : null}
-      <View style={[styles.dayDot, today ? styles.dayDotToday : null]} />
-    </PressableScale>
-  );
 }
 
 type Status = 'now' | 'next' | undefined;
@@ -279,7 +221,7 @@ export function TimetableView({
         contentContainerStyle={styles.days}
       >
         {week.map((day) => (
-          <DayButton
+          <DayStripButton
             key={day.day}
             label={weekdayShort(day.day, language)}
             date={dayOff ? dates.get(day.day) : undefined}
@@ -346,27 +288,6 @@ const useStyles = createStyles((theme) => ({
     paddingHorizontal: theme.spacing[3],
     paddingVertical: theme.spacing[2],
     gap: theme.spacing[0.5],
-  },
-  dayButton: {
-    minWidth: 52,
-    paddingHorizontal: theme.spacing[2],
-    paddingTop: theme.spacing[2],
-    paddingBottom: theme.spacing[1],
-    borderRadius: theme.radius.md,
-    alignItems: 'center',
-    gap: 2,
-  },
-  daySelected: {
-    backgroundColor: theme.colors.text,
-  },
-  dayDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    marginTop: 2,
-  },
-  dayDotToday: {
-    backgroundColor: theme.colors.brand,
   },
   card: {
     gap: theme.spacing[2],

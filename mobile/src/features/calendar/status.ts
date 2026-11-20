@@ -121,3 +121,22 @@ export function dayStatus(calendar: AcademicCalendar, now: Date, city: string | 
   }
   return { kind: 'off', next: calendar.periods.find((next) => next.from > iso) };
 }
+
+/**
+ * The dates of the week a day strip shows, by weekday (1 Monday … 7 Sunday):
+ * this one, or the coming one from Saturday on, when this week is over.
+ */
+export function weekDates(now: Date, rollWeekend = true): Map<number, Date> {
+  const weekday = now.getDay() === 0 ? 7 : now.getDay();
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (weekday - 1), 12);
+  // Classes are over by Saturday; the restaurant still serves, so its strip keeps the week.
+  if (rollWeekend && weekday >= 6) monday.setDate(monday.getDate() + 7);
+  const dates = new Map<number, Date>();
+  for (let day = 1; day <= 7; day++) {
+    dates.set(
+      day,
+      new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + day - 1, 12),
+    );
+  }
+  return dates;
+}

@@ -1,9 +1,8 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { View } from 'react-native';
 
-import { createStyles, Screen, ScreenTitle, SegmentedControl } from '@/design';
+import { Screen, ScreenTitle, SegmentedControl } from '@/design';
 import { ScheduleView } from '@/features/schedules/ScheduleView';
 import type { ScheduleKind } from '@/features/schedules/schema';
 import { useSettings } from '@/features/settings/store';
@@ -13,7 +12,6 @@ const isKind = (value: unknown): value is ScheduleKind =>
 
 export default function ScheduleScreen() {
   const { t } = useTranslation();
-  const styles = useStyles();
   const departmentId = useSettings((settings) => settings.departmentId);
   // The Home screen's "next up" card opens the schedule it came from.
   const params = useLocalSearchParams<{ kind?: string }>();
@@ -29,10 +27,10 @@ export default function ScheduleScreen() {
   }
 
   return (
-    <Screen testID="schedule-screen">
-      <ScreenTitle title={t('schedule.title')} />
-      <View style={styles.tabs}>
+    <Screen tone="blue" testID="schedule-screen">
+      <ScreenTitle title={t('schedule.title')} tone="blue" icon="schedule">
         <SegmentedControl
+          onTint
           accessibilityLabel={t('schedule.title')}
           options={[
             { value: 'timetable', label: t('schedule.tabs.timetable') },
@@ -42,16 +40,8 @@ export default function ScheduleScreen() {
           onChange={setKind}
           testID="schedule-kind-toggle"
         />
-      </View>
+      </ScreenTitle>
       <ScheduleView key={kind} scope={departmentId} kind={kind} />
     </Screen>
   );
 }
-
-const useStyles = createStyles((theme) => ({
-  tabs: {
-    paddingHorizontal: theme.spacing[4],
-    paddingTop: theme.spacing[1],
-    paddingBottom: theme.spacing[2],
-  },
-}));

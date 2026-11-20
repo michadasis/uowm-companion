@@ -15,6 +15,8 @@ export interface SegmentedControlProps<Value extends string> {
   onChange: (value: Value) => void;
   /** Names the group for screen readers, for example "Theme". */
   accessibilityLabel: string;
+  /** Sits on a coloured band: the track turns see-through so the colour shows. */
+  onTint?: boolean;
   testID?: string;
 }
 
@@ -24,6 +26,7 @@ export function SegmentedControl<Value extends string>({
   value,
   onChange,
   accessibilityLabel,
+  onTint = false,
   testID,
 }: SegmentedControlProps<Value>) {
   const styles = useStyles();
@@ -45,7 +48,7 @@ export function SegmentedControl<Value extends string>({
     <View
       accessibilityRole="radiogroup"
       accessibilityLabel={accessibilityLabel}
-      style={styles.control}
+      style={[styles.control, onTint ? styles.controlOnTint : null]}
       testID={testID}
     >
       <View style={styles.track}>
@@ -82,6 +85,9 @@ const useStyles = createStyles((theme) => ({
     padding: 3,
     borderRadius: theme.radius.md,
     backgroundColor: theme.colors.surfaceMuted,
+  },
+  controlOnTint: {
+    backgroundColor: theme.scheme === 'dark' ? 'rgba(0, 0, 0, 0.28)' : 'rgba(255, 255, 255, 0.55)',
   },
   track: {
     flex: 1,

@@ -104,7 +104,15 @@ function NextCard({
  * the weekly timetable & skips the days the academic calendar has no classes
  * — holidays, the breaks, the exam periods.
  */
-export function NextUpSection({ scope, city }: { scope: string; city: string | null }) {
+export function NextUpSection({
+  scope,
+  city,
+  now = new Date(),
+}: {
+  scope: string;
+  city: string | null;
+  now?: Date;
+}) {
   const { t, i18n } = useTranslation();
   const language = i18n.language as Language;
   const router = useRouter();
@@ -120,6 +128,7 @@ export function NextUpSection({ scope, city }: { scope: string; city: string | n
     courses,
     semester,
     isTeachingDay: calendar ? (date) => isTeachingDay(calendar, date, city) : undefined,
+    now,
   });
 
   let body;
@@ -127,7 +136,7 @@ export function NextUpSection({ scope, city }: { scope: string; city: string | n
     body = <Loading />;
   } else if (next.kind === 'class') {
     const { session, daysAhead, inProgress } = next.upcoming;
-    const date = new Date();
+    const date = new Date(now);
     date.setDate(date.getDate() + daysAhead);
     const when = inProgress
       ? t('home.nextUp.now')

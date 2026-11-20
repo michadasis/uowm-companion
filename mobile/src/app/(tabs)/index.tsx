@@ -10,7 +10,7 @@ import {
   TodayMenuSection,
 } from '@/features/home/sections';
 import { GradesSection } from '@/features/home/GradesSection';
-import { TodayHero } from '@/features/home/TodayHero';
+import { toneOfDay, TodayHero, useToday } from '@/features/home/TodayHero';
 import { useSettings } from '@/features/settings/store';
 import type { Language } from '@/features/settings/store';
 import { usePreviewNow } from '@/lib/usePreviewNow';
@@ -23,13 +23,14 @@ export default function HomeScreen() {
   const departmentId = useSettings((settings) => settings.departmentId);
   const department = findDepartment(directory, departmentId);
   const now = usePreviewNow();
+  const today = useToday(now, department?.city ?? null);
 
   return (
-    <Screen testID="home-screen">
+    <Screen tone={toneOfDay(today.tone)} testID="home-screen">
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <TodayHero
           now={now}
-          city={department?.city ?? null}
+          today={today}
           departmentLine={
             department
               ? [
@@ -44,7 +45,7 @@ export default function HomeScreen() {
 
         {departmentId ? (
           <>
-            <NextUpSection scope={departmentId} city={department?.city ?? null} />
+            <NextUpSection scope={departmentId} city={department?.city ?? null} now={now} />
             <GradesSection />
             <TodayMenuSection />
             <LatestAnnouncementsSection scope={departmentId} />
