@@ -42,7 +42,7 @@ describe('docToBlocks', () => {
     ]);
   });
 
-  it('keeps text whose cells break over lines as lines, cells joined by a dot', async () => {
+  it('keeps text whose cells break over lines as lines, cells divided by a bar', async () => {
     body.text = [
       'ΩΡΕΣ\tΔευτέρα\tΑιθ\tΤρίτη\tΑιθ',
       '9:00- 12:00\t\t\tΔΕΟΣ0103',
@@ -52,6 +52,9 @@ describe('docToBlocks', () => {
 
     const blocks = await docToBlocks(new Uint8Array());
     expect(blocks.every((block) => block.type === 'paragraph')).toBe(true);
-    expect(blocks[1]).toEqual({ type: 'paragraph', content: [{ text: '9:00- 12:00 · ΔΕΟΣ0103' }] });
+    expect(blocks[1]).toEqual({
+      type: 'paragraph',
+      content: [{ text: '9:00- 12:00  |  ΔΕΟΣ0103' }],
+    });
   });
 });

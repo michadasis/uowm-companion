@@ -23,7 +23,7 @@ export function OfflineNotice({ title, detail, testID }: OfflineNoticeProps) {
     <View accessible accessibilityRole="alert" style={styles.notice} testID={testID}>
       <Icon name="offline" size={theme.size.icon.sm} color="onAccentMuted" />
       <Text variant="label" color="onAccentMuted" style={styles.text}>
-        {detail ? `${title} · ${detail}` : title}
+        {detail ? `${title}. ${detail}` : title}
       </Text>
     </View>
   );

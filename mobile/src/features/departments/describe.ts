@@ -10,5 +10,5 @@ export function describeDepartment(
 ): string {
   const school = directory.schools.find((entry) => entry.id === department.school);
   const city = directory.cities.find((entry) => entry.id === department.city);
-  return [school?.name[language], city?.name[language]].filter(Boolean).join(' · ');
+  return [school?.name[language], city?.name[language]].filter(Boolean).join(', ');
 }

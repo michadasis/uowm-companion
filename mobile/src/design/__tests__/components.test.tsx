@@ -353,7 +353,7 @@ describe('OfflineNotice', () => {
     await render(<OfflineNotice title="Εκτός σύνδεσης" detail="Τελευταία ενημέρωση 12:40" />);
 
     expect(screen.getByRole('alert')).toHaveTextContent(
-      'Εκτός σύνδεσης · Τελευταία ενημέρωση 12:40',
+      'Εκτός σύνδεσης. Τελευταία ενημέρωση 12:40',
     );
   });
 });

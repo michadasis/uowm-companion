@@ -174,12 +174,7 @@ export function MenuView({ now = new Date() }: { now?: Date }) {
   const dates = weekDates(now, false);
 
   const header = (
-    <ScreenTitle
-      title={t('menu.title')}
-      subtitle={data ? t('menu.week', { week: data.week }) : undefined}
-      tone="amber"
-      icon="mainDish"
-    >
+    <ScreenTitle title={t('menu.title')} tone="amber" icon="mainDish">
       <MealPicker value={meal} onChange={setMeal} />
     </ScreenTitle>
   );

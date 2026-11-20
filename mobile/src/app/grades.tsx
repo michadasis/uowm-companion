@@ -155,7 +155,7 @@ export default function GradesScreen() {
                 <ListRow
                   key={`${course.code ?? ''}:${course.name}`}
                   title={course.name}
-                  subtitle={[course.code, course.gradedIn].filter(Boolean).join(' · ') || undefined}
+                  subtitle={[course.code, course.gradedIn].filter(Boolean).join(', ') || undefined}
                   trailing={<GradeValue course={course} language={language} />}
                 />
               ))}

@@ -12,7 +12,7 @@ const paragraph = (text: string): Block => ({ type: 'paragraph', content: [{ tex
  * row ends but a line break — which a cell's own line breaks blur. So where
  * the lines between the first & the last with several cells mostly have the
  * same number of them, each line is a row of a table; otherwise the text is
- * kept as lines, a row's cells joined by a dot.
+ * kept as lines, a row's cells divided by a bar.
  */
 export async function docToBlocks(data: Uint8Array): Promise<Block[]> {
   const document = await new WordExtractor().extract(Buffer.from(data));
@@ -25,7 +25,7 @@ export async function docToBlocks(data: Uint8Array): Promise<Block[]> {
   const filled = (cells: string[]) => cells.filter(Boolean).length;
   const first = lines.findIndex((cells) => filled(cells) >= 3);
   const last = lines.findLastIndex((cells) => filled(cells) >= 2);
-  const asText = (cells: string[]) => paragraph(cells.filter(Boolean).join(' · '));
+  const asText = (cells: string[]) => paragraph(cells.filter(Boolean).join('  |  '));
   if (first === -1 || last <= first) return lines.map(asText);
 
   // A table's rows keep roughly its heading's width; lines of a cell broken

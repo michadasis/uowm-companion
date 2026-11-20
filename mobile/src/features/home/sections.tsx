@@ -1,17 +1,18 @@
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import {
   Card,
   createStyles,
   Icon,
+  ListRow,
   ListRowSkeleton,
   SectionHeader,
   SkeletonGroup,
   Text,
 } from '@/design';
-import { AnnouncementCard } from '@/features/announcements/AnnouncementCard';
+import { formatListDate } from '@/features/announcements/format';
 import { useAnnouncements } from '@/features/announcements/useAnnouncements';
 import { isoDay, isTeachingDay } from '@/features/calendar/status';
 import { useCalendar } from '@/features/calendar/useCalendar';
@@ -229,11 +230,12 @@ export function TodayMenuSection() {
 }
 
 export function LatestAnnouncementsSection({ scope }: { scope: string }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const styles = useStyles();
   const { data, isLoading } = useAnnouncements(scope);
-  const latest = data?.announcements.slice(0, 3) ?? [];
+  // Two, as lines: Home points to the news, the News tab is where it is read.
+  const latest = data?.announcements.slice(0, 2) ?? [];
 
   return (
     <View>
@@ -244,17 +246,21 @@ export function LatestAnnouncementsSection({ scope }: { scope: string }) {
       {isLoading ? (
         <Loading />
       ) : latest.length > 0 ? (
-        <View style={styles.list}>
-          {latest.map((announcement) => (
-            <AnnouncementCard
-              key={announcement.id}
-              announcement={announcement}
-              onPress={() =>
-                router.push({ pathname: '/announcement/[id]', params: { id: announcement.id } })
-              }
-            />
+        <Card padded={false} style={styles.card}>
+          {latest.map((announcement, index) => (
+            <View key={announcement.id}>
+              {index > 0 ? <View style={styles.divider} /> : null}
+              <ListRow
+                title={announcement.title}
+                subtitle={formatListDate(announcement.date, i18n.language) ?? undefined}
+                trailing="chevron"
+                onPress={() =>
+                  router.push({ pathname: '/announcement/[id]', params: { id: announcement.id } })
+                }
+              />
+            </View>
           ))}
-        </View>
+        </Card>
       ) : (
         <EmptyHint icon="announcements" text={t('home.latest.empty')} />
       )}
@@ -295,7 +301,9 @@ const useStyles = createStyles((theme) => ({
   items: {
     gap: theme.spacing[1],
   },
-  list: {
-    gap: theme.spacing[3],
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    marginLeft: theme.spacing[4],
+    backgroundColor: theme.colors.border,
   },
 }));

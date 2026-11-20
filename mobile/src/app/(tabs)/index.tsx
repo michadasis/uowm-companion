@@ -2,7 +2,6 @@ import { useTranslation } from 'react-i18next';
 import { ScrollView } from 'react-native';
 
 import { createStyles, Screen } from '@/design';
-import { describeDepartment } from '@/features/departments/describe';
 import { findDepartment, useDirectory } from '@/features/departments/useDirectory';
 import {
   LatestAnnouncementsSection,
@@ -16,7 +15,7 @@ import type { Language } from '@/features/settings/store';
 import { usePreviewNow } from '@/lib/usePreviewNow';
 
 export default function HomeScreen() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const language = i18n.language as Language;
   const styles = useStyles();
   const directory = useDirectory();
@@ -33,12 +32,12 @@ export default function HomeScreen() {
           today={today}
           departmentLine={
             department
-              ? [
-                  department.shortName[language],
-                  describeDepartment(directory, department, language),
-                ]
-                  .filter(Boolean)
-                  .join(' · ')
+              ? t('home.departmentLine', {
+                  name: department.shortName[language],
+                  city:
+                    directory.cities.find((city) => city.id === department.city)?.name[language] ??
+                    '',
+                })
               : undefined
           }
         />

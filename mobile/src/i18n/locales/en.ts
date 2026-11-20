@@ -50,6 +50,7 @@ export const en: Messages = {
     },
   },
   home: {
+    departmentLine: '{{name}}, {{city}}',
     greeting: {
       morning: 'Good morning',
       afternoon: 'Good afternoon',
@@ -220,6 +221,7 @@ export const en: Messages = {
     link: {
       title: 'Connect Universis',
       hint: 'Connect Universis so the schedule shows only your courses.',
+      mine: 'My courses',
       cta: 'Connect',
     },
     filter: {
@@ -229,6 +231,8 @@ export const en: Messages = {
       registered: 'Registered',
     },
     linked: 'Connected',
+    loadingShort: 'Loading from Universis…',
+    retryShort: 'Universis: retry',
     signOut: 'Disconnect',
     loading: 'Loading your courses from Universis…',
     error: 'Your courses could not be loaded from Universis. Showing the whole schedule.',
@@ -271,7 +275,9 @@ export const en: Messages = {
     title: 'More',
     studies: {
       section: 'Studies',
-      gradesHint: 'From Universis · saved on this device',
+      universisLinked: 'Universis',
+      universisLinkedHint: 'Linked. The schedule shows your courses.',
+      gradesHint: 'From Universis, saved on your device',
     },
     department: {
       section: 'My department',

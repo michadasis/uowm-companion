@@ -156,7 +156,7 @@ describe('TodayMenuSection', () => {
 });
 
 describe('LatestAnnouncementsSection', () => {
-  it('shows the three most recent announcements', async () => {
+  it('shows just the two most recent announcements, as lines', async () => {
     respond({
       '/api/announcements': {
         source: { kind: 'department', id: 'cs' },
@@ -175,7 +175,8 @@ describe('LatestAnnouncementsSection', () => {
     await renderSection(<LatestAnnouncementsSection scope="cs" />);
 
     expect(await screen.findByText('Ανακοίνωση 1')).toBeOnTheScreen();
-    expect(screen.getByText('Ανακοίνωση 3')).toBeOnTheScreen();
+    expect(screen.getByText('Ανακοίνωση 2')).toBeOnTheScreen();
+    expect(screen.queryByText('Ανακοίνωση 3')).not.toBeOnTheScreen();
     expect(screen.queryByText('Ανακοίνωση 4')).not.toBeOnTheScreen();
   });
 });

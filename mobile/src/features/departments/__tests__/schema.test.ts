@@ -66,10 +66,10 @@ describe('describeDepartment', () => {
     const informatics = findDepartment(bundledDirectory, 'cs')!;
 
     expect(describeDepartment(bundledDirectory, informatics, 'el')).toBe(
-      'Σχολή Θετικών Επιστημών · Καστοριά',
+      'Σχολή Θετικών Επιστημών, Καστοριά',
     );
     expect(describeDepartment(bundledDirectory, informatics, 'en')).toBe(
-      'School of Science · Kastoria',
+      'School of Science, Kastoria',
     );
   });
 });
