@@ -53,7 +53,7 @@ describe('todayMessage', () => {
       tone: 'rest',
       badge: 'Αργία',
       title: 'Επέτειος του Πολυτεχνείου',
-      message: 'Σήμερα δεν γίνονται μαθήματα· ξαναρχίζουν αύριο.',
+      message: 'Σήμερα δεν γίνονται μαθήματα. Ξαναρχίζουν αύριο.',
     });
   });
 
@@ -97,5 +97,19 @@ describe('onDay', () => {
     expect(onDay(at('2026-11-24'), now, 'el', i18n.t)).toBe('την Τρίτη 24 Νοεμβρίου');
     expect(onDay(at('2026-11-28'), now, 'el', i18n.t)).toBe('το Σάββατο 28 Νοεμβρίου');
     expect(onDay(at('2026-11-21'), now, 'el', i18n.t)).toBe('αύριο');
+  });
+});
+
+describe('todayMessage with the student’s name', () => {
+  const sayTo = (iso: string, name: string) => {
+    const now = at(iso);
+    return todayMessage(dayStatus(calendar, now, 'kozani'), now, 'el', i18n.t, name);
+  };
+
+  it('adds it to a greeting & to a wish, not to a holiday’s name', () => {
+    expect(sayTo('2026-11-20', 'Ιωάννη').title).toBe('Καλημέρα, Ιωάννη');
+    expect(sayTo('2026-11-21', 'Ιωάννη').title).toBe('Καλό Σαββατοκύριακο, Ιωάννη!');
+    expect(sayTo('2027-01-20', 'Ιωάννη').title).toBe('Καλή επιτυχία, Ιωάννη!');
+    expect(sayTo('2026-11-17', 'Ιωάννη').title).toBe('Επέτειος του Πολυτεχνείου');
   });
 });

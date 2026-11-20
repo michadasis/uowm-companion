@@ -147,7 +147,7 @@ interface RequestOptions {
   baseUrl?: string;
 }
 
-async function getList(path: string, token: string, options: RequestOptions): Promise<Json[]> {
+async function getBody(path: string, token: string, options: RequestOptions): Promise<unknown> {
   const base = options.baseUrl ?? UNIVERSIS_API;
   let response: Response;
   try {
@@ -160,13 +160,29 @@ async function getList(path: string, token: string, options: RequestOptions): Pr
   }
   if (!response.ok)
     throw new UniversisError(`Universis replied ${response.status}`, response.status);
-
-  let body: unknown;
   try {
-    body = await response.json();
+    return await response.json();
   } catch {
     throw new UniversisError('Universis sent an unreadable reply');
   }
+}
+
+/**
+ * The student's given name, as Universis keeps it — for the greeting on Home.
+ * Undefined when the reply doesn't carry one.
+ */
+export async function fetchStudentName(
+  token: string,
+  options: RequestOptions = {},
+): Promise<string | undefined> {
+  const body = await getBody('students/me?$expand=person', token, options);
+  if (!isObject(body)) return undefined;
+  const person = isObject(body.person) ? body.person : undefined;
+  return text(person?.givenName) ?? text(body.givenName);
+}
+
+async function getList(path: string, token: string, options: RequestOptions): Promise<Json[]> {
+  const body = await getBody(path, token, options);
   // OData wraps a list as { value: [...] }; a bare array is accepted too.
   const items = Array.isArray(body) ? body : isObject(body) ? body.value : undefined;
   if (!Array.isArray(items)) throw new UniversisError('Universis sent an unexpected reply');

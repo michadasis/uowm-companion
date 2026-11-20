@@ -55,6 +55,26 @@ export function todayMessage(
   now: Date,
   language: string,
   t: TFunction,
+  /** The student's name in the vocative, to address them by. */
+  name?: string | null,
+): TodayMessage {
+  const message = compose(status, now, language, t);
+  if (!name) return message;
+  // A greeting or a wish addresses the student; a holiday's name does not.
+  const personal =
+    message.title === t(`home.greeting.${dayPart(now)}`) || message.title.endsWith('!');
+  if (!personal) return message;
+  const title = message.title.endsWith('!')
+    ? `${message.title.slice(0, -1)}, ${name}!`
+    : `${message.title}, ${name}`;
+  return { ...message, title };
+}
+
+function compose(
+  status: DayStatus | null,
+  now: Date,
+  language: string,
+  t: TFunction,
 ): TodayMessage {
   const greeting = t(`home.greeting.${dayPart(now)}`);
   const resumes = (date?: Date) =>

@@ -5,6 +5,8 @@ import { BrandMark, createStyles, Text, useToneColors } from '@/design';
 import type { ScreenTone } from '@/design';
 import { dayStatus } from '@/features/calendar/status';
 import { useCalendar } from '@/features/calendar/useCalendar';
+import { useSavedCourses } from '@/features/universis/saved';
+import { greetingName } from '@/lib/greekName';
 
 import { formatToday } from './greeting';
 import { todayMessage } from './today';
@@ -14,8 +16,12 @@ import type { TodayMessage, TodayTone } from './today';
 export function useToday(now: Date, city: string | null): TodayMessage {
   const { t, i18n } = useTranslation();
   const { data: calendar } = useCalendar();
+  const givenName = useSavedCourses((s) => s.givenName);
   const status = calendar ? dayStatus(calendar, now, city) : null;
-  return todayMessage(status, now, i18n.language, t);
+  const name = greetingName(givenName);
+  // In English, a Greek name in the middle of the greeting would mix scripts.
+  const usable = name && (i18n.language === 'el' || !/[Α-Ωα-ωΆ-ώ]/u.test(name)) ? name : null;
+  return todayMessage(status, now, i18n.language, t, usable);
 }
 
 /** The colour the day's band takes: green for a day off, blue for study, amber otherwise. */

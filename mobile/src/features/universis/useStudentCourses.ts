@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { queryClient } from '@/lib/query';
 
 import { isTokenExpired, useUniversisAuth } from './auth';
-import { loadStudentCourses, UniversisError } from './client';
+import { loadStudentCourses, UniversisError, fetchStudentName } from './client';
 import { useSavedCourses } from './saved';
 import type { StudentCourse } from './types';
 
@@ -54,8 +54,12 @@ export function useStudentCourses(): StudentCoursesState {
   const query = useQuery({
     queryKey: coursesKey,
     queryFn: async ({ signal }) => {
-      const courses = await loadStudentCourses(token!, { signal });
-      useSavedCourses.getState().save(courses);
+      const [courses, givenName] = await Promise.all([
+        loadStudentCourses(token!, { signal }),
+        // The name is a nicety: a failure to read it leaves the courses be.
+        fetchStudentName(token!, { signal }).catch(() => undefined),
+      ]);
+      useSavedCourses.getState().save(courses, givenName);
       return courses;
     },
     enabled: live,

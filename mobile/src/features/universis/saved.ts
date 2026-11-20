@@ -9,7 +9,10 @@ interface SavedCourses {
   courses: StudentCourse[] | null;
   /** When they were read, in epoch milliseconds. */
   updatedAt: number | null;
-  save: (courses: StudentCourse[]) => void;
+  /** The student's given name, as Universis keeps it, to greet them by. */
+  givenName: string | null;
+  /** A name left out keeps the one saved before: reading it can fail on its own. */
+  save: (courses: StudentCourse[], givenName?: string) => void;
   clear: () => void;
 }
 
@@ -27,14 +30,20 @@ export const useSavedCourses = create<SavedCourses>()(
     (set) => ({
       courses: null,
       updatedAt: null,
-      save: (courses) => set({ courses, updatedAt: Date.now() }),
-      clear: () => set({ courses: null, updatedAt: null }),
+      givenName: null,
+      save: (courses, givenName) =>
+        set((state) => ({
+          courses,
+          updatedAt: Date.now(),
+          givenName: givenName ?? state.givenName,
+        })),
+      clear: () => set({ courses: null, updatedAt: null, givenName: null }),
     }),
     {
       name: 'universis-courses',
       version: 1,
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: ({ courses, updatedAt }) => ({ courses, updatedAt }),
+      partialize: ({ courses, updatedAt, givenName }) => ({ courses, updatedAt, givenName }),
     },
   ),
 );
