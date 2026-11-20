@@ -283,12 +283,25 @@ describe('SearchField', () => {
 });
 
 describe('SectionHeader', () => {
-  it('sets Greek in capitals without accents but reads out the original', async () => {
+  it('keeps Greek in sentence case, accents & all, as a header with its detail', async () => {
     await render(<SectionHeader title="Σχολή Θετικών Επιστημών" detail="2" />);
 
-    expect(screen.getByText('ΣΧΟΛΗ ΘΕΤΙΚΩΝ ΕΠΙΣΤΗΜΩΝ')).toBeOnTheScreen();
-    expect(screen.getByRole('header', { name: 'Σχολή Θετικών Επιστημών' })).toBeOnTheScreen();
+    expect(screen.getByRole('header', { name: 'Σχολή Θετικών Επιστημών' })).toHaveTextContent(
+      'Σχολή Θετικών Επιστημών',
+    );
     expect(screen.getByText('2')).toBeOnTheScreen();
+  });
+
+  it('offers an action in place of the detail', async () => {
+    const onPress = jest.fn();
+    const user = userEvent.setup();
+    await render(
+      <SectionHeader title="Ανακοινώσεις" detail="3" action={{ label: 'Όλες', onPress }} />,
+    );
+
+    expect(screen.queryByText('3')).not.toBeOnTheScreen();
+    await user.press(screen.getByRole('link', { name: 'Όλες' }));
+    expect(onPress).toHaveBeenCalled();
   });
 });
 

@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import type { ReactNode } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 
@@ -58,8 +58,8 @@ const useStyles = createStyles((theme) => ({
   card: {
     backgroundColor: theme.colors.surface,
     borderColor: theme.colors.border,
-    borderWidth: 1,
-    borderRadius: theme.radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: theme.radius.lg + 2,
     overflow: 'hidden',
   },
   padded: {

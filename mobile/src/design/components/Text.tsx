@@ -9,12 +9,15 @@ import type { TypeVariant } from '../tokens/typography';
 export type TextColor = Extract<
   keyof ColorTokens,
   | 'text'
+  // Text on a surface inked in the text colour, as a chosen chip.
+  | 'background'
   | 'textMuted'
   | 'textSubtle'
   | 'textDisabled'
   | 'primary'
   | 'onPrimary'
   | 'onPrimaryMuted'
+  | 'accent'
   | 'onAccentMuted'
   | 'danger'
   | 'onDangerMuted'

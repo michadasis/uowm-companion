@@ -1,3 +1,5 @@
+import { StyleSheet } from 'react-native';
+
 import { createStyles } from '../theme';
 
 import { PressableScale } from './PressableScale';
@@ -24,7 +26,7 @@ export function Chip({ label, selected = false, onPress, testID }: ChipProps) {
       testID={testID}
       style={[styles.chip, selected ? styles.selected : null]}
     >
-      <Text variant="label" color={selected ? 'onPrimary' : 'textMuted'} numberOfLines={1}>
+      <Text variant="label" color={selected ? 'background' : 'textMuted'} numberOfLines={1}>
         {label}
       </Text>
     </PressableScale>
@@ -36,14 +38,15 @@ const useStyles = createStyles((theme) => ({
     height: 36,
     paddingHorizontal: theme.spacing[4],
     borderRadius: theme.radius.full,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.borderStrong,
     backgroundColor: theme.colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // The chosen filter is inked in, the way a pen marks it on paper.
   selected: {
-    borderColor: theme.colors.primary,
-    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.text,
+    backgroundColor: theme.colors.text,
   },
 }));
