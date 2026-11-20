@@ -146,11 +146,3 @@ cd mobile  && npm run lint && npm run typecheck && npm test
 ```
 
 GitHub Actions runs both on every push and pull request.
-
-## Credits
-
-The first-year guides, FAQ and useful links reused in later phases come from
-[myCS](https://github.com/ieeesbkastoria/My-UoWM) by the IEEE Student Branch of UoWM
-Kastoria, which itself a fork of [myUoM](https://github.com/Open-Source-UoM/MyUoM) by Open
-Source UoM. The content is MIT licensed; the licence notice (Open Source UoM) will be
-kept in `THIRD_PARTY_NOTICES.md` when that content is included.
