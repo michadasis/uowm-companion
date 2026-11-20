@@ -11,7 +11,8 @@
     "lint": "eslint . --max-warnings 0 && prettier --check .",
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest",
+    "icons": "node scripts/render-icons.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/commissioner": "^0.4.1",
@@ -53,6 +54,7 @@
     "zustand": "^5.1.0"
   },
   "devDependencies": {
+    "@resvg/resvg-js": "2.6.2",
     "@testing-library/react-native": "^14.1.0",
     "@types/jest": "30.0.0",
     "@types/react": "~19.3.0",
