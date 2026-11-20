@@ -68,6 +68,24 @@ function splitByLines(cell: Inline): { course: string; teacher?: string; room: s
   ) {
     courseEnd += 1;
   }
+  // A title over two lines, its room right after: "Θεμελιώδεις Έννοιες" /
+  // "Μαθηματικών" / "Αίθουσα Β2".
+  const second = lines[courseEnd];
+  if (
+    courseEnd === 1 &&
+    second &&
+    !looksLikeRoom(second) &&
+    !teacherLine.test(second) &&
+    lines[2] !== undefined &&
+    looksLikeRoom(lines[2])
+  ) {
+    courseEnd = 2;
+  }
+  // A course code closing a line, "(301)" or "(Υ001)", ends the title there.
+  const coded = lines.findIndex((line) => /\(\s*[Α-ΩA-Z]{0,3}-?\d{3,4}[Α-ΩA-Z]?\s*\)$/u.test(line));
+  if (coded >= 0 && coded <= 2 && !lines.slice(0, coded + 1).some(looksLikeRoom)) {
+    courseEnd = coded + 1;
+  }
   const course = lines.slice(0, courseEnd).join(' ').replace(courseCode, '');
   const rest = lines.slice(courseEnd);
   const teacherIndex = rest.findIndex((line) => teacherLine.test(line));
@@ -77,7 +95,8 @@ function splitByLines(cell: Inline): { course: string; teacher?: string; room: s
 }
 
 // A row of column labels under the weekday names, as some grids have.
-const labelsOnly = /^(μαθημα|αιθ\.?|αιθουσα|ομαδα|θ-ε-απ|διδασκων|καθηγητης|\s)+$/u;
+const labelsOnly =
+  /^(μαθημα|μαθ\.?|καθηγ\.?|καθ\.?|αιθ\.?|αιθουσα|ομαδα|θ-ε-απ|διδασκων|καθηγητης|\s)+$/u;
 
 /**
  * Splits one class cell by the teacher's run, which the source marks italic:
@@ -148,9 +167,11 @@ const semesterLetters = ['Α', 'Β', 'Γ', 'Δ', 'Ε', 'ΣΤ', 'Ζ', 'Η', 'Θ',
 
 /** The semester a heading names, as "Γ΄", whether it is written "Γ΄" or "3ο". */
 function semesterIn(text: string): string | undefined {
+  // "Α΄ εξάμηνο", "Α’ Εξαμήνου", "Εξάμηνο Α'".
   const lettered =
-    /([Α-Ω]{1,2}['΄’])\s*εξάμην/u.exec(text) ?? /([Α-Ω]{1,2}['΄’])\s*ΕΞΑΜΗΝ/u.exec(text);
-  if (lettered) return lettered[1]!.replace(/['’]/u, '΄');
+    /([Α-Ω]{1,2}['΄’])\s*(?:[εΕ]ξ[αά]μ[ηή]ν|ΕΞΑΜΗΝ)/u.exec(text)?.[1] ??
+    /(?:[εΕ]ξ[αά]μ[ηή]ν[οου]*|ΕΞΑΜΗΝ[ΟΟΥ]*)\s+([Α-Ω]{1,2}['΄’])(?![Α-Ωα-ω])/u.exec(text)?.[1];
+  if (lettered) return lettered.replace(/['’]/u, '΄');
   const numbered = /(\d{1,2})\s*[οo]?\s*εξαμην/u.exec(fold(text));
   const letter = numbered ? semesterLetters[Number(numbered[1]) - 1] : undefined;
   return letter ? `${letter}΄` : undefined;
@@ -189,7 +210,38 @@ function looksLikeName(text: string): boolean {
 function looksLikeRoom(text: string): boolean {
   const trimmed = text.trim();
   if (!trimmed || trimmed.includes('\n') || trimmed.length > 40) return false;
-  return /^(αιθουσα|αιθ\.?\s|αμφιθεατρο|αμφ\.?\s|εργαστηριο|εργ\.\s|[βb]\d)/u.test(fold(trimmed));
+  return /^\(?\s*(αιθουσα|αιθ(?![α-ω])|αμφιθεατρο|αμφ(?![α-ω])|εργαστηριο|εργ\.\s|[βb]\d)/u.test(
+    fold(trimmed),
+  );
+}
+
+/**
+ * The classes a cell stacks one under another, as some grids list every
+ * class of a slot in one cell: each ends on the line naming its room. A cell
+ * with one class, or with italic runs that mark its parts, is left whole.
+ */
+function stackedParts(cell: Inline): Inline[] {
+  if (cell.some((run) => run.italic)) return [cell];
+  const lines = cellText(cell).split('\n').map(tidy).filter(Boolean);
+  // Only a cell naming two rooms or more can hold more than one class.
+  if (lines.filter(looksLikeRoom).length < 2) return [cell];
+  const parts: string[][] = [[]];
+  lines.forEach((line, index) => {
+    parts.at(-1)!.push(line);
+    const next = lines[index + 1];
+    if (
+      next !== undefined &&
+      looksLikeRoom(line) &&
+      !looksLikeRoom(next) &&
+      !teacherLine.test(next) &&
+      !looksLikeName(next)
+    ) {
+      parts.push([]);
+    }
+  });
+  // A part of a single line is a stray, not a class: keep the cell whole.
+  if (parts.length < 2 || parts.some((part) => part.length < 2)) return [cell];
+  return parts.map((part) => [{ text: part.join('\n') }]);
 }
 
 /**
@@ -264,6 +316,12 @@ export function parseTimetableGrid(blocks: Block[]): ClassSession[] {
           }
           continue;
         }
+        // A lone "Ε. Surname" spilt from the cell above, when rows differ in
+        // height, is that class's teacher.
+        if (fromSlotAbove && teacherLine.test(text)) {
+          above.session.teacher ??= tidy(text);
+          continue;
+        }
         // A room under a course is where it is held; one with no course above
         // it belongs to a class the grid prints lower down, & is not a class.
         if (looksLikeRoom(text)) {
@@ -273,23 +331,25 @@ export function parseTimetableGrid(blocks: Block[]): ClassSession[] {
         }
         if (!time) continue;
 
-        const session = parseCell(cell, day, pad(time[1]!), pad(time[2]!), semester, track);
-        if (!session) continue;
-        // The same course in the next slot is the same class running on.
-        if (
-          above &&
-          above.slot === slot - 1 &&
-          above.session.course === session.course &&
-          above.session.endTime === session.startTime &&
-          (session.teacher === undefined || session.teacher === above.session.teacher)
-        ) {
-          above.session.endTime = session.endTime;
-          above.slot = slot;
-          if (!above.session.room && session.room) above.session.room = session.room;
-          continue;
+        for (const part of stackedParts(cell)) {
+          const session = parseCell(part, day, pad(time[1]!), pad(time[2]!), semester, track);
+          if (!session) continue;
+          // The same course in the next slot is the same class running on.
+          if (
+            above &&
+            above.slot === slot - 1 &&
+            above.session.course === session.course &&
+            above.session.endTime === session.startTime &&
+            (session.teacher === undefined || session.teacher === above.session.teacher)
+          ) {
+            above.session.endTime = session.endTime;
+            above.slot = slot;
+            if (!above.session.room && session.room) above.session.room = session.room;
+            continue;
+          }
+          classes.push(session);
+          last.set(col, { session, slot });
         }
-        classes.push(session);
-        last.set(col, { session, slot });
       }
     }
   }

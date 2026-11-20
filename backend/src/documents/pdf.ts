@@ -4,8 +4,8 @@ import { getDocumentProxy } from 'unpdf';
 
 import type { Block } from '../content/blocks.js';
 
-import { gridBlocks } from './pdfGrid.js';
-import type { PositionedText } from './pdfGrid.js';
+import { gridBlocks, listBlocks } from './pdfGrid.js';
+import type { ListLayout, PositionedText } from './pdfGrid.js';
 
 interface Line {
   text: string;
@@ -24,6 +24,7 @@ interface Line {
 export async function pdfToBlocks(data: Uint8Array): Promise<Block[]> {
   const doc = await getDocumentProxy(data);
   const blocks: Block[] = [];
+  let layout: ListLayout | undefined;
 
   for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber++) {
     const page = await doc.getPage(pageNumber);
@@ -39,7 +40,12 @@ export async function pdfToBlocks(data: Uint8Array): Promise<Block[]> {
         width: item.width,
       });
     }
-    const grid = gridBlocks(positioned);
+    // A list with its own heading row (or running on from the page before)
+    // is the more telling layout; a weekly grid next; failing both, the page
+    // reads as text.
+    const list = listBlocks(positioned, layout);
+    layout = list?.layout;
+    const grid = list?.blocks ?? gridBlocks(positioned);
     if (grid) {
       if (pageNumber > 1) blocks.push({ type: 'divider' });
       blocks.push(...grid);

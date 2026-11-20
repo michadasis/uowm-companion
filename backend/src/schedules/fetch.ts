@@ -4,6 +4,7 @@ import { NotADocumentError, renderDocument } from '../documents/pipeline.js';
 import { fetchBuffer, fetchText } from '../http/fetch.js';
 import type { Department } from '../registry/index.js';
 
+import { parseClassTable } from './parse/classTable.js';
 import { parseExamList } from './parse/examList.js';
 import { parseExamTable } from './parse/examTable.js';
 import { plausibleClasses, plausibleExams } from './parse/plausible.js';
@@ -17,9 +18,13 @@ import type { ScheduleKind, ScheduleResponse } from './types.js';
  * can't read yet, comes back with `available` set accordingly & an empty
  * Original, so the app can show the right state.
  */
+const isLongPast = (date: string, now: Date): boolean =>
+  now.getTime() - new Date(`${date}T23:59:59Z`).getTime() > 7 * 86_400_000;
+
 export async function fetchSchedule(
   department: Department,
   kind: ScheduleKind,
+  now: Date = new Date(),
 ): Promise<ScheduleResponse> {
   const source = kind === 'exams' ? department.sources.exams : department.sources.timetable;
   const empty: ScheduleResponse = {
@@ -34,7 +39,7 @@ export async function fetchSchedule(
 
   if (!source) return empty;
 
-  const discovery = await discoverDocuments(source, kind, fetchText);
+  const discovery = await discoverDocuments(source, kind, fetchText, now);
   if (!discovery) return empty;
 
   // Each document is read on its own: one that can't be read leaves the rest.
@@ -67,10 +72,15 @@ export async function fetchSchedule(
       );
 
   try {
+    const exams = kind === 'exams' ? parseExams(blocks) : [];
+    // A sitting whose every exam is over by a week is last term's, not the
+    // coming one: better to say none is out yet.
+    if (exams.length && exams.every((exam) => exam.date && isLongPast(exam.date, now)))
+      return empty;
     return {
       ...empty,
       document: meta,
-      exams: kind === 'exams' ? parseExams(blocks) : [],
+      exams,
       classes: kind === 'timetable' ? parseClasses(blocks) : [],
       original: blocks,
     };
@@ -92,10 +102,35 @@ function parseExams(blocks: Block[]): ReturnType<typeof parseExamList> {
   const best = fromTable.length > fromList.length ? fromTable : fromList;
   // An agenda that doesn't hold together is worse than none: the app then
   // shows the document as written.
-  return plausibleExams(best) ? best : [];
+  if (!plausibleExams(best)) return [];
+  return best.map(({ semester, ...exam }) => {
+    const tidied = semester === undefined ? undefined : tidySemester(semester);
+    return tidied ? { ...exam, semester: tidied } : exam;
+  });
 }
 
+// Latin letters a semester is often typed with in place of the Greek ones.
+const latinToGreek: Record<string, string> = { A: 'Α', B: 'Β', E: 'Ε', H: 'Η', Z: 'Ζ', I: 'Ι' };
+
+/**
+ * One spelling for a semester, as the app's semester filter matches them:
+ * "Δ’", "B'", " Ζ’" -> "Δ΄", "Β΄", "Ζ΄". Several ("Ε’/ΣΤ’") are kept as
+ * written, tidied; none gives undefined.
+ */
+export function tidySemester(semester: string): string | undefined {
+  const tidied = semester
+    .trim()
+    .replace(/[A-Z]/g, (letter) => latinToGreek[letter] ?? letter)
+    .replace(/['’`΄]/gu, '΄')
+    .replace(/\s*[/,]\s*/g, '/')
+    .replace(/^\/+|\/+$/g, '');
+  return tidied && tidied !== '΄' ? tidied : undefined;
+}
+
+/** The classes in a timetable, read as a weekly grid or as a list, whichever finds more. */
 function parseClasses(blocks: Block[]): ReturnType<typeof parseTimetableGrid> {
-  const classes = parseTimetableGrid(blocks);
+  const fromGrid = parseTimetableGrid(blocks);
+  const fromList = parseClassTable(blocks);
+  const classes = fromList.length > fromGrid.length ? fromList : fromGrid;
   return plausibleClasses(classes) ? classes : [];
 }

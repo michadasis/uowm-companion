@@ -16,10 +16,10 @@ type Column = 'date' | 'time' | 'course' | 'semester' | 'examiner' | 'room';
 
 // Header words for each column, matched against the folded header cell.
 const headers: [Column, RegExp][] = [
-  ['date', /ημερομηνια|ημερα|^date/],
-  ['time', /ωρα|^time/],
-  ['course', /μαθημα|course/],
-  ['semester', /εξαμην|semester/],
+  ['date', /ημερομηνια|ημερα|^ημ\/νια|^date/],
+  ['time', /ωρα|^κυμα|^time/],
+  ['course', /μαθημα|^τιτλος|course/],
+  ['semester', /^εξαμ|semester/],
   ['examiner', /εισηγητ|εξεταστ|διδασκ|καθηγητ|υπευθυν/],
   ['room', /αιθουσ|χωρος|room/],
 ];
@@ -55,7 +55,26 @@ function semesterOf(text: string): string | undefined {
  * without its year is placed in the year that brings it nearest to `now`, as
  * a schedule is read within months of its dates.
  */
+// Months as written out, by their folded stems: "31 Αυγούστου", "31 Αύγουστος".
+const monthNames: [RegExp, number][] = [
+  [/ιανουαρ/u, 1],
+  [/φεβρουαρ/u, 2],
+  [/μαρτ/u, 3],
+  [/απριλ/u, 4],
+  [/μαι/u, 5],
+  [/ιουνι/u, 6],
+  [/ιουλι/u, 7],
+  [/αυγουστ/u, 8],
+  [/σεπτεμβρ/u, 9],
+  [/οκτωβρ/u, 10],
+  [/νοεμβρ/u, 11],
+  [/δεκεμβρ/u, 12],
+];
+
 function dateOf(text: string, now: Date): string | undefined {
+  const written = /(\d{1,2})\s+([α-ω]+)\s*(\d{4})?/u.exec(fold(text));
+  const named = written ? monthNames.find(([stem]) => stem.test(written[2]!))?.[1] : undefined;
+  if (written && named) text = `${written[1]}/${named}${written[3] ? `/${written[3]}` : ''}`;
   const match = /(\d{1,2})\s*[/.-]\s*(\d{1,2})(?:\s*[/.-]\s*(\d{2,4}))?/.exec(text);
   if (!match) return undefined;
   const day = Number(match[1]);
@@ -116,7 +135,8 @@ export function parseExamTable(blocks: Block[], now: Date = new Date()): Exam[] 
       if (!course || columnsOf(row).has('course')) continue;
       const semester = semesterOf(at(row, 'semester'));
       const examiner = at(row, 'examiner');
-      const room = at(row, 'room');
+      // A room left as a dash or a stray stroke is no room.
+      const room = at(row, 'room').replace(/^[\s_–-]+|[\s_–-]+$/g, '');
       exams.push({
         course,
         ...(date ? { date } : {}),
