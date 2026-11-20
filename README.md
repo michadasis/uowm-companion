@@ -10,6 +10,29 @@ to department websites.
 
 It is unofficial and not affiliated with the University of Western Macedonia and for now remains a hobby project.
 
+## What it does
+
+- **Home**: the day at a glance. A greeting by name, the next class or exam,
+  the grades summary, today's menu and the two latest announcements. On a
+  holiday, a break or a weekend it says so, from the academic calendar.
+- **Announcements**: the department's and the university's, with their images,
+  tables and attachments shown in the app, and a search.
+- **Schedule**: the timetable and the exam schedule as real screens, by day,
+  with the semester filters and, once Universis is linked, just the student's
+  declared courses. Days off from the academic calendar are greyed out.
+- **Restaurant**: breakfast, lunch and dinner for each day of the week.
+- **Universis**: linking it brings in the grades (average, ECTS, the latest
+  results) and the declared courses, and the student's name and department. On
+  a first launch, signing in to Universis picks the department.
+
+## Universis and privacy
+
+Students sign in to Universis on the university's own pages, in an in-app
+browser, with its single sign-on and two-factor step. The app never sees a
+password: it keeps only the access token, in the device's keychain. What it
+reads with that token (courses, grades, the given name, gender and department) stays on
+the device and is cleared on signing out. None of it goes through the backend.
+
 ## The one rule, everything is shown inside the app
 
 Nothing opens as a file and nothing opens in a browser to be read. The backend turns
@@ -27,12 +50,23 @@ This is a monorepo with two packages:
 
 - `mobile/` — the Expo app (React Native, TypeScript, Expo Router).
 - `backend/` — the serverless API (TypeScript). Only the backend
-  ever talks to university sites; the app talks only to the backend, and falls back
-  to what it bundles and what it has cached.
+  talks to the university's websites; the app talks to the backend, and falls back
+  to what it bundles and what it has cached. The one exception is Universis, which
+  the app calls itself with the student's token, so their grades never pass
+  through the backend.
 
 The app never scrapes or polls university sites. The backend fetches each source at
 most every ten minutes, identifies itself with a User-Agent that names the app and
 links this repo, respects robots.txt, and keeps each item's source URL as attribution.
+A few scheduled requests to `/api/warm` keep the CDN's copies fresh, so a student
+rarely waits on a department's site.
+
+The university sites mark their images as for their own pages only
+(`Cross-Origin-Resource-Policy: same-site`), so `/api/image` passes an image on
+from them, for `https` addresses on `uowm.gr` alone, and the CDN keeps a copy.
+
+The academic calendar (teaching periods, exam periods, breaks and holidays) is
+read from the Senate's decision, published as a PDF on the university's site.
 
 ## Source coverage
 
@@ -41,7 +75,13 @@ WordPress site: 20 serve announcements through the REST API, two through their
 category archive page. Exam schedules and timetables have no common home, so a
 feature is listed only where there is a dependable source for it.
 
-Departments: 22 · announcements 22 · exam schedules 12 · timetables 16 · staff 22
+Departments: 22, announcements 22, exam schedules 17, timetables 20, staff 22.
+
+Timetables and exam schedules are read from whatever the department publishes:
+a page, a PDF, a Word file (DOCX or the older DOC) or a spreadsheet. Tables are
+rebuilt from the documents' text, including PDFs printed sideways and lists
+spread over several pages, so they become screens rather than files. An exam
+schedule from a sitting that has ended is not shown as if it were current.
 
 | Department | City | Announcements | Exams | Timetable | Staff |
 | --- | --- | :-: | :-: | :-: | :-: |
@@ -49,11 +89,11 @@ Departments: 22 · announcements 22 · exam schedules 12 · timetables 16 · sta
 | Mechanical Engineering | Kozani | yes | - | yes | yes |
 | Chemical Engineering | Kozani | yes | yes | yes | yes |
 | Mineral Resources Engineering | Kozani | yes | - | yes | yes |
-| Product and Systems Design Engineering | Kozani | yes | - | - | yes |
-| International and European Economic Studies | Kozani | yes | - | - | yes |
+| Product and Systems Design Engineering | Kozani | yes | yes | yes | yes |
+| International and European Economic Studies | Kozani | yes | yes | yes | yes |
 | Management Science and Technology | Kozani | yes | - | - | yes |
 | Accounting and Finance | Kozani | yes | yes | yes | yes |
-| Regional and Cross-Border Development Studies | Kozani | yes | - | - | yes |
+| Regional and Cross-Border Development Studies | Kozani | yes | yes | - | yes |
 | Economics | Kastoria | yes | - | yes | yes |
 | Business Administration | Grevena | yes | yes | yes | yes |
 | Statistics | Grevena | yes | yes | yes | yes |
@@ -64,8 +104,8 @@ Departments: 22 · announcements 22 · exam schedules 12 · timetables 16 · sta
 | Mathematics | Kastoria | yes | yes | yes | yes |
 | Informatics | Kastoria | yes | yes | yes | yes |
 | Occupational Therapy | Ptolemaida | yes | yes | yes | yes |
-| Midwifery | Ptolemaida | yes | - | - | yes |
-| Fine and Applied Arts | Florina | yes | - | - | yes |
+| Midwifery | Ptolemaida | yes | yes | yes | yes |
+| Fine and Applied Arts | Florina | yes | yes | yes | yes |
 | Agriculture | Florina | yes | yes | yes | yes |
 
 ## Running it locally
