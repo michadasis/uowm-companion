@@ -12,21 +12,19 @@ import { markSvg, palette } from './brand.mjs';
 const assets = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets');
 mkdirSync(join(assets, 'brand'), { recursive: true });
 
+const white = { ring: '#FFFFFF', north: '#FFFFFF', south: '#FFFFFF' };
+
 const outputs = [
-  // The launcher icon: the mark on ink, which both themes' home screens suit.
-  { file: 'icon.png', size: 1024, svg: markSvg({ background: palette.ink, scale: 1.02 }) },
+  // The launcher icon, where nothing crops it: the mark larger, on ink.
+  { file: 'icon.png', size: 1024, svg: markSvg({ background: palette.ink, scale: 1.15 }) },
   // Android's adaptive icon crops to a circle or squircle inside the middle
-  // two thirds, so the mark is drawn smaller; the ink is its background colour.
-  { file: 'adaptive-icon-foreground.png', size: 1024, svg: markSvg({ scale: 0.74 }) },
+  // two thirds; the mark as drawn fits there. Ink is its background colour.
+  { file: 'adaptive-icon-foreground.png', size: 1024, svg: markSvg() },
   // Themed icons (Android 13+) tint a single-colour shape.
-  {
-    file: 'adaptive-icon-monochrome.png',
-    size: 1024,
-    svg: markSvg({ a: '#FFFFFF', b: '#FFFFFF', heart: '#FFFFFF', scale: 0.74 }),
-  },
+  { file: 'adaptive-icon-monochrome.png', size: 1024, svg: markSvg(white) },
   // The splash shows the mark alone, on paper or night per theme.
-  { file: 'splash-icon.png', size: 512, svg: markSvg() },
-  { file: 'favicon.png', size: 96, svg: markSvg({ background: palette.ink, scale: 1.1 }) },
+  { file: 'splash-icon.png', size: 512, svg: markSvg({ scale: 1.9 }) },
+  { file: 'favicon.png', size: 96, svg: markSvg({ background: palette.ink, scale: 1.6 }) },
 ];
 
 for (const { file, size, svg } of outputs) {

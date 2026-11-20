@@ -1,85 +1,54 @@
-// The app's mark: two rounded squares woven through each other & turned on
-// end, so they read as one diamond-shaped knot, with a small square at its
-// heart. It takes after the interlaced mark & the coloured squares of the
-// university without copying them: the app is unofficial.
+// The app's mark, the compass ("Πυξίδα"): an amber ring broken in two where
+// a needle crosses it, the needle pointing north-east in blue & south-west in
+// deep amber — the student finding their way through the day & the five
+// cities. Original, not the university's emblem: the app is unofficial.
 //
-// Drawn on a 1024 grid. Where one square passes under the other it is cut
-// away with a mask rather than painted over, so the gaps are transparent &
-// the mark sits on any background — the launcher icon, the splash screen in
-// either theme, the monochrome icon. src/design/components/BrandMark.tsx
-// draws the same geometry.
+// Drawn on a 1024 grid, centred, filling the middle 47% of it, so it sits
+// inside the safe zone of Android's adaptive icon as drawn. Every part is a
+// filled path, so the mark sits on any background. src/design/components/
+// BrandMark.tsx draws the same paths: keep the two in step.
 
-const centre = 512;
-const size = 420;
-const offset = 140;
-const stroke = 100;
-// Room left either side of the square passing over.
-const clearance = stroke / 2 + 18;
-
-const a = centre - offset / 2 - size / 2; // 232: the square drawn first, top left
-const b = centre + offset / 2 - size / 2; // 372: the other, bottom right
-
-export const geometry = {
-  rotate: 45,
-  /** The knot, turned, fits the grid at this scale. */
-  scale: 0.82,
-  stroke,
-  radius: 100,
-  a: { x: a, y: a, size },
-  b: { x: b, y: b, size },
-  // B passes under A where A's right side crosses B's top…
-  cutB: {
-    x: a + size - clearance,
-    y: b - stroke / 2 - 4,
-    width: 2 * clearance,
-    height: stroke + 8,
-  },
-  // …& A under B where B's left side crosses A's bottom.
-  cutA: {
-    x: b - clearance,
-    y: a + size - stroke / 2 - 4,
-    width: 2 * clearance,
-    height: stroke + 8,
-  },
-  heart: { x: centre - 52, y: centre - 52, size: 104, radius: 22 },
+export const paths = {
+  /** The two halves of the ring. */
+  ring: [
+    'M 751.11 362.5 A 282 282 0 0 1 362.5 751.11 L 418.21 695.41 A 206 206 0 0 0 695.41 418.21 L 751.11 362.5 Z',
+    'M 272.89 661.5 A 282 282 0 0 1 661.5 272.89 L 605.79 328.59 A 206 206 0 0 0 328.59 605.79 L 272.89 661.5 Z',
+  ],
+  /** The needle's point, north-east. */
+  north:
+    'M 693.59 316.76 A 10 10 0 0 1 707.24 330.41 L 583.16 546.99 A 6 6 0 0 1 573.71 548.25 L 475.75 450.29 A 6 6 0 0 1 477.01 440.84 L 693.59 316.76 Z',
+  /** Its tail, south-west. */
+  south:
+    'M 330.41 707.24 A 10 10 0 0 1 316.76 693.59 L 440.84 477.01 A 6 6 0 0 1 450.29 475.75 L 548.25 573.71 A 6 6 0 0 1 546.99 583.16 L 330.41 707.24 Z',
 };
 
 export const palette = {
   amber: '#F29A16',
-  amberDeep: '#D9730D',
-  blue: '#2F6FC0',
+  amberDeep: '#A8510A',
+  blue: '#1F5AA6',
   ink: '#1F1B16',
   paper: '#FAF7F2',
   night: '#13110E',
 };
 
 /**
- * The mark as SVG markup.
- * @param {{ a?: string, b?: string, heart?: string, background?: string, scale?: number }} options
+ * The mark as SVG markup, scaled about the centre: 1 is the size the adaptive
+ * icon's safe zone takes, larger for an icon with nothing cropping it.
+ * @param {{ ring?: string, north?: string, south?: string, background?: string, scale?: number }} options
  */
 export function markSvg({
-  a: colourA = palette.amber,
-  b: colourB = palette.amberDeep,
-  heart = palette.blue,
+  ring = palette.amber,
+  north = palette.blue,
+  south = palette.amberDeep,
   background,
   scale = 1,
 } = {}) {
-  const g = geometry;
-  const square = (s) =>
-    `x="${s.x}" y="${s.y}" width="${s.size}" height="${s.size}" rx="${g.radius}"`;
-  const cut = (c) =>
-    `<rect x="${c.x}" y="${c.y}" width="${c.width}" height="${c.height}" fill="black"/>`;
-  const fit = g.scale * scale;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <defs>
-    <mask id="cutA" maskUnits="userSpaceOnUse"><rect width="1024" height="1024" fill="white"/>${cut(g.cutA)}</mask>
-    <mask id="cutB" maskUnits="userSpaceOnUse"><rect width="1024" height="1024" fill="white"/>${cut(g.cutB)}</mask>
-  </defs>
   ${background ? `<rect width="1024" height="1024" fill="${background}"/>` : ''}
-  <g transform="translate(${centre} ${centre}) rotate(${g.rotate}) scale(${fit}) translate(${-centre} ${-centre})">
-    <rect ${square(g.b)} fill="none" stroke="${colourB}" stroke-width="${g.stroke}" mask="url(#cutB)"/>
-    <rect ${square(g.a)} fill="none" stroke="${colourA}" stroke-width="${g.stroke}" mask="url(#cutA)"/>
-    <rect x="${g.heart.x}" y="${g.heart.y}" width="${g.heart.size}" height="${g.heart.size}" rx="${g.heart.radius}" fill="${heart}"/>
+  <g transform="translate(512 512) scale(${scale}) translate(-512 -512)">
+    ${paths.ring.map((d) => `<path d="${d}" fill="${ring}"/>`).join('\n    ')}
+    <path d="${paths.north}" fill="${north}"/>
+    <path d="${paths.south}" fill="${south}"/>
   </g>
 </svg>`;
 }

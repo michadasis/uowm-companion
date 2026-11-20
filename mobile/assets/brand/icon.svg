@@ -1,12 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <defs>
-    <mask id="cutA" maskUnits="userSpaceOnUse"><rect width="1024" height="1024" fill="white"/><rect x="304" y="598" width="136" height="108" fill="black"/></mask>
-    <mask id="cutB" maskUnits="userSpaceOnUse"><rect width="1024" height="1024" fill="white"/><rect x="584" y="318" width="136" height="108" fill="black"/></mask>
-  </defs>
   <rect width="1024" height="1024" fill="#1F1B16"/>
-  <g transform="translate(512 512) rotate(45) scale(0.8363999999999999) translate(-512 -512)">
-    <rect x="372" y="372" width="420" height="420" rx="100" fill="none" stroke="#D9730D" stroke-width="100" mask="url(#cutB)"/>
-    <rect x="232" y="232" width="420" height="420" rx="100" fill="none" stroke="#F29A16" stroke-width="100" mask="url(#cutA)"/>
-    <rect x="460" y="460" width="104" height="104" rx="22" fill="#2F6FC0"/>
+  <g transform="translate(512 512) scale(1.15) translate(-512 -512)">
+    <path d="M 751.11 362.5 A 282 282 0 0 1 362.5 751.11 L 418.21 695.41 A 206 206 0 0 0 695.41 418.21 L 751.11 362.5 Z" fill="#F29A16"/>
+    <path d="M 272.89 661.5 A 282 282 0 0 1 661.5 272.89 L 605.79 328.59 A 206 206 0 0 0 328.59 605.79 L 272.89 661.5 Z" fill="#F29A16"/>
+    <path d="M 693.59 316.76 A 10 10 0 0 1 707.24 330.41 L 583.16 546.99 A 6 6 0 0 1 573.71 548.25 L 475.75 450.29 A 6 6 0 0 1 477.01 440.84 L 693.59 316.76 Z" fill="#1F5AA6"/>
+    <path d="M 330.41 707.24 A 10 10 0 0 1 316.76 693.59 L 440.84 477.01 A 6 6 0 0 1 450.29 475.75 L 548.25 573.71 A 6 6 0 0 1 546.99 583.16 L 330.41 707.24 Z" fill="#A8510A"/>
   </g>
 </svg>
