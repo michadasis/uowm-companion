@@ -15,11 +15,13 @@ import {
 } from './wordpress.js';
 
 const perPage = 20;
-const htmlListingLimit = 15;
+// As many as the REST departments give, so no feed is shorter for its site.
+const htmlListingLimit = perPage;
 const htmlListingConcurrency = 4;
 // Fewer announcements than this on a listing's first page sends us to its next ones.
-const minimumListed = 10;
-const listingExtraPages = [2, 3];
+const minimumListed = htmlListingLimit;
+// A listing of only a few posts a page is read on, up to this page.
+const listingLastPage = 6;
 
 /**
  * Reads a department's or the university's announcements from whichever source
@@ -50,19 +52,21 @@ export async function fetchAnnouncements(
 
   const archive = await fetchText(source.listingUrl);
   let all = parseArchiveEntries(archive, source.listingUrl, source.postPathPrefix);
-  // A listing that shows only a few posts a page is read a few pages deep.
+  // A listing that shows only a few posts a page is read on, page by page,
+  // until it has enough: Management Science & Technology shows four.
   const nextPage = `${new URL(source.listingUrl).pathname}page/2/`;
-  if (all.filter((entry) => entry.date).length < minimumListed && archive.includes(nextPage)) {
-    const more = await Promise.all(
-      listingExtraPages.map((page) =>
-        fetchText(`${source.listingUrl}page/${page}/`).then(
-          (html) => parseArchiveEntries(html, source.listingUrl, source.postPathPrefix),
-          () => [],
-        ),
-      ),
-    );
-    const known = new Set(all.map((entry) => entry.url));
-    all = [...all, ...more.flat().filter((entry) => !known.has(entry.url))];
+  const datedCount = () => all.filter((entry) => entry.date).length;
+  if (archive.includes(nextPage)) {
+    for (let page = 2; page <= listingLastPage && datedCount() < minimumListed; page++) {
+      const more = await fetchText(`${source.listingUrl}page/${page}/`).then(
+        (html) => parseArchiveEntries(html, source.listingUrl, source.postPathPrefix),
+        () => [],
+      );
+      const known = new Set(all.map((entry) => entry.url));
+      const fresh = more.filter((entry) => !known.has(entry.url));
+      if (fresh.length === 0) break;
+      all = [...all, ...fresh];
+    }
   }
   // Where the listing dates its items, an undated link is the site's menu or
   // sidebar pointing at a standing page, not an announcement.

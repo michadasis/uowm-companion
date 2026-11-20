@@ -214,3 +214,22 @@ describe('gridBlocks on other layouts', () => {
     ]);
   });
 });
+
+describe('listBlocks, a heading typed with Latin letters', () => {
+  it('reads "ΗΜ/NIA", its NIA in Latin capitals, as the date heading', () => {
+    const blocks = listBlocks([
+      piece('ΗΜ/NIA', 60, 707, 40),
+      piece('ΩΡΑ', 140, 707, 20),
+      piece('ΜΑΘΗΜΑ', 300, 707, 45),
+      piece('31/8/2026', 50, 660, 50),
+      piece('09:00 – 11:00', 125, 660, 50),
+      piece('Γεωλογία', 290, 660, 60),
+      piece('1/9/2026', 50, 620, 50),
+      piece('11:00 – 13:00', 125, 620, 50),
+      piece('Ορυκτολογία', 290, 620, 60),
+    ]);
+    expect(blocks).not.toBeNull();
+    const table = blocks!.blocks.find((block) => block.type === 'table');
+    expect(table).toBeDefined();
+  });
+});

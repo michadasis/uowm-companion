@@ -57,4 +57,30 @@ describe('docToBlocks', () => {
       content: [{ text: '9:00- 12:00  |  ΔΕΟΣ0103' }],
     });
   });
+
+  it('rebuilds a week timetable from its cell marks, rooms & merged hours included', async () => {
+    // As the extractor gives iees's timetable: a tab ends each cell & one
+    // more each row; a cell's own lines are only text in it.
+    body.text =
+      'ΕΞΑΜΗΝΟ: 7ο  \t \t\t\nΩΡΕΣ\tΔευτέρα\tAιθ\tΤρίτη\tΑιθ\t\t' +
+      // 9:00: Tuesday, with its room.
+      '9:00- 12:00\t\t\tΔΕΟΣ0702\nΕνωσιακή Νομοθεσία / ΚΑΝΑΒΑΣ\t3204\t' +
+      // The row's mark, then the same hour, merged & so blank: Monday.
+      '\t\tΔΕΟΣ 0708\nΔιεθνές Εμπόριο\nΣΚΑΛΙΔΗ\t1307\t\t\t\t' +
+      '15:00 - \n18:00\tΔΕΟΣ0710 Ιστορία Οικονομικών\nΑΝΤΑΠΟΔΟΤΙΚΗ\nΜπρώνη/Κυριακούλης\t3204\t\t\t\n' +
+      'ΕΞΑΜΗΝΟ: 9ο';
+
+    const blocks = await docToBlocks(new Uint8Array());
+    const text = (cell: { text: string; italic?: boolean }[]) =>
+      cell.map((run) => (run.italic ? `<${run.text.trim()}>` : run.text)).join('');
+    expect(blocks[0]).toEqual({ type: 'paragraph', content: [{ text: 'ΕΞΑΜΗΝΟ: 7ο' }] });
+    const table = blocks[1] as Extract<(typeof blocks)[number], { type: 'table' }>;
+    expect(table.header!.map(text)).toEqual(['ΩΡΕΣ', 'Δευτέρα', 'Τρίτη']);
+    expect(table.rows.map((row) => row.map(text))).toEqual([
+      ['9:00- 12:00', '', 'Ενωσιακή Νομοθεσία<ΚΑΝΑΒΑΣ>\n3204'],
+      ['9:00- 12:00', 'Διεθνές Εμπόριο<ΣΚΑΛΙΔΗ>\n1307', ''],
+      ['15:00 - 18:00', 'Ιστορία Οικονομικών<Μπρώνη/Κυριακούλης>\n3204', ''],
+    ]);
+    expect(blocks[2]).toEqual({ type: 'paragraph', content: [{ text: 'ΕΞΑΜΗΝΟ: 9ο' }] });
+  });
 });

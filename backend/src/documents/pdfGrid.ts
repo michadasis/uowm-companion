@@ -20,8 +20,30 @@ interface Placed {
   width: number;
 }
 
+// Latin letters that look Greek, as typed into a Greek heading: "ΗΜ/NIA".
+const lookalikes: Record<string, string> = {
+  a: 'α',
+  b: 'β',
+  e: 'ε',
+  h: 'η',
+  i: 'ι',
+  k: 'κ',
+  m: 'μ',
+  n: 'ν',
+  o: 'ο',
+  p: 'ρ',
+  t: 'τ',
+  x: 'χ',
+  y: 'υ',
+  z: 'ζ',
+};
+
 function fold(text: string): string {
-  return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+  const folded = text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+  // In text that is Greek at all, a Latin lookalike is a Greek letter mistyped.
+  return /[α-ω]/u.test(folded)
+    ? folded.replace(/[abehikmnoptxyz]/g, (c) => lookalikes[c]!)
+    : folded;
 }
 
 const weekdays = ['δευτερα', 'τριτη', 'τεταρτη', 'πεμπτη', 'παρασκευη', 'σαββατο'];
