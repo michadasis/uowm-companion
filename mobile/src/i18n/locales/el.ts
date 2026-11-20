@@ -35,7 +35,7 @@ export const el = {
   departmentPicker: {
     fromUniversis: 'Βρες το τμήμα μου από το Universis',
     orPick: 'ή διάλεξέ το από τη λίστα',
-    universisUnmatched: 'Το Universis δεν μας είπε σε ποιο τμήμα είσαι. Διάλεξέ το από τη λίστα.',
+    universisUnmatched: 'Δεν βρήκαμε το τμήμα σου στο Universis. Διάλεξέ το από τη λίστα.',
     title: 'Ποιο είναι το τμήμα σου;',
     subtitle: 'Η εφαρμογή προσαρμόζεται σε αυτό. Το αλλάζεις όποτε θέλεις από τις ρυθμίσεις.',
     settingsTitle: 'Το τμήμα μου',

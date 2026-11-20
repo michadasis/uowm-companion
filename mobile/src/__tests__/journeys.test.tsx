@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { screen, userEvent } from '@testing-library/react-native';
+import { act, screen, userEvent } from '@testing-library/react-native';
 import { renderRouter } from 'expo-router/testing-library';
 
 import { defaultSettings, useSettings } from '@/features/settings/store';
@@ -17,10 +17,22 @@ jest.mock('expo-splash-screen', () => ({
 }));
 
 // The sign-in page is the University's own, in a native WebView.
+// It hands the page's messages to the test, as the hook inside it would.
+let sendFromPage: ((data: string) => void) | undefined;
 jest.mock('react-native-webview', () => {
   const { View } = jest.requireActual<typeof import('react-native')>('react-native');
-  return { WebView: () => <View testID="universis-webview" /> };
+  return {
+    WebView: ({ onMessage }: { onMessage: (event: { nativeEvent: { data: string } }) => void }) => {
+      sendFromPage = (data) => onMessage({ nativeEvent: { data } });
+      return <View testID="universis-webview" />;
+    },
+  };
 });
+
+/** A sign-in token as Universis issues one, running out at `exp` (seconds). */
+const jwt = (exp: number, id: string) =>
+  `h.${btoa(JSON.stringify({ exp, sub: id })).replace(/=+$/, '')}.s`;
+const tokenMessage = (token: string) => JSON.stringify({ type: 'universis-token', token });
 
 // Each test boots the whole app, which takes longer than Jest's five
 // seconds on a busy CI runner.
@@ -71,6 +83,50 @@ describe('first launch', () => {
 
     expect(await screen.findByTestId('universis-login')).toBeOnTheScreen();
     expect(router.getPathname()).toBe('/universis-login');
+  });
+
+  it('finds the department from Universis, past a stale token & one it turns down', async () => {
+    const inAnHour = Math.floor(Date.now() / 1000) + 3600;
+    const refused = jwt(inAnHour, 'refused');
+    const fetchMock = jest.spyOn(globalThis, 'fetch').mockImplementation((_input, init) => {
+      const auth = (init?.headers as Record<string, string> | undefined)?.Authorization ?? '';
+      if (auth.includes(refused)) {
+        return Promise.resolve({ ok: false, status: 401, json: async () => ({}) } as Response);
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({
+          person: { givenName: 'ΙΩΑΝΝΗΣ', gender: { alternateName: 'male' } },
+          department: { id: '1554', name: 'ΤΜΗΜΑ ΠΛΗΡΟΦΟΡΙΚΗΣ', abbreviation: 'cs' },
+        }),
+      } as Response);
+    });
+    const { router, user } = await launch();
+    await user.press(await screen.findByRole('button', { name: 'Ξεκίνα' }));
+    await user.press(await screen.findByTestId('department-from-universis'));
+    await screen.findByTestId('universis-webview');
+
+    // A token left from an earlier session, long expired: not a sign-in.
+    await act(async () => sendFromPage!(tokenMessage(jwt(1_000, 'old'))));
+    // One Universis turns down: wait for the next.
+    await act(async () => sendFromPage!(tokenMessage(refused)));
+    expect(router.getPathname()).toBe('/universis-login');
+    expect(useSettings.getState().departmentId).toBeNull();
+    // The student's own sign-in.
+    await act(async () => sendFromPage!(tokenMessage(jwt(inAnHour, 'live'))));
+
+    expect(await screen.findByTestId('home-screen')).toBeOnTheScreen();
+    expect(useSettings.getState().departmentId).toBe('cs');
+    expect(useSavedCourses.getState().givenName).toBe('ΙΩΑΝΝΗΣ');
+    fetchMock.mockRestore();
+    useUniversisAuth.setState({ token: null });
+    useSavedCourses.setState({
+      courses: null,
+      updatedAt: null,
+      givenName: null,
+      gender: null,
+      departmentId: null,
+    });
   });
 
   it('switches the whole app to English from the welcome screen', async () => {

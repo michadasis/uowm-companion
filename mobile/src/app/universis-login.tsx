@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, View } from 'react-native';
 import { WebView } from 'react-native-webview';
@@ -7,8 +7,9 @@ import type { WebViewMessageEvent } from 'react-native-webview';
 
 import { createStyles, NavBar, Screen, Text, useTheme } from '@/design';
 import { useSettings } from '@/features/settings/store';
-import { givenNameFromToken, useUniversisAuth } from '@/features/universis/auth';
-import { fetchStudentProfile } from '@/features/universis/client';
+import { givenNameFromToken, isTokenExpired, useUniversisAuth } from '@/features/universis/auth';
+import { fetchStudentProfile, UniversisError } from '@/features/universis/client';
+import type { StudentProfile } from '@/features/universis/client';
 import { INJECTED_TOKEN_HOOK, parseTokenMessage } from '@/features/universis/login';
 import { useSavedCourses } from '@/features/universis/saved';
 import { applyProfile, refreshStudentCourses } from '@/features/universis/useStudentCourses';
@@ -26,32 +27,59 @@ export default function UniversisLoginScreen() {
 
   const goBack = () => (router.canGoBack() ? router.back() : router.replace('/schedule'));
 
+  // One sign-in is acted on: the first live token. `busy` holds off others
+  // while it is checked; `settled` once it has been taken.
+  const busy = useRef(false);
+  const settled = useRef(false);
+
   const onMessage = (event: WebViewMessageEvent) => {
     const token = parseTokenMessage(event.nativeEvent.data);
-    if (!token) return;
+    if (!token || busy.current || settled.current) return;
+    // The page may hand over a token left from an earlier session before the
+    // student signs in; one already expired is no sign-in.
+    if (isTokenExpired(token)) return;
+    busy.current = true;
     const onboarding = useSettings.getState().departmentId === null;
-    void signIn(token).then(async () => {
-      // The token may name the student; greet them by it at once.
-      useSavedCourses.getState().saveProfile({ givenName: givenNameFromToken(token) });
+
+    void (async () => {
       if (!onboarding) {
+        settled.current = true;
+        await signIn(token);
+        useSavedCourses.getState().saveProfile({ givenName: givenNameFromToken(token) });
         // A fresh token means a fresh read, even if a saved copy is on hand.
         refreshStudentCourses();
         goBack();
         return;
       }
+
+      // On a first launch the student's department is read with the token.
       setFinding(true);
-      const found = await fetchStudentProfile(token)
-        .then((profile) => applyProfile(token, profile))
-        .catch(() => null);
+      let profile: StudentProfile | null;
+      try {
+        profile = await fetchStudentProfile(token);
+      } catch (error) {
+        if (error instanceof UniversisError && error.status === 401) {
+          // Universis turned the token down: not the student's own sign-in
+          // yet. Wait for the one that follows.
+          setFinding(false);
+          busy.current = false;
+          return;
+        }
+        profile = null;
+      }
+      settled.current = true;
+      await signIn(token);
+      useSavedCourses.getState().saveProfile({ givenName: givenNameFromToken(token) });
+      const found = profile ? applyProfile(token, profile) : null;
       refreshStudentCourses();
       if (found) {
         // Setting the department ends onboarding; Home is theirs.
         router.replace('/');
       } else {
-        // Universis named no department the app knows: the student picks it.
+        // No department the app knows came back: the student picks it.
         router.replace({ pathname: '/department', params: { universis: 'unmatched' } });
       }
-    });
+    })();
   };
 
   return (

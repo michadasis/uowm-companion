@@ -37,7 +37,7 @@ export const en: Messages = {
   departmentPicker: {
     fromUniversis: 'Find my department from Universis',
     orPick: 'or pick it from the list',
-    universisUnmatched: 'Universis did not say which department you are in. Pick it from the list.',
+    universisUnmatched: 'We could not find your department on Universis. Pick it from the list.',
     title: 'Which department are you in?',
     subtitle: 'The app adapts to it. You can change it at any time in the settings.',
     settingsTitle: 'My department',

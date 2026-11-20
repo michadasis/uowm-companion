@@ -10,9 +10,12 @@ export const INJECTED_TOKEN_HOOK = String.raw`
 (function () {
   if (window.__uowmHook) return;
   window.__uowmHook = true;
+  // Every new token goes to the app, not just the first: the page may open
+  // with one left from an earlier session, long expired, before the student
+  // signs in & a live one takes its place. The app keeps the live one.
   function send(token) {
-    if (!token || window.__uowmSent) return;
-    window.__uowmSent = true;
+    if (!token || token === window.__uowmLast) return;
+    window.__uowmLast = token;
     try {
       window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'universis-token', token: token }));
     } catch (e) {}
@@ -41,7 +44,6 @@ export const INJECTED_TOKEN_HOOK = String.raw`
     };
   }
   function scan() {
-    if (window.__uowmSent) return;
     try {
       for (var s = 0; s < 2; s++) {
         var store = s === 0 ? sessionStorage : localStorage;
