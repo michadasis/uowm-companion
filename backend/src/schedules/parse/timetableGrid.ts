@@ -172,7 +172,9 @@ function semesterIn(text: string): string | undefined {
     /([Α-Ω]{1,2}['΄’])\s*(?:[εΕ]ξ[αά]μ[ηή]ν|ΕΞΑΜΗΝ)/u.exec(text)?.[1] ??
     /(?:[εΕ]ξ[αά]μ[ηή]ν[οου]*|ΕΞΑΜΗΝ[ΟΟΥ]*)\s+([Α-Ω]{1,2}['΄’])(?![Α-Ωα-ω])/u.exec(text)?.[1];
   if (lettered) return lettered.replace(/['’]/u, '΄');
-  const numbered = /(\d{1,2})\s*[οo]?\s*εξαμην/u.exec(fold(text));
+  const numbered =
+    /(\d{1,2})\s*[οo]?\s*εξαμην/u.exec(fold(text)) ??
+    /εξαμην[οου]*\s*:?\s*(\d{1,2})\s*[οo]?(?!\d)/u.exec(fold(text));
   const letter = numbered ? semesterLetters[Number(numbered[1]) - 1] : undefined;
   return letter ? `${letter}΄` : undefined;
 }
@@ -244,6 +246,26 @@ function stackedParts(cell: Inline): Inline[] {
   return parts.map((part) => [{ text: part.join('\n') }]);
 }
 
+// A cell saying "as above": a ditto mark or two.
+const ditto = /^["“”„'΄`〃]+$/u;
+
+type ColumnRole = 'course' | 'teacher' | 'room';
+
+/** The role of each day column, from a row of labels under the day names. */
+function columnRoles(row: Inline[], columns: Map<number, number>): Map<number, ColumnRole> {
+  const roles = new Map<number, ColumnRole>();
+  // A row of times holds classes, not labels.
+  if (timeRange.test(cellText(row[0] ?? []))) return roles;
+  for (const col of columns.keys()) {
+    const label = fold(cellText(row[col] ?? []));
+    if (/^μαθημα(τα)?$/u.test(label)) roles.set(col, 'course');
+    else if (/^(διδασκων|διδασκοντες|διδασκουσα|καθηγητης|καθηγητες)$/u.test(label)) {
+      roles.set(col, 'teacher');
+    } else if (/^αιθουσα$/u.test(label)) roles.set(col, 'room');
+  }
+  return roles;
+}
+
 /**
  * Parses a timetable laid out as a grid: a header row of weekday columns, then
  * a row per time slot whose first cell is the time & whose other cells hold a
@@ -288,12 +310,20 @@ export function parseTimetableGrid(blocks: Block[]): ClassSession[] {
       }
     }
 
+    // Some sheets split each day into labelled columns under it — "Μάθημα",
+    // "Διδάσκων", "Αίθουσα" — in a row of their own.
+    const roles = columnRoles(rows[headerIndex + 1] ?? [], columns);
+    const body = rows.slice(headerIndex + (roles.size >= 2 ? 2 : 1));
+
     // The class last placed in each column, & the slot it ended in.
     const last = new Map<number, { session: ClassSession; slot: number }>();
     let slot = 0;
     let slotEnd: string | undefined;
 
-    for (const row of rows.slice(headerIndex + 1)) {
+    for (const row of body) {
+      // The class each day's course column holds in this row, for the
+      // teacher & room columns beside it.
+      const inRow = new Map<number, ClassSession>();
       const time = timeRange.exec(cellText(row[0] ?? []));
       if (time) {
         slot += 1;
@@ -305,6 +335,22 @@ export function parseTimetableGrid(blocks: Block[]): ClassSession[] {
         if (!text) continue;
         const above = last.get(col);
         const fromSlotAbove = above !== undefined && above.slot >= slot - (time ? 1 : 0);
+
+        const role = roles.get(col);
+        if (role === 'teacher' || role === 'room') {
+          const session = inRow.get(day);
+          if (session && !ditto.test(text)) session[role] ??= tidy(text);
+          continue;
+        }
+        // Ditto marks under a class: it runs on into this slot.
+        if (ditto.test(text)) {
+          if (above && time && above.slot === slot - 1) {
+            above.session.endTime = pad(time[2]!);
+            above.slot = slot;
+            inRow.set(day, above.session);
+          }
+          continue;
+        }
 
         // A name under a course is that course's teacher, not a class of its
         // own; on a timed row it also means the course runs on into this slot.
@@ -345,10 +391,12 @@ export function parseTimetableGrid(blocks: Block[]): ClassSession[] {
             above.session.endTime = session.endTime;
             above.slot = slot;
             if (!above.session.room && session.room) above.session.room = session.room;
+            inRow.set(day, above.session);
             continue;
           }
           classes.push(session);
           last.set(col, { session, slot });
+          inRow.set(day, session);
         }
       }
     }

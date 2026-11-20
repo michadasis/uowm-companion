@@ -1,5 +1,6 @@
 import type { Block } from '../content/blocks.js';
 
+import { docToBlocks } from './doc.js';
 import { docxToBlocks } from './docx.js';
 import { pdfToBlocks } from './pdf.js';
 import type { DiscoveredDocument, RenderedDocument } from './types.js';
@@ -52,6 +53,8 @@ export async function renderDocument(
     blocks = await pdfToBlocks(data);
   } else if (document.format === 'xlsx') {
     blocks = await xlsxToBlocks(data);
+  } else if (document.format === 'doc') {
+    blocks = await docToBlocks(data);
   }
 
   return { document, blocks };

@@ -102,9 +102,18 @@ function timesOf(text: string): { startTime?: string; endTime?: string } {
   const pad = (time: string) => time.replace(/^(\d):/, '0$1:').replace('.', ':');
   const range = /(\d{1,2}[:.]\d{2})\s*[-–—]\s*(\d{1,2}[:.]\d{2})/.exec(text);
   if (range) return { startTime: pad(range[1]!), endTime: pad(range[2]!) };
+  // Bare hours, as "9-11" or "13 - 15".
+  const hours = /^(\d{1,2})\s*[-–—]\s*(\d{1,2})$/.exec(text.trim());
+  if (hours) {
+    const hour = (value: string) => `${value.padStart(2, '0')}:00`;
+    return { startTime: hour(hours[1]!), endTime: hour(hours[2]!) };
+  }
   const single = /(\d{1,2}[:.]\d{2})/.exec(text);
   return single ? { startTime: pad(single[1]!) } : {};
 }
+
+// A row that only names a semester, heading the exams under it.
+const semesterRow = /^(ΣΤ|[Α-Ι])['΄’]?\s*εξαμην/iu;
 
 /**
  * Parses an exam schedule laid out as a table with a header row — a date, a
@@ -117,30 +126,46 @@ export function parseExamTable(blocks: Block[], now: Date = new Date()): Exam[] 
   for (const block of blocks) {
     if (block.type !== 'table') continue;
     const rows = block.header ? [block.header, ...block.rows] : block.rows;
+    // A heading row names the course column, or — with both a date & a time
+    // column named — leaves the first column, the course, unnamed.
     const headerIndex = rows.findIndex((row) => {
       const columns = columnsOf(row);
-      return columns.has('course') && (columns.has('date') || columns.has('time'));
+      return columns.has('course')
+        ? columns.has('date') || columns.has('time')
+        : columns.has('date') && columns.has('time') && ![...columns.values()].includes(0);
     });
     if (headerIndex === -1) continue;
     const columns = columnsOf(rows[headerIndex]!);
+    if (!columns.has('course')) columns.set('course', 0);
     const at = (row: Inline[], column: Column) => {
       const index = columns.get(column);
       return index === undefined ? '' : cellText(row[index]);
     };
 
     let date: string | undefined;
+    let heading: string | undefined;
     for (const row of rows.slice(headerIndex + 1)) {
-      date = dateOf(at(row, 'date'), now) ?? date;
+      const cells = row.map((cell) => cellText(cell)).filter(Boolean);
+      if (cells.length <= 2 && semesterRow.test(cells[0] ?? '')) {
+        heading = semesterOf(cells[0]!.replace(/\s*εξ.*$/iu, ''));
+        continue;
+      }
+      const ownDate = dateOf(at(row, 'date'), now);
+      date = ownDate ?? date;
       const course = at(row, 'course');
       if (!course || columnsOf(row).has('course')) continue;
-      const semester = semesterOf(at(row, 'semester'));
+      const times = timesOf(at(row, 'time'));
+      // A row with neither its own date nor a time is no sitting: coursework
+      // handed in, say.
+      if (!ownDate && !times.startTime) continue;
+      const semester = semesterOf(at(row, 'semester')) ?? heading;
       const examiner = at(row, 'examiner');
       // A room left as a dash or a stray stroke is no room.
       const room = at(row, 'room').replace(/^[\s_–-]+|[\s_–-]+$/g, '');
       exams.push({
         course,
         ...(date ? { date } : {}),
-        ...timesOf(at(row, 'time')),
+        ...times,
         ...(room ? { room } : {}),
         ...(semester ? { semester } : {}),
         ...(examiner ? { examiners: examiner.split(/\s*[,/]\s*|\n/).filter(Boolean) } : {}),

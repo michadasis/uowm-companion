@@ -94,3 +94,61 @@ describe('plausibleExams', () => {
     expect(plausibleExams([exam('Φυσική'), exam('Χημεία'), exam('Βιολογία')])).toBe(false);
   });
 });
+
+describe('parseExamTable on a list with the course column unnamed', () => {
+  it('reads bare hours, semester rows & the first column as the course, & skips coursework', () => {
+    const exams = parseExamTable(
+      [
+        table([
+          row(
+            '(Αναμορφωμένο πρόγραμμα)',
+            'Ημερομηνία εξέτασης',
+            'Ώρα εξέτασης',
+            'Αίθουσα',
+            'Καθηγητής',
+          ),
+          row('Α΄ ΕΞΑΜΗΝΟ', '', '', '', ''),
+          row('Αρχές Στατιστικής', '31/8', '17-19', '3402', 'Τσακιρίδου'),
+          row('Μαθηματικά', 'Εργασία', '', 'Απαλλακτική εργασία', 'Ευθαλτσίδου'),
+          row('Β΄ ΕΞΑΜΗΝΟ', '', '', 'Υποχρεωτικά', ''),
+          row('Διοίκηση Επιχειρήσεων', '1/9', '9-11', '3402', 'Καλογιαννίδης'),
+        ]),
+      ],
+      new Date('2026-08-20T12:00:00Z'),
+    );
+
+    expect(exams).toEqual([
+      {
+        course: 'Αρχές Στατιστικής',
+        date: '2026-08-31',
+        startTime: '17:00',
+        endTime: '19:00',
+        room: '3402',
+        semester: 'Α΄',
+        examiners: ['Τσακιρίδου'],
+      },
+      {
+        course: 'Διοίκηση Επιχειρήσεων',
+        date: '2026-09-01',
+        startTime: '09:00',
+        endTime: '11:00',
+        room: '3402',
+        semester: 'Β΄',
+        examiners: ['Καλογιαννίδης'],
+      },
+    ]);
+  });
+
+  it('reads a date with its month written out', () => {
+    const [exam] = parseExamTable(
+      [
+        table([
+          row('Ημερομηνία', 'Ώρα', 'Μάθημα'),
+          row('Δευτέρα, 31 Αύγουστος 2026', '09:00 - 12:00', 'Ψυχολογία'),
+        ]),
+      ],
+      new Date('2026-08-20T12:00:00Z'),
+    );
+    expect(exam?.date).toBe('2026-08-31');
+  });
+});
