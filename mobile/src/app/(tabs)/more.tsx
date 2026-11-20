@@ -39,23 +39,26 @@ export default function MoreScreen() {
   const locked = universis.connected || universis.expired ? universisDepartment !== null : false;
 
   return (
-    <Screen testID="more-screen">
+    <Screen tone="stone" testID="more-screen">
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <ScreenTitle title={t('more.title')} />
+        <ScreenTitle title={t('more.title')} tone="stone" icon="more" />
 
         <SectionHeader title={t('more.department.section')} />
         <Card padded={false} style={styles.card}>
           <ListRow
             icon="department"
             title={department?.shortName[language] ?? t('more.department.change')}
-            subtitle={
-              department
-                ? locked
-                  ? `${describeDepartment(directory, department, language)}. ${t('more.department.fromUniversis')}`
-                  : describeDepartment(directory, department, language)
-                : undefined
+            subtitle={department ? describeDepartment(directory, department, language) : undefined}
+            // Set by Universis, the department says so where the arrow would be.
+            trailing={
+              locked ? (
+                <Text variant="caption" color="textSubtle">
+                  {t('more.department.fromUniversis')}
+                </Text>
+              ) : (
+                'chevron'
+              )
             }
-            trailing={locked ? undefined : 'chevron'}
             onPress={locked ? undefined : () => router.push('/settings/department')}
             testID="more-department"
           />

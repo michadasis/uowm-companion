@@ -56,7 +56,9 @@ describe('CourseFilterBar', () => {
     );
 
     expect(await screen.findByTestId('course-filter-registered')).toBeOnTheScreen();
-    expect(screen.getByText('Η σύνδεση με το Universis έληξε')).toBeOnTheScreen();
+    // One quiet line on screen; the full explanation for a screen reader.
+    expect(screen.getByText(/^Βαθμοί όπως στις /)).toBeOnTheScreen();
+    expect(screen.getByLabelText(/^Η σύνδεση με το Universis έληξε\. Βλέπεις/)).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: 'Σύνδεση ξανά' }));
     expect(onConnect).toHaveBeenCalled();
   });

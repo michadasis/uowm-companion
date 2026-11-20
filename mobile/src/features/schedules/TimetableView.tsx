@@ -234,11 +234,7 @@ export function TimetableView({
           ))}
         </ScrollView>
       ) : null}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.days}
-      >
+      <View style={styles.days}>
         {week.map((day) => (
           <DayStripButton
             key={day.day}
@@ -247,11 +243,12 @@ export function TimetableView({
             selected={day.day === effectiveDay}
             today={day.day === today}
             off={offReason(day.day) !== null}
+            fill
             onPress={() => setSelectedDay(day.day)}
             testID={`timetable-day-${day.day}`}
           />
         ))}
-      </ScrollView>
+      </View>
 
       {selectedOff ? (
         <View style={styles.offNotice} testID="timetable-day-off">
@@ -296,6 +293,7 @@ const useStyles = createStyles((theme) => ({
     alignItems: 'center',
   },
   days: {
+    flexDirection: 'row',
     paddingHorizontal: theme.spacing[4],
     gap: theme.spacing[2],
   },

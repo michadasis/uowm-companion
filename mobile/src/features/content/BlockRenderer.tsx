@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { createStyles, Divider, Icon, PressableScale, Text } from '@/design';
 import type { TypeVariant } from '@/design/tokens/typography';
 
-import { attachmentIcon, attachmentLabel } from './attachment';
+import { attachmentIcon, attachmentLabel, attachmentName } from './attachment';
 import { AutoImage } from './AutoImage';
 import { BlockTable } from './BlockTable';
 import { InlineText } from './InlineText';
@@ -89,7 +89,7 @@ function AttachmentCard({ block }: { block: AttachmentBlock }) {
   return (
     <PressableScale
       accessibilityRole="link"
-      accessibilityLabel={block.name}
+      accessibilityLabel={attachmentName(block.name)}
       onPress={() => openExternal(block.href)}
       style={styles.attachment}
     >
@@ -98,7 +98,7 @@ function AttachmentCard({ block }: { block: AttachmentBlock }) {
       </View>
       <View style={styles.attachmentText}>
         <Text variant="subheading" numberOfLines={2}>
-          {block.name}
+          {attachmentName(block.name)}
         </Text>
         {label ? (
           <Text variant="caption" color="textMuted">

@@ -249,6 +249,8 @@ export const en: Messages = {
       detailUndated:
         'You are seeing saved courses and grades. Sign in again for the latest, such as new grades or a new declaration.',
       cta: 'Sign in again',
+      short: 'Grades as of {{time}}',
+      shortUndated: 'Saved grades',
     },
   },
   menu: {

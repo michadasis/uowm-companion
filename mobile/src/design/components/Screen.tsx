@@ -13,9 +13,9 @@ import { Text } from './Text';
 /**
  * The colour a section of the app is known by, after the small coloured
  * squares of the university's mark: the restaurant amber, the schedule blue,
- * the news green.
+ * the news green; & a quiet stone for the settings, which belong to none.
  */
-export type ScreenTone = 'amber' | 'blue' | 'green';
+export type ScreenTone = 'amber' | 'blue' | 'green' | 'stone';
 
 /** The band & the ink of a section's colour, for a band drawn outside `ScreenTitle`. */
 export function useToneColors(tone: ScreenTone): { band: string; ink: string } {
@@ -28,6 +28,7 @@ function toneColors(theme: Theme, tone: ScreenTone) {
     amber: { band: colors.primaryMuted, ink: colors.onPrimaryMuted },
     blue: { band: colors.accentMuted, ink: colors.onAccentMuted },
     green: { band: colors.successMuted, ink: colors.onSuccessMuted },
+    stone: { band: colors.surfaceMuted, ink: colors.textMuted },
   }[tone];
 }
 
@@ -111,7 +112,9 @@ export function ScreenTitle({ title, subtitle, tone, icon, children }: ScreenTit
                 ? 'onPrimaryMuted'
                 : tone === 'blue'
                   ? 'onAccentMuted'
-                  : 'onSuccessMuted'
+                  : tone === 'green'
+                    ? 'onSuccessMuted'
+                    : 'textSubtle'
             }
           />
         </View>

@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 
-import { createStyles, Icon, PressableScale, Text, useTheme } from '@/design';
+import { createStyles, Icon, PressableScale, Text } from '@/design';
 import { formatUpdatedAt } from '@/features/announcements/format';
 
 export interface ExpiredNoticeProps {
@@ -11,39 +11,37 @@ export interface ExpiredNoticeProps {
 }
 
 /**
- * Says that the Universis connection has run out & what is on screen is the
- * copy saved at the last read, so a student knows a newer grade or declaration
- * may be missing — with the way to bring it up to date right there.
+ * Says, in one line, that the Universis connection has run out & what is on
+ * screen is the copy saved at the last read — with the way to bring it up to
+ * date at its end. The full explanation is what a screen reader hears.
  */
 export function ExpiredNotice({ updatedAt, onReconnect }: ExpiredNoticeProps) {
   const { t, i18n } = useTranslation();
-  const theme = useTheme();
   const styles = useStyles();
+  const time = updatedAt ? formatUpdatedAt(updatedAt, i18n.language) : null;
   return (
-    <View accessible accessibilityRole="alert" style={styles.notice} testID="universis-expired">
-      <View style={styles.row}>
-        <Icon name="offline" size={theme.size.icon.sm} color="onAccentMuted" />
-        <View style={styles.text}>
-          <Text variant="label" color="onAccentMuted">
-            {t('universis.expired.title')}
-          </Text>
-          <Text variant="caption" color="onAccentMuted">
-            {updatedAt
-              ? t('universis.expired.detail', {
-                  time: formatUpdatedAt(updatedAt, i18n.language),
-                })
-              : t('universis.expired.detailUndated')}
-          </Text>
-        </View>
+    <View style={styles.notice} testID="universis-expired">
+      <View
+        accessible
+        accessibilityRole="alert"
+        accessibilityLabel={`${t('universis.expired.title')}. ${
+          time ? t('universis.expired.detail', { time }) : t('universis.expired.detailUndated')
+        }`}
+        style={styles.text}
+      >
+        <Icon name="offline" size={16} color="textSubtle" />
+        <Text variant="caption" color="textMuted" numberOfLines={1} style={styles.label}>
+          {time ? t('universis.expired.short', { time }) : t('universis.expired.shortUndated')}
+        </Text>
       </View>
       <PressableScale
         accessibilityRole="button"
         accessibilityLabel={t('universis.expired.cta')}
-        hitSlop={8}
+        hitSlop={10}
         onPress={onReconnect}
         style={styles.action}
       >
-        <Icon name="retry" size={16} color="accent" />
+        <Icon name="retry" size={14} color="accent" />
         <Text variant="label" color="accent">
           {t('universis.expired.cta')}
         </Text>
@@ -53,28 +51,25 @@ export function ExpiredNotice({ updatedAt, onReconnect }: ExpiredNoticeProps) {
 }
 
 const useStyles = createStyles((theme) => ({
+  // A quiet line, not a box: the saved copy is still good to use.
   notice: {
-    padding: theme.spacing[3],
-    borderRadius: theme.radius.md,
-    backgroundColor: theme.colors.accentMuted,
-    gap: theme.spacing[2],
-  },
-  row: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: theme.spacing[2],
+    alignItems: 'center',
+    gap: theme.spacing[3],
+    paddingVertical: theme.spacing[1],
   },
   text: {
     flex: 1,
-    gap: theme.spacing[0.5],
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing[1],
   },
-  // A link under the text, lined up with it, rather than a second button-shaped
-  // colour inside the notice's own.
+  label: {
+    flexShrink: 1,
+  },
   action: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
     gap: theme.spacing[1],
-    marginLeft: theme.size.icon.sm + theme.spacing[2],
   },
 }));

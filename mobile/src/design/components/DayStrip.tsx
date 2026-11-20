@@ -15,6 +15,8 @@ export interface DayStripButtonProps {
   today?: boolean;
   /** Greys a day out, as a holiday. */
   off?: boolean;
+  /** Shares the row's width with the other days, so a whole week fits. */
+  fill?: boolean;
   onPress: () => void;
   testID?: string;
 }
@@ -29,6 +31,7 @@ export function DayStripButton({
   selected,
   today = false,
   off = false,
+  fill = false,
   onPress,
   testID,
 }: DayStripButtonProps) {
@@ -40,7 +43,7 @@ export function DayStripButton({
       accessibilityState={{ selected }}
       accessibilityLabel={date ? `${label} ${date.getDate()}` : label}
       onPress={onPress}
-      style={[styles.day, selected ? styles.selected : null]}
+      style={[styles.day, fill ? styles.fill : null, selected ? styles.selected : null]}
       testID={testID}
     >
       <Text variant="caption" color={color ?? 'textMuted'}>
@@ -65,6 +68,13 @@ const useStyles = createStyles((theme) => ({
     borderRadius: theme.radius.md,
     alignItems: 'center',
     gap: 2,
+  },
+  fill: {
+    flex: 1,
+    minWidth: 0,
+    // A short week (a timetable with classes on two days) keeps its days day-sized.
+    maxWidth: 72,
+    paddingHorizontal: 0,
   },
   selected: {
     backgroundColor: theme.colors.text,

@@ -234,11 +234,7 @@ export function MenuView({ now = new Date() }: { now?: Date }) {
         </View>
       ) : (
         <>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.days}
-          >
+          <View style={styles.days}>
             {days.map((d) => (
               <DayStripButton
                 key={d.day}
@@ -246,11 +242,12 @@ export function MenuView({ now = new Date() }: { now?: Date }) {
                 date={dates.get(weekdayOf[d.day] ?? 0)}
                 selected={d.day === selectedDay}
                 today={d.day === todayName(now)}
+                fill
                 onPress={() => setDay(d.day)}
                 testID={`menu-day-${d.day}`}
               />
             ))}
-          </ScrollView>
+          </View>
           {activeDay ? <MealCourses meal={activeDay[meal]} language={language} /> : null}
         </>
       )}
@@ -283,6 +280,7 @@ const useStyles = createStyles((theme) => ({
     backgroundColor: theme.colors.text,
   },
   days: {
+    flexDirection: 'row',
     paddingHorizontal: theme.spacing[4],
     paddingTop: theme.spacing[4],
     paddingBottom: theme.spacing[2],
