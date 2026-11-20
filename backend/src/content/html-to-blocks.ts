@@ -100,8 +100,9 @@ function walk(node: AnyNode, out: Block[], baseUrl: string) {
       return;
     default:
       if (transparentTags.has(tag)) {
-        // A standalone link to a document is an attachment wherever it sits.
-        if (tag === 'a' && isDocumentLink(node, baseUrl) && !hasText(node)) {
+        // A standalone link to a document is an attachment wherever it sits —
+        // a PDF viewer plugin's link among them — its text, if any, the name.
+        if (tag === 'a' && isDocumentLink(node, baseUrl)) {
           pushAttachment(node, out, baseUrl);
           return;
         }
@@ -357,10 +358,6 @@ function collectText(node: AnyNode): string {
     else if (isElement(child)) text += collectText(child);
   }
   return text;
-}
-
-function hasText(node: Element): boolean {
-  return collectText(node).trim() !== '';
 }
 
 function firstSrcFromSet(srcset: string | undefined): string | undefined {

@@ -205,3 +205,18 @@ describe('attachmentFormat', () => {
     expect(attachmentFormat('/photo.jpg')).toBeNull();
   });
 });
+
+describe('htmlToBlocks on a PDF viewer plugin', () => {
+  it('keeps the embedded document as an attachment named by its link', () => {
+    const blocks = htmlToBlocks(
+      '<p>Ενημέρωση για το Erasmus+.</p><div class="wp-block-pdfemb-pdf-embedder-viewer"><a href="https://cs.uowm.gr/wp-content/uploads/2026/10/Erasmus_Final_Poster.pdf" class="pdfemb-viewer">Erasmus_Final_Poster</a></div>',
+      'https://cs.uowm.gr/',
+    );
+    expect(blocks.at(-1)).toEqual({
+      type: 'attachment',
+      name: 'Erasmus_Final_Poster',
+      href: 'https://cs.uowm.gr/wp-content/uploads/2026/10/Erasmus_Final_Poster.pdf',
+      format: 'pdf',
+    });
+  });
+});
