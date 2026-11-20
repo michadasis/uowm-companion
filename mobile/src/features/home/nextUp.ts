@@ -19,6 +19,8 @@ export interface NextUpInput {
   /** The semester picked in the timetable, when one is. */
   semester: string | null;
   now?: Date;
+  /** Whether classes are held on a day, from the academic calendar, when it is known. */
+  isTeachingDay?: (date: Date) => boolean;
 }
 
 // An exam that started a while ago is over; it should not hold the card.
@@ -58,7 +60,14 @@ function minutesUntilExam(exam: Exam, now: Date): number | null {
  * the semester they picked. Without either, the next class in a whole
  * department's timetable would be somebody else's, so it shows none.
  */
-export function pickNextUp({ classes, exams, courses, semester, now = new Date() }: NextUpInput): NextUp {
+export function pickNextUp({
+  classes,
+  exams,
+  courses,
+  semester,
+  now = new Date(),
+  isTeachingDay,
+}: NextUpInput): NextUp {
   const keys = courses ? personalKeys(courses) : null;
   if (!keys && !semester) return { kind: 'none', personalised: false };
 
@@ -77,7 +86,7 @@ export function pickNextUp({ classes, exams, courses, semester, now = new Date()
             semesterLetters(exam.semester).includes(wanted),
       );
 
-  const upcoming = nextClass(myClasses, now);
+  const upcoming = nextClass(myClasses, now, isTeachingDay);
   const exam = nextExam(myExams, now);
   const examMinutes = exam ? minutesUntilExam(exam, now) : null;
   const examIsAhead = exam !== undefined && examMinutes !== null && examMinutes > -examGraceMinutes;

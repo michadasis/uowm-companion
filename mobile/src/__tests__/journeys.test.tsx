@@ -53,7 +53,7 @@ describe('first launch', () => {
     expect(await screen.findByTestId('home-screen')).toBeOnTheScreen();
     expect(router.getPathname()).toBe('/');
     expect(useSettings.getState().departmentId).toBe('cs');
-    expect(screen.getByTestId('home-department')).toHaveTextContent(/Πληροφορικής/);
+    expect(screen.getByTestId('home-today')).toHaveTextContent(/Πληροφορικής/);
   });
 
   it('switches the whole app to English from the welcome screen', async () => {
@@ -77,7 +77,7 @@ describe('a returning student', () => {
 
     expect(await screen.findByTestId('home-screen')).toBeOnTheScreen();
     expect(router.getPathname()).toBe('/');
-    expect(screen.getByTestId('home-department')).toHaveTextContent(/Μηχανολόγων Μηχανικών/);
+    expect(screen.getByTestId('home-today')).toHaveTextContent(/Μηχανολόγων Μηχανικών/);
   });
 
   it('cannot be sent back into onboarding by a link', async () => {

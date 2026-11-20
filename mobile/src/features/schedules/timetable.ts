@@ -108,9 +108,35 @@ export interface UpcomingClass {
 export function nextClass(
   classes: ClassSession[],
   now: Date = new Date(),
+  /**
+   * Whether classes are held on a day, from the academic calendar. Given, the
+   * search skips holidays, breaks & exam periods, as far ahead as it takes.
+   */
+  isTeachingDay?: (date: Date) => boolean,
 ): UpcomingClass | undefined {
   const today = todayWeekday(now);
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+  if (isTeachingDay) {
+    for (let daysAhead = 0; daysAhead <= 200; daysAhead++) {
+      const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysAhead, 12);
+      if (!isTeachingDay(date)) continue;
+      const weekday = todayWeekday(date);
+      let best: UpcomingClass | undefined;
+      for (const session of classes) {
+        const start = minutesOf(session.startTime);
+        if (start === null || session.day !== weekday) continue;
+        const end = minutesOf(session.endTime) ?? start + 60;
+        if (daysAhead === 0 && nowMinutes >= end) continue;
+        const minutesUntil = daysAhead * 24 * 60 + start - nowMinutes;
+        if (!best || minutesUntil < best.minutesUntil) {
+          best = { session, daysAhead, minutesUntil, inProgress: minutesUntil <= 0 };
+        }
+      }
+      if (best) return best;
+    }
+    return undefined;
+  }
 
   let best: UpcomingClass | undefined;
   for (const session of classes) {

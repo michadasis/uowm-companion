@@ -48,21 +48,36 @@ const schedule = (kind: 'exams' | 'timetable', items: object[]) => ({
 });
 
 describe('NextUpSection', () => {
-  const tomorrow = ((new Date().getDay() + 1) % 7) || 7;
+  const tomorrow = (new Date().getDay() + 1) % 7 || 7;
 
   it("shows the next class of the student's semester from the timetable", async () => {
     useSettings.setState({ semester: 'Α΄' });
     respond({
       '/api/exams': schedule('exams', []),
       '/api/timetable': schedule('timetable', [
-        { course: 'Φυσική', day: tomorrow, startTime: '11:00', endTime: '12:00', semester: 'Α΄', room: 'Μ.Αμφ.' },
-        { course: 'Μεταγλωττιστές', day: tomorrow, startTime: '09:00', endTime: '10:00', semester: 'Γ΄' },
+        {
+          course: 'Φυσική',
+          day: tomorrow,
+          startTime: '11:00',
+          endTime: '12:00',
+          semester: 'Α΄',
+          room: 'Μ.Αμφ.',
+        },
+        {
+          course: 'Μεταγλωττιστές',
+          day: tomorrow,
+          startTime: '09:00',
+          endTime: '10:00',
+          semester: 'Γ΄',
+        },
       ]),
     });
-    await renderSection(<NextUpSection scope="cs" />);
+    await renderSection(<NextUpSection scope="cs" city="kastoria" />);
 
     expect(await screen.findByText('Φυσική')).toBeOnTheScreen();
-    expect(screen.getByText('Αύριο · 11:00 - 12:00')).toBeOnTheScreen();
+    // The time is set apart from the day, the way a diary reads.
+    expect(screen.getByText('11:00')).toBeOnTheScreen();
+    expect(screen.getByText('Αύριο')).toBeOnTheScreen();
     expect(screen.queryByText('Μεταγλωττιστές')).not.toBeOnTheScreen();
   });
 
@@ -75,7 +90,7 @@ describe('NextUpSection', () => {
       ]),
       '/api/timetable': schedule('timetable', []),
     });
-    await renderSection(<NextUpSection scope="cs" />);
+    await renderSection(<NextUpSection scope="cs" city="kastoria" />);
 
     expect(await screen.findByText('Αλγόριθμοι')).toBeOnTheScreen();
     expect(screen.getByText('Α2')).toBeOnTheScreen();
@@ -93,7 +108,7 @@ describe('NextUpSection', () => {
         { course: 'Φυσική', day: tomorrow, startTime: '11:00', endTime: '12:00' },
       ]),
     });
-    await renderSection(<NextUpSection scope="cs" />);
+    await renderSection(<NextUpSection scope="cs" city="kastoria" />);
 
     expect(await screen.findByText('Φυσική')).toBeOnTheScreen();
     expect(screen.queryByText('Ηλεκτρονική')).not.toBeOnTheScreen();
@@ -106,7 +121,7 @@ describe('NextUpSection', () => {
         { course: 'Φυσική', day: tomorrow, startTime: '11:00', endTime: '12:00', semester: 'Α΄' },
       ]),
     });
-    await renderSection(<NextUpSection scope="cs" />);
+    await renderSection(<NextUpSection scope="cs" city="kastoria" />);
 
     expect(
       await screen.findByText(

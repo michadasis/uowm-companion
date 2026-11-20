@@ -13,7 +13,9 @@ import {
 } from '@/design';
 import { AnnouncementCard } from '@/features/announcements/AnnouncementCard';
 import { useAnnouncements } from '@/features/announcements/useAnnouncements';
-import { formatDayHeading, formatTimeRange } from '@/features/schedules/agenda';
+import { isoDay, isTeachingDay } from '@/features/calendar/status';
+import { useCalendar } from '@/features/calendar/useCalendar';
+import { formatDayHeading } from '@/features/schedules/agenda';
 import { formatClassTime, weekdayLabel } from '@/features/schedules/timetable';
 import { useSchedule } from '@/features/schedules/useSchedule';
 import { useMenu, todayName } from '@/features/menu/useMenu';
@@ -49,17 +51,66 @@ function Meta({ icon, text }: { icon: 'location' | 'department'; text: string })
 }
 
 /**
- * The student's next class or exam, whichever is sooner. The class comes from
- * the weekly timetable, so there is one to show all term — not only in the
- * weeks an exam schedule is out.
+ * A class or an exam with its time set apart on the left, the way a diary
+ * reads: when first, then what & where.
  */
-export function NextUpSection({ scope }: { scope: string }) {
+function NextCard({
+  time,
+  when,
+  title,
+  room,
+  teacher,
+  tag,
+  onPress,
+}: {
+  time: string;
+  when: string;
+  title: string;
+  room?: string;
+  teacher?: string;
+  tag?: string;
+  onPress: () => void;
+}) {
+  const styles = useStyles();
+  return (
+    <Card onPress={onPress} accessibilityLabel={`${when} ${time}, ${title}`} style={styles.card}>
+      <View style={styles.next}>
+        <View style={styles.when}>
+          <Text variant="heading">{time}</Text>
+          <Text variant="caption" color="primary" numberOfLines={2}>
+            {when}
+          </Text>
+        </View>
+        <View style={styles.rule} />
+        <View style={styles.what}>
+          {tag ? (
+            <Text variant="label" color="primary">
+              {tag}
+            </Text>
+          ) : null}
+          <Text variant="subheading" numberOfLines={2}>
+            {title}
+          </Text>
+          {room ? <Meta icon="location" text={room} /> : null}
+          {teacher ? <Meta icon="department" text={teacher} /> : null}
+        </View>
+      </View>
+    </Card>
+  );
+}
+
+/**
+ * The student's next class or exam, whichever is sooner. The class comes from
+ * the weekly timetable & skips the days the academic calendar has no classes
+ * — holidays, the breaks, the exam periods.
+ */
+export function NextUpSection({ scope, city }: { scope: string; city: string | null }) {
   const { t, i18n } = useTranslation();
   const language = i18n.language as Language;
   const router = useRouter();
-  const styles = useStyles();
   const exams = useSchedule(scope, 'exams');
   const timetable = useSchedule(scope, 'timetable');
+  const { data: calendar } = useCalendar();
   const semester = useSettings((s) => s.semester);
   const { courses } = useStudentCourses();
 
@@ -68,6 +119,7 @@ export function NextUpSection({ scope }: { scope: string }) {
     exams: exams.data?.exams ?? [],
     courses,
     semester,
+    isTeachingDay: calendar ? (date) => isTeachingDay(calendar, date, city) : undefined,
   });
 
   let body;
@@ -75,51 +127,38 @@ export function NextUpSection({ scope }: { scope: string }) {
     body = <Loading />;
   } else if (next.kind === 'class') {
     const { session, daysAhead, inProgress } = next.upcoming;
+    const date = new Date();
+    date.setDate(date.getDate() + daysAhead);
     const when = inProgress
       ? t('home.nextUp.now')
       : daysAhead === 0
         ? t('home.nextUp.today')
         : daysAhead === 1
           ? t('home.nextUp.tomorrow')
-          : weekdayLabel(session.day ?? 1, language);
+          : daysAhead < 7
+            ? weekdayLabel(session.day ?? 1, language)
+            : (formatDayHeading(isoDay(date), language) ?? '');
     body = (
-      <Card
+      <NextCard
+        time={session.startTime ?? formatClassTime(session) ?? '—'}
+        when={when}
+        title={session.course}
+        room={session.room ?? undefined}
+        teacher={session.teacher ?? undefined}
         onPress={() => router.push({ pathname: '/schedule', params: { kind: 'timetable' } })}
-        accessibilityLabel={session.course}
-        style={styles.card}
-      >
-        <Text variant="label" color="primary">
-          {[when, formatClassTime(session)].filter(Boolean).join(' · ')}
-        </Text>
-        <Text variant="heading" numberOfLines={2}>
-          {session.course}
-        </Text>
-        {session.room ? <Meta icon="location" text={session.room} /> : null}
-        {session.teacher ? <Meta icon="department" text={session.teacher} /> : null}
-      </Card>
+      />
     );
   } else if (next.kind === 'exam') {
     const { exam } = next;
     body = (
-      <Card
+      <NextCard
+        time={exam.startTime ?? '—'}
+        when={exam.date ? (formatDayHeading(exam.date, language) ?? '') : ''}
+        title={exam.course}
+        room={exam.room ?? undefined}
+        tag={t('home.nextUp.exam')}
         onPress={() => router.push({ pathname: '/schedule', params: { kind: 'exams' } })}
-        accessibilityLabel={exam.course}
-        style={styles.card}
-      >
-        <Text variant="label" color="primary">
-          {[
-            t('home.nextUp.exam'),
-            exam.date ? formatDayHeading(exam.date, language) : null,
-            formatTimeRange(exam),
-          ]
-            .filter(Boolean)
-            .join(' · ')}
-        </Text>
-        <Text variant="heading" numberOfLines={2}>
-          {exam.course}
-        </Text>
-        {exam.room ? <Meta icon="location" text={exam.room} /> : null}
-      </Card>
+      />
     );
   } else {
     body = (
@@ -150,7 +189,10 @@ export function TodayMenuSection() {
 
   return (
     <View>
-      <SectionHeader title={t('home.menuToday.title')} />
+      <SectionHeader
+        title={t('home.menuToday.title')}
+        action={{ label: t('home.menuToday.all'), onPress: () => router.push('/menu') }}
+      />
       {isLoading ? (
         <Loading />
       ) : mains.length > 0 ? (
@@ -159,7 +201,7 @@ export function TodayMenuSection() {
           accessibilityLabel={t('home.menuToday.title')}
           style={styles.card}
         >
-          <Text variant="overline" color="primary">
+          <Text variant="label" color="primary">
             {t('menu.meals.lunch')}
           </Text>
           <View style={styles.items}>
@@ -186,7 +228,10 @@ export function LatestAnnouncementsSection({ scope }: { scope: string }) {
 
   return (
     <View>
-      <SectionHeader title={t('home.latest.title')} />
+      <SectionHeader
+        title={t('home.latest.title')}
+        action={{ label: t('home.latest.all'), onPress: () => router.push('/announcements') }}
+      />
       {isLoading ? (
         <Loading />
       ) : latest.length > 0 ? (
@@ -212,6 +257,23 @@ const useStyles = createStyles((theme) => ({
   card: {
     marginHorizontal: theme.spacing[4],
     gap: theme.spacing[2],
+  },
+  next: {
+    flexDirection: 'row',
+    gap: theme.spacing[4],
+  },
+  when: {
+    width: 72,
+    gap: theme.spacing[0.5],
+  },
+  rule: {
+    width: 3,
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.brand,
+  },
+  what: {
+    flex: 1,
+    gap: theme.spacing[1],
   },
   meta: {
     flexDirection: 'row',
