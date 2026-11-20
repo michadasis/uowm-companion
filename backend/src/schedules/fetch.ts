@@ -1,7 +1,7 @@
 import type { Block } from '../content/blocks.js';
 import { discoverDocuments } from '../documents/discover.js';
 import { NotADocumentError, renderDocument } from '../documents/pipeline.js';
-import { fetchBuffer, fetchText } from '../http/fetch.js';
+import { fetchBuffer, fetchText, isTransient } from '../http/fetch.js';
 import type { Department } from '../registry/index.js';
 
 import { parseClassTable } from './parse/classTable.js';
@@ -44,13 +44,17 @@ export async function fetchSchedule(
 
   // Each document is read on its own: one that can't be read leaves the rest.
   // A link that turns out to serve no document at all — a dead link landing on
-  // a 404 page — is dropped, as if it had never been listed.
+  // a 404 page — is dropped, as if it had never been listed. A site that is
+  // only slow fails the whole request instead, so the last full schedule
+  // stays served rather than one missing a part.
   const results = await Promise.all(
     discovery.documents.map((document) =>
       renderDocument(document, fetchBuffer).then(
         (result) => ({ document, blocks: result.blocks }),
-        (error: unknown) =>
-          error instanceof NotADocumentError ? null : { document, blocks: [] as Block[] },
+        (error: unknown) => {
+          if (isTransient(error)) throw error;
+          return error instanceof NotADocumentError ? null : { document, blocks: [] as Block[] };
+        },
       ),
     ),
   );

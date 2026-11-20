@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type * as HttpFetch from '../src/http/fetch.js';
 import type { Department } from '../src/registry/index.js';
 
 const render = vi.fn<(...args: unknown[]) => Promise<{ blocks: unknown[] }>>();
@@ -16,7 +17,11 @@ vi.mock('../src/documents/pipeline.js', () => {
   class NotADocumentError extends Error {}
   return { NotADocumentError, renderDocument: (...args: unknown[]) => render(...args) };
 });
-vi.mock('../src/http/fetch.js', () => ({ fetchText: vi.fn(), fetchBuffer: vi.fn() }));
+vi.mock('../src/http/fetch.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof HttpFetch>()),
+  fetchText: vi.fn(),
+  fetchBuffer: vi.fn(),
+}));
 
 const { fetchSchedule } = await import('../src/schedules/fetch.js');
 const { NotADocumentError } = await import('../src/documents/pipeline.js');
@@ -53,5 +58,21 @@ describe('fetchSchedule resilience', () => {
     const result = await fetchSchedule(dept, 'timetable');
 
     expect(result).toMatchObject({ available: true, document: null, original: [] });
+  });
+});
+
+describe('fetchSchedule when a site is only slow', () => {
+  it('fails the request, rather than serve a schedule missing a part', async () => {
+    const { FetchError } = await import('../src/http/fetch.js');
+    render.mockRejectedValue(new FetchError('Could not reach https://x/doc.pdf'));
+
+    await expect(fetchSchedule(dept, 'timetable')).rejects.toThrow('Could not reach');
+  });
+
+  it('still leaves out a document the site says is gone', async () => {
+    const { FetchError } = await import('../src/http/fetch.js');
+    render.mockRejectedValue(new FetchError('https://x/doc.pdf answered 404', { status: 404 }));
+
+    await expect(fetchSchedule(dept, 'timetable')).resolves.toMatchObject({ available: true });
   });
 });

@@ -1,5 +1,5 @@
 import { parseArchiveEntries } from '../content/extract.js';
-import { fetchJson, fetchText, mapWithConcurrency } from '../http/fetch.js';
+import { FetchError, fetchJson, fetchText, mapWithConcurrency } from '../http/fetch.js';
 import type { AnnouncementsSource } from '../registry/index.js';
 
 import { parseHtmlListingPost } from './htmlListing.js';
@@ -74,6 +74,14 @@ export async function fetchAnnouncements(
     // A theme that dates posts only in the listing still gets them dated.
     return announcement.date ? announcement : { ...announcement, date: entry.date };
   });
+  // The odd post that won't load is left out; most of them failing is the
+  // site struggling, & a feed of the few that made it would be cached as if
+  // that were all there is.
+  if (entries.length >= 4 && announcements.length < entries.length / 2) {
+    throw new FetchError(
+      `Only ${announcements.length} of ${entries.length} posts loaded from ${source.listingUrl}`,
+    );
+  }
   return orderNewestFirst(announcements);
 }
 

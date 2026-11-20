@@ -30,12 +30,33 @@ async function request(url: string): Promise<Response> {
   return response;
 }
 
+/**
+ * Whether an error is the site being slow or briefly down — worth a retry
+ * later — rather than a page that isn't there. A response built around such a
+ * failure would be cached as if the site had less to say; better to fail the
+ * request, which the CDN never caches, & keep serving the last good answer.
+ */
+export function isTransient(error: unknown): boolean {
+  if (!(error instanceof FetchError)) return false;
+  return error.status === undefined || error.status >= 500 || error.status === 429;
+}
+
+// The body can time out too, after the headers came back in time.
+async function body<T>(url: string, read: (response: Response) => Promise<T>): Promise<T> {
+  const response = await request(url);
+  try {
+    return await read(response);
+  } catch (cause) {
+    throw new FetchError(`Could not read ${url}`, { cause });
+  }
+}
+
 export async function fetchText(url: string): Promise<string> {
-  return (await request(url)).text();
+  return body(url, (response) => response.text());
 }
 
 export async function fetchBuffer(url: string): Promise<Uint8Array> {
-  return new Uint8Array(await (await request(url)).arrayBuffer());
+  return body(url, async (response) => new Uint8Array(await response.arrayBuffer()));
 }
 
 export async function fetchJson(url: string): Promise<unknown> {
