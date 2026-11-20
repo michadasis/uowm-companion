@@ -160,7 +160,13 @@ function isPast(texts: string[], published: Date | null, kind: ScheduleKind, now
   if (named !== undefined) {
     const current =
       now.getUTCMonth() >= yearTurnsIn[kind] ? now.getUTCFullYear() : now.getUTCFullYear() - 1;
-    return named < current;
+    if (named < current) return true;
+    // A winter term's timetable is over once the spring term starts, in
+    // March at the latest, even while the year it names still runs.
+    const folded = fold(texts.join(' '));
+    const winterOnly = /χειμ|winter/.test(folded) && !/εαριν|spring/.test(folded);
+    const month = now.getUTCMonth();
+    return kind === 'timetable' && winterOnly && named === current && month >= 2 && month <= 7;
   }
   return published !== null && isStale(published, kind, now);
 }

@@ -283,6 +283,23 @@ describe('telling a past term from the current one', () => {
     ).toBeNull();
   });
 
+  it("drops a winter term's timetable once spring has begun", async () => {
+    const page = pages({
+      'https://mech.uowm.gr/': `<a href="https://mech.uowm.gr/wp-content/uploads/2019/10/MECH_schedule_winter_26-27.pdf">Ωρολόγιο Πρόγραμμα</a>`,
+    });
+    const source: ScheduleSource = {
+      adapter: 'menu-link',
+      pageUrl: 'https://mech.uowm.gr/',
+      label: 'Ωρολόγιο Πρόγραμμα',
+    };
+    expect(
+      await discoverDocuments(source, 'timetable', page, new Date('2027-02-10T12:00:00Z')),
+    ).not.toBeNull();
+    expect(
+      await discoverDocuments(source, 'timetable', page, new Date('2027-03-10T12:00:00Z')),
+    ).toBeNull();
+  });
+
   it('drops an exam schedule for a sitting over by more than a week', async () => {
     const posted = (title: string) =>
       vi.fn(() =>
@@ -317,5 +334,45 @@ describe('telling a past term from the current one', () => {
         now,
       ),
     ).not.toBeNull();
+  });
+});
+
+describe('discoverDocuments from a post listing', () => {
+  const listing = 'https://rdcbs.uowm.gr/category/anakoinoseis/';
+  const post = 'https://rdcbs.uowm.gr/anakoinoseis/programma-exetastikis-ianouariou/';
+  const source: ScheduleSource = { adapter: 'listing-posts', listingUrl: listing };
+
+  it("takes the newest post titled as the schedule & the documents in it, not the page's menu", async () => {
+    const fetchText = pages({
+      [listing]: `<a href="/anakoinoseis/dilosi/">Δήλωση μαθημάτων</a>
+        <a href="${post}">ΠΡΟΓΡΑΜΜΑ ΕΞΕΤΑΣΤΙΚΗΣ ΙΑΝΟΥΑΡΙΟΥ 2027</a>
+        <a href="/anakoinoseis/old/">ΠΡΟΓΡΑΜΜΑ ΕΞΕΤΑΣΤΙΚΗΣ ΣΕΠΤΕΜΒΡΙΟΥ 2026</a>`,
+      [post]: `<nav><a href="/wp-content/uploads/2020/10/odigos.pdf">Οδηγός</a></nav>
+        <div class="post-content"><a href="/wp-content/uploads/2026/12/exams.doc">Πρόγραμμα</a></div>`,
+    });
+
+    const found = await discoverDocuments(
+      source,
+      'exams',
+      fetchText,
+      new Date('2026-12-20T12:00:00Z'),
+    );
+    expect(found?.label).toBe('ΠΡΟΓΡΑΜΜΑ ΕΞΕΤΑΣΤΙΚΗΣ ΙΑΝΟΥΑΡΙΟΥ 2027');
+    expect(found?.documents).toEqual([
+      {
+        url: 'https://rdcbs.uowm.gr/wp-content/uploads/2026/12/exams.doc',
+        format: 'doc',
+        label: 'Πρόγραμμα',
+      },
+    ]);
+  });
+
+  it('gives none when the newest such post is for a sitting long over', async () => {
+    const fetchText = pages({
+      [listing]: `<a href="${post}">ΠΡΟΓΡΑΜΜΑ ΕΞΕΤΑΣΤΙΚΗΣ ΣΕΠΤΕΜΒΡΙΟΥ 2026</a>`,
+    });
+    expect(
+      await discoverDocuments(source, 'exams', fetchText, new Date('2026-11-20T12:00:00Z')),
+    ).toBeNull();
   });
 });
