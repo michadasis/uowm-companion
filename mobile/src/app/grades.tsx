@@ -20,6 +20,7 @@ import {
 } from '@/design';
 import { formatUpdatedAt } from '@/features/announcements/format';
 import { ExpiredNotice } from '@/features/universis/ExpiredNotice';
+import { GradeSummaryCard } from '@/features/universis/GradeSummaryCard';
 import { bySemester, formatGrade, semesterLetter, summarise } from '@/features/universis/grades';
 import type { StudentCourse } from '@/features/universis/types';
 import { useStudentCourses } from '@/features/universis/useStudentCourses';
@@ -112,28 +113,7 @@ export default function GradesScreen() {
           <ExpiredNotice updatedAt={student.updatedAt} onReconnect={connect} />
         ) : null}
 
-        <Card style={styles.summary}>
-          <View style={styles.stat}>
-            <Text variant="title">
-              {summary.average !== null ? formatGrade(summary.average, language) : '—'}
-            </Text>
-            <Text variant="caption" color="textMuted">
-              {t('universis.grades.average')}
-            </Text>
-          </View>
-          <View style={styles.stat}>
-            <Text variant="title">{`${summary.passed}/${summary.total}`}</Text>
-            <Text variant="caption" color="textMuted">
-              {t('universis.grades.passed')}
-            </Text>
-          </View>
-          <View style={styles.stat}>
-            <Text variant="title">{formatGrade(summary.ects, language)}</Text>
-            <Text variant="caption" color="textMuted">
-              ECTS
-            </Text>
-          </View>
-        </Card>
+        <GradeSummaryCard summary={summary} />
         {!student.expired && student.updatedAt ? (
           <Text variant="caption" color="textSubtle">
             {t('universis.grades.updated', {
@@ -205,14 +185,6 @@ const useStyles = createStyles((theme) => ({
     paddingTop: theme.spacing[2],
     paddingBottom: theme.spacing[10],
     gap: theme.spacing[3],
-  },
-  summary: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  stat: {
-    alignItems: 'center',
-    gap: theme.spacing[0.5],
   },
   chips: {
     gap: theme.spacing[2],

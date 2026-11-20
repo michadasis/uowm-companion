@@ -83,6 +83,32 @@ function gradedInOf(raw: Json): string | undefined {
   return [period, year].filter(Boolean).join(' ') || undefined;
 }
 
+// The sittings of an academic year, in the order they come: winter, spring,
+// the September resits.
+const sittings: [RegExp, number][] = [
+  [/ιαν|φεβ|χειμ/u, 1],
+  [/ιουν|ιουλ|εαρ/u, 2],
+  [/σεπ/u, 3],
+];
+
+function gradedOrderOf(raw: Json): number | undefined {
+  const gradeYear = isObject(raw.gradeYear) ? raw.gradeYear : undefined;
+  const year = numberOf(gradeYear?.id) ?? numberOf(gradeYear);
+  if (year === undefined || year < 1900) return undefined;
+  const examPeriod = isObject(raw.examPeriod) ? raw.examPeriod : undefined;
+  const period = (
+    text(raw.gradePeriodDescription) ??
+    text(examPeriod?.alternateName) ??
+    text(examPeriod?.name) ??
+    ''
+  )
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase();
+  const sitting = sittings.find(([pattern]) => pattern.test(period))?.[1] ?? 0;
+  return year * 10 + sitting;
+}
+
 /**
  * Maps a Universis course — a row of the transcript or a class on a
  * declaration, which carry the same fields here — to our shape.
@@ -98,6 +124,7 @@ export function mapCourse(raw: Json): StudentCourse | null {
   const semester = numberOf(raw.semester);
   const grade = gradeOf(raw);
   const gradedIn = grade !== undefined ? gradedInOf(raw) : undefined;
+  const gradedOrder = grade !== undefined ? gradedOrderOf(raw) : undefined;
   const ects = plainNumber(raw.ects);
   const coefficient = plainNumber(raw.coefficient);
 
@@ -109,6 +136,7 @@ export function mapCourse(raw: Json): StudentCourse | null {
     ...(semester !== undefined ? { semester } : {}),
     ...(grade !== undefined ? { grade } : {}),
     ...(gradedIn ? { gradedIn } : {}),
+    ...(gradedOrder !== undefined ? { gradedOrder } : {}),
     ...(ects !== undefined ? { ects } : {}),
     ...(coefficient !== undefined ? { coefficient } : {}),
   };

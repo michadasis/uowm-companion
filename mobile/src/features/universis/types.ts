@@ -21,6 +21,11 @@ export interface StudentCourse {
   grade?: number;
   /** The exam period it was graded in, e.g. "ΦΕΒΡ 2025-2026". */
   gradedIn?: string;
+  /**
+   * When it was graded, as a number that sorts in order: the academic year's
+   * start times ten, plus the sitting — 1 January, 2 June, 3 September.
+   */
+  gradedOrder?: number;
   ects?: number;
   /** The course's weight in the degree mark. */
   coefficient?: number;

@@ -195,6 +195,11 @@ export const el = {
     grades: {
       title: 'Βαθμολογία',
       average: 'Μέσος όρος',
+      averageShort: 'Μ.Ο.',
+      noAverage: 'Χωρίς μέσο όρο ακόμα',
+      ects: 'ECTS',
+      latest: 'Τελευταίοι βαθμοί',
+      all: 'Όλοι',
       passed: 'Περασμένα',
       updated: 'Ενημερώθηκε {{time}}',
       semester: '{{letter}} εξάμηνο',

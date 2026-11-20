@@ -31,6 +31,17 @@ export function summarise(courses: StudentCourse[]): GradeSummary {
   };
 }
 
+/**
+ * The most recently graded courses, newest first: what a student checks after
+ * a sitting. A course graded with no known date comes after the dated ones.
+ */
+export function latestGrades(courses: StudentCourse[], count = 3): StudentCourse[] {
+  return courses
+    .filter((course) => course.grade !== undefined)
+    .sort((a, b) => (b.gradedOrder ?? -1) - (a.gradedOrder ?? -1))
+    .slice(0, count);
+}
+
 export interface SemesterGrades {
   /** 1-based; 0 gathers the courses Universis gave no semester. */
   semester: number;

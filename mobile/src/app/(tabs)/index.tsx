@@ -9,6 +9,7 @@ import {
   NextUpSection,
   TodayMenuSection,
 } from '@/features/home/sections';
+import { GradesSection } from '@/features/home/GradesSection';
 import { TodayHero } from '@/features/home/TodayHero';
 import { useSettings } from '@/features/settings/store';
 import type { Language } from '@/features/settings/store';
@@ -44,6 +45,7 @@ export default function HomeScreen() {
         {departmentId ? (
           <>
             <NextUpSection scope={departmentId} city={department?.city ?? null} />
+            <GradesSection />
             <TodayMenuSection />
             <LatestAnnouncementsSection scope={departmentId} />
           </>

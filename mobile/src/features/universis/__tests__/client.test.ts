@@ -104,6 +104,8 @@ describe('mapCourse', () => {
       grade: 3.5,
       passed: false,
       gradedIn: 'ΣΕΠΤ 2025-2026',
+      // The September sitting of 2025-2026 sorts after its June & January.
+      gradedOrder: 20253,
       ects: 6,
       coefficient: 1.5,
     });

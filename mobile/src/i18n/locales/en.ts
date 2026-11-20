@@ -197,6 +197,11 @@ export const en: Messages = {
     grades: {
       title: 'Grades',
       average: 'Average',
+      averageShort: 'Avg.',
+      noAverage: 'No average yet',
+      ects: 'ECTS',
+      latest: 'Latest grades',
+      all: 'See all',
       passed: 'Passed',
       updated: 'Updated {{time}}',
       semester: 'Semester {{letter}}',

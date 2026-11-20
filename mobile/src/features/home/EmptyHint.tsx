@@ -15,7 +15,7 @@ export function EmptyHint({ icon, text }: EmptyHintProps) {
     <Card style={styles.card}>
       <View style={styles.row}>
         <View style={styles.icon}>
-          <Icon name={icon} color="textMuted" />
+          <Icon name={icon} color="textSubtle" />
         </View>
         <Text variant="callout" color="textMuted" style={styles.text}>
           {text}
@@ -34,11 +34,9 @@ const useStyles = createStyles((theme) => ({
     alignItems: 'center',
     gap: theme.spacing[3],
   },
+  // A bare icon, as the list rows have: a placeholder should be quiet.
   icon: {
-    width: 40,
-    height: 40,
-    borderRadius: theme.radius.full,
-    backgroundColor: theme.colors.surfaceMuted,
+    width: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },
