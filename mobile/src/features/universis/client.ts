@@ -152,7 +152,8 @@ async function getBody(path: string, token: string, options: RequestOptions): Pr
   const base = options.baseUrl ?? UNIVERSIS_API;
   let response: Response;
   try {
-    response = await fetch(`${base}${path}`, {
+    // One slash between the base & the path, whichever way either is written.
+    response = await fetch(`${base.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`, {
       headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
       signal: options.signal,
     });
@@ -210,10 +211,10 @@ export async function fetchStudentProfile(
   let body: unknown;
   let failure: unknown;
   for (const path of [
-    'students/me?$expand=person($expand=gender),department,studyProgram',
-    'students/me?$expand=person,department',
-    'students/me?$expand=person',
-    'students/me',
+    '/students/me?$expand=person($expand=gender),department,studyProgram',
+    '/students/me?$expand=person,department',
+    '/students/me?$expand=person',
+    '/students/me',
   ]) {
     try {
       body = await getBody(path, token, options);

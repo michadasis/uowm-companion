@@ -88,10 +88,15 @@ describe('first launch', () => {
   it('finds the department from Universis, past a stale token & one it turns down', async () => {
     const inAnHour = Math.floor(Date.now() / 1000) + 3600;
     const refused = jwt(inAnHour, 'refused');
-    const fetchMock = jest.spyOn(globalThis, 'fetch').mockImplementation((_input, init) => {
+    // Universis as it answers: the profile only at its real address, a 404
+    // anywhere else, & a 401 for a token it turns down.
+    const fetchMock = jest.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
       const auth = (init?.headers as Record<string, string> | undefined)?.Authorization ?? '';
       if (auth.includes(refused)) {
         return Promise.resolve({ ok: false, status: 401, json: async () => ({}) } as Response);
+      }
+      if (!String(input).startsWith('https://api1.uowm.gr/api/students/me?')) {
+        return Promise.resolve({ ok: false, status: 404, json: async () => ({}) } as Response);
       }
       return Promise.resolve({
         ok: true,

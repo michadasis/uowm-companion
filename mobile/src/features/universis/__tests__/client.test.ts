@@ -324,6 +324,14 @@ describe('fetchStudentProfile, as the UoWM Universis answers', () => {
         names: ['ΤΜΗΜΑ ΠΛΗΡΟΦΟΡΙΚΗΣ', 'ΠΡΟΓΡΑΜΜΑ ΣΠΟΥΔΩΝ ΠΛΗΡΟΦΟΡΙΚΗΣ'],
       },
     });
+    // The address the live API answers on, checked in the browser: one slash
+    // between /api & the path. Without it the API says 404, & no department.
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api1.uowm.gr/api/students/me?$expand=person($expand=gender),department,studyProgram',
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer tok' }),
+      }),
+    );
     fetchMock.mockRestore();
   });
 });
