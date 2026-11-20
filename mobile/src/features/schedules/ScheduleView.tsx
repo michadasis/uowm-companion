@@ -27,6 +27,7 @@ import type { CourseFilterStatus } from '@/features/universis/CourseFilterBar';
 import { ExpiredNotice } from '@/features/universis/ExpiredNotice';
 import { filterByCourses, selectedCourseKeys } from '@/features/universis/match';
 import { useStudentCourses } from '@/features/universis/useStudentCourses';
+import { isNetworkError } from '@/lib/api';
 import { usePreviewNow } from '@/lib/usePreviewNow';
 
 import { ExamsAgenda } from './ExamsAgenda';
@@ -49,17 +50,21 @@ export function ScheduleView({ scope, kind }: ScheduleViewProps) {
   const router = useRouter();
   const theme = useTheme();
   const styles = useStyles();
-  const { data, isLoading, isRefetching, refetch, fetchStatus, dataUpdatedAt } = useSchedule(
+  const { data, isLoading, isRefetching, refetch, fetchStatus, dataUpdatedAt, error } = useSchedule(
     scope,
     kind,
   );
-  const offline = fetchStatus === 'paused';
+  // No network at all, or a request that tried & could not get through.
+  const offline = fetchStatus === 'paused' || isNetworkError(error);
   const { data: calendar } = useCalendar();
   const now = usePreviewNow();
   const directory = useDirectory();
   const city = findDepartment(directory, scope)?.city ?? null;
 
-  const courseFilter = useSettings((s) => s.courseFilter);
+  // "Owed" is no longer offered on the schedule; a student who had it picked
+  // sees their declared courses.
+  const savedFilter = useSettings((s) => s.courseFilter);
+  const courseFilter = savedFilter === 'owed' ? 'registered' : savedFilter;
   const setCourseFilter = useSettings((s) => s.setCourseFilter);
   const student = useStudentCourses();
   // Only narrow once there are courses to narrow by. A read still in flight, or

@@ -55,7 +55,7 @@ describe('CourseFilterBar', () => {
       <CourseFilterBar {...base} expired updatedAt={Date.now()} onConnect={onConnect} />,
     );
 
-    expect(await screen.findByTestId('course-filter-owed')).toBeOnTheScreen();
+    expect(await screen.findByTestId('course-filter-registered')).toBeOnTheScreen();
     expect(screen.getByText('Η σύνδεση με το Universis έληξε')).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: 'Σύνδεση ξανά' }));
     expect(onConnect).toHaveBeenCalled();

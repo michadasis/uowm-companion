@@ -70,7 +70,9 @@ export function CourseChips({
     ) : null;
   }
 
-  const shown: CourseFilter[] = includeAll ? ['registered', 'owed', 'all'] : ['registered', 'owed'];
+  // Declared only: owed courses are mostly the declared ones, so a second chip
+  // filtered nearly the same.
+  const shown: CourseFilter[] = includeAll ? ['registered', 'all'] : ['registered'];
   return (
     <>
       {shown.map((value) => (

@@ -12,7 +12,11 @@ import { ScheduleView } from '../ScheduleView';
 import type { ScheduleResponse } from '../schema';
 
 jest.mock('expo-web-browser', () => ({ openBrowserAsync: jest.fn(() => Promise.resolve()) }));
-jest.mock('@/lib/api', () => ({ apiUrl: 'https://backend.test', getJson: jest.fn() }));
+jest.mock('@/lib/api', () => ({
+  ...jest.requireActual<typeof import('@/lib/api')>('@/lib/api'),
+  apiUrl: 'https://backend.test',
+  getJson: jest.fn(),
+}));
 
 const getJson = api.getJson as jest.MockedFunction<typeof api.getJson>;
 
@@ -109,7 +113,7 @@ describe('ScheduleView', () => {
     expect(screen.getByText('Μεγ. Αμφιθέατρο')).toBeOnTheScreen();
   });
 
-  it('narrows the exams to the owed courses once Universis is linked', async () => {
+  it('narrows the exams to the declared courses once Universis is linked', async () => {
     respond({
       ...withDocument,
       exams: [
@@ -117,14 +121,21 @@ describe('ScheduleView', () => {
         { course: 'Παλιό Μάθημα', date: '2026-09-01', startTime: '09:00' },
       ],
     });
-    const fetchMock = jest.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true,
-      json: async () => [
-        { course: { name: 'Αλγόριθμοι' }, isPassed: false },
-        { course: { name: 'Παλιό Μάθημα' }, isPassed: true },
-      ],
-    } as Response);
+    // Universis answers per endpoint: the transcript, the declarations, the profile.
+    const fetchMock = jest.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+      const url = String(input);
+      const body = url.includes('registrations')
+        ? [{ registrationYear: { id: 2026 }, classes: [{ course: { name: 'Αλγόριθμοι' } }] }]
+        : url.includes('students/me/courses')
+          ? [
+              { course: { name: 'Αλγόριθμοι' }, isPassed: 0 },
+              { course: { name: 'Παλιό Μάθημα' }, isPassed: 1 },
+            ]
+          : { person: { givenName: 'ΙΩΑΝΝΗΣ' } };
+      return Promise.resolve({ ok: true, json: async () => body } as Response);
+    });
     useUniversisAuth.setState({ token: 'tok' });
+    // A student who had "owed" picked, before it was dropped, sees the declared.
     useSettings.setState({ courseFilter: 'owed' });
 
     await renderView('exams');
