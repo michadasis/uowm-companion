@@ -62,7 +62,8 @@ export function academicYearOf(now: Date): number {
 }
 
 async function pdfLines(data: Uint8Array): Promise<string[]> {
-  const doc = await getDocumentProxy(data);
+  // Quiet: pdf.js warns of every odd font instruction,   const doc = await getDocumentProxy(data); the logs are for errors.
+  const doc = await getDocumentProxy(data, { verbosity: 0 });
   const lines: string[] = [];
   for (let number = 1; number <= doc.numPages; number++) {
     const page = await doc.getPage(number);

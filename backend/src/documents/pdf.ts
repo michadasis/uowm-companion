@@ -22,7 +22,8 @@ interface Line {
  * back empty, for the caller to handle.
  */
 export async function pdfToBlocks(data: Uint8Array): Promise<Block[]> {
-  const doc = await getDocumentProxy(data);
+  // Quiet: pdf.js warns of every odd font instruction,   const doc = await getDocumentProxy(data); the logs are for errors.
+  const doc = await getDocumentProxy(data, { verbosity: 0 });
   const blocks: Block[] = [];
   let layout: ListLayout | undefined;
 
