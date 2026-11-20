@@ -31,7 +31,13 @@ describe('settings', () => {
     useSettings.getState().setTheme('dark');
 
     expect(await saved()).toEqual({
-      state: { departmentId: 'cs', semester: null, courseFilter: 'all', language: 'en', theme: 'dark' },
+      state: {
+        departmentId: 'cs',
+        semester: null,
+        courseFilter: 'all',
+        language: 'en',
+        theme: 'dark',
+      },
       version: 1,
     });
   });

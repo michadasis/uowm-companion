@@ -130,7 +130,8 @@ async function getList(path: string, token: string, options: RequestOptions): Pr
   } catch {
     throw new UniversisError('Could not reach Universis');
   }
-  if (!response.ok) throw new UniversisError(`Universis replied ${response.status}`, response.status);
+  if (!response.ok)
+    throw new UniversisError(`Universis replied ${response.status}`, response.status);
 
   let body: unknown;
   try {

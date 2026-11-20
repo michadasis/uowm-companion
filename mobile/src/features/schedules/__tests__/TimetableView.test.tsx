@@ -7,8 +7,22 @@ import { TimetableView } from '../TimetableView';
 import type { ClassSession } from '../schema';
 
 const classes: ClassSession[] = [
-  { course: 'Ηλεκτρονική', day: 1, startTime: '09:00', endTime: '10:00', room: 'Μεγ. Αμφιθέατρο', semester: 'Α΄' },
-  { course: 'Φυσική', day: 1, startTime: '11:00', endTime: '12:00', teacher: 'Θ. Παπαβασιλείου', semester: 'Α΄' },
+  {
+    course: 'Ηλεκτρονική',
+    day: 1,
+    startTime: '09:00',
+    endTime: '10:00',
+    room: 'Μεγ. Αμφιθέατρο',
+    semester: 'Α΄',
+  },
+  {
+    course: 'Φυσική',
+    day: 1,
+    startTime: '11:00',
+    endTime: '12:00',
+    teacher: 'Θ. Παπαβασιλείου',
+    semester: 'Α΄',
+  },
   { course: 'Μεταγλωττιστές', day: 2, startTime: '13:00', endTime: '14:00', semester: 'Α΄' },
   { course: 'Ασφάλεια Δικτύων', day: 1, startTime: '11:00', endTime: '12:00', semester: 'Γ΄' },
 ];
@@ -21,7 +35,7 @@ beforeEach(() => {
 });
 
 describe('TimetableView', () => {
-  it("opens on today & flags the class in progress", async () => {
+  it('opens on today & flags the class in progress', async () => {
     await render(<TimetableView classes={classes} now={monday} />);
 
     expect(await screen.findByText('Ηλεκτρονική')).toBeOnTheScreen();

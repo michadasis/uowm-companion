@@ -30,6 +30,20 @@ const withDocument: ScheduleResponse = {
   original: [{ type: 'paragraph', content: [{ text: 'Η εξεταστική ξεκινά τη Δευτέρα.' }] }],
 };
 
+// The view reads the schedule, & beside it the academic calendar & the
+// department directory, which these tests leave unanswered.
+function respond(schedule: object) {
+  getJson.mockImplementation((path: string) =>
+    /^\/api\/(exams|timetable)/.test(path)
+      ? Promise.resolve(schedule)
+      : Promise.reject(new Error(`not mocked: ${path}`)),
+  );
+}
+
+function fail(error: Error) {
+  getJson.mockImplementation(() => Promise.reject(error));
+}
+
 function renderView(kind: ScheduleResponse['kind'] = 'exams') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const wrapper = ({ children }: { children: ReactNode }) => (
@@ -46,7 +60,7 @@ beforeEach(() => {
 
 describe('ScheduleView', () => {
   it('shows the document & its Original view when it did not parse', async () => {
-    getJson.mockResolvedValue(withDocument);
+    respond(withDocument);
     await renderView();
 
     expect(await screen.findByText('Πρόγραμμα Σεπτεμβρίου')).toBeOnTheScreen();
@@ -54,7 +68,7 @@ describe('ScheduleView', () => {
   });
 
   it('shows the agenda when the exam schedule parsed', async () => {
-    getJson.mockResolvedValue({
+    respond({
       ...withDocument,
       exams: [
         {
@@ -76,11 +90,17 @@ describe('ScheduleView', () => {
   });
 
   it('shows the timetable when it parsed into classes', async () => {
-    getJson.mockResolvedValue({
+    respond({
       ...withDocument,
       kind: 'timetable',
       classes: [
-        { course: 'Ηλεκτρονική', day: 1, startTime: '09:00', endTime: '10:00', room: 'Μεγ. Αμφιθέατρο' },
+        {
+          course: 'Ηλεκτρονική',
+          day: 1,
+          startTime: '09:00',
+          endTime: '10:00',
+          room: 'Μεγ. Αμφιθέατρο',
+        },
       ],
     });
     await renderView('timetable');
@@ -90,7 +110,7 @@ describe('ScheduleView', () => {
   });
 
   it('narrows the exams to the owed courses once Universis is linked', async () => {
-    getJson.mockResolvedValue({
+    respond({
       ...withDocument,
       exams: [
         { course: 'Αλγόριθμοι', date: '2026-08-31', startTime: '09:00' },
@@ -113,23 +133,25 @@ describe('ScheduleView', () => {
     expect(screen.queryByText('Παλιό Μάθημα')).not.toBeOnTheScreen();
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('api1.uowm.gr/api/students/me/courses'),
-      expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'Bearer tok' }) }),
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer tok' }),
+      }),
     );
     fetchMock.mockRestore();
   });
 
   it('opens the source document when asked', async () => {
-    getJson.mockResolvedValue(withDocument);
+    respond(withDocument);
     const user = userEvent.setup();
     await renderView();
 
-    await user.press(await screen.findByRole('button', { name: 'Άνοιγμα εγγράφου' }));
+    await user.press(await screen.findByRole('link', { name: /^Άνοιγμα εγγράφου:/ }));
 
     expect(WebBrowser.openBrowserAsync).toHaveBeenCalledWith('https://cs.uowm.gr/exams.docx');
   });
 
   it('explains a department that publishes no exam schedule', async () => {
-    getJson.mockResolvedValue({
+    respond({
       dept: 'ide',
       kind: 'exams',
       available: false,
@@ -146,7 +168,7 @@ describe('ScheduleView', () => {
   });
 
   it('says the next exam schedule is not out yet, not that there is none', async () => {
-    getJson.mockResolvedValue({
+    respond({
       dept: 'cs',
       kind: 'exams',
       available: true,
@@ -163,7 +185,7 @@ describe('ScheduleView', () => {
   });
 
   it('offers a retry when the schedule fails to load', async () => {
-    getJson.mockRejectedValue(new Error('boom'));
+    fail(new Error('boom'));
     await renderView();
 
     expect(await screen.findByRole('button', { name: 'Δοκίμασε ξανά' })).toBeOnTheScreen();

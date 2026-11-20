@@ -18,7 +18,7 @@ describe('CourseFilterBar', () => {
     const user = userEvent.setup();
     await render(<CourseFilterBar {...base} status="disconnected" onConnect={onConnect} />);
 
-    await user.press(await screen.findByRole('button', { name: 'Σύνδεση' }));
+    await user.press(await screen.findByRole('button', { name: /^Σύνδεση:/ }));
     expect(onConnect).toHaveBeenCalled();
     expect(screen.queryByTestId('course-filter-owed')).not.toBeOnTheScreen();
   });
@@ -53,7 +53,9 @@ describe('CourseFilterBar', () => {
   it('keeps the chips & says the saved courses may be out of date once expired', async () => {
     const onConnect = jest.fn();
     const user = userEvent.setup();
-    await render(<CourseFilterBar {...base} expired updatedAt={Date.now()} onConnect={onConnect} />);
+    await render(
+      <CourseFilterBar {...base} expired updatedAt={Date.now()} onConnect={onConnect} />,
+    );
 
     expect(await screen.findByTestId('course-filter-owed')).toBeOnTheScreen();
     expect(screen.getByText('Η σύνδεση με το Universis έληξε')).toBeOnTheScreen();

@@ -2,7 +2,9 @@ import { INJECTED_TOKEN_HOOK, parseTokenMessage } from '../login';
 
 describe('parseTokenMessage', () => {
   it('reads the token from a well-formed message', () => {
-    expect(parseTokenMessage(JSON.stringify({ type: 'universis-token', token: 'abc' }))).toBe('abc');
+    expect(parseTokenMessage(JSON.stringify({ type: 'universis-token', token: 'abc' }))).toBe(
+      'abc',
+    );
   });
 
   it('ignores a message of another type', () => {

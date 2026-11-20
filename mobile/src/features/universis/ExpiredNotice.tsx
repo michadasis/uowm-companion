@@ -36,7 +36,12 @@ export function ExpiredNotice({ updatedAt, onReconnect }: ExpiredNoticeProps) {
           </Text>
         </View>
       </View>
-      <Button label={t('universis.expired.cta')} variant="secondary" icon="retry" onPress={onReconnect} />
+      <Button
+        label={t('universis.expired.cta')}
+        variant="secondary"
+        icon="retry"
+        onPress={onReconnect}
+      />
     </View>
   );
 }

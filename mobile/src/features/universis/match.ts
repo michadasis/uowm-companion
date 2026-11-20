@@ -5,16 +5,47 @@ import type { CourseFilter, StudentCourse } from './types';
 // Small words that come & go between two spellings of the same title:
 // "Εισαγωγή σε Υπολογιστές" & "Εισαγωγή στους Υπολογιστές" are one course.
 const stopwords = new Set([
-  'και', 'σε', 'στο', 'στον', 'στην', 'στουσ', 'στισ', 'στα', 'με', 'του', 'τησ', 'των',
-  'το', 'τον', 'την', 'οι', 'τα', 'η', 'ο', 'για', 'απο',
+  'και',
+  'σε',
+  'στο',
+  'στον',
+  'στην',
+  'στουσ',
+  'στισ',
+  'στα',
+  'με',
+  'του',
+  'τησ',
+  'των',
+  'το',
+  'τον',
+  'την',
+  'οι',
+  'τα',
+  'η',
+  'ο',
+  'για',
+  'απο',
 ]);
 
 // Latin letters typed in place of the Greek ones they look like — a timetable
 // can say "IΙ" with one of each. Both sides get the same mapping, so a title
 // that really is in English still matches itself.
 const lookalikes: Record<string, string> = {
-  a: 'α', b: 'β', e: 'ε', h: 'η', i: 'ι', k: 'κ', m: 'μ', n: 'ν', o: 'ο', p: 'ρ', t: 'τ',
-  x: 'χ', y: 'υ', z: 'ζ',
+  a: 'α',
+  b: 'β',
+  e: 'ε',
+  h: 'η',
+  i: 'ι',
+  k: 'κ',
+  m: 'μ',
+  n: 'ν',
+  o: 'ο',
+  p: 'ρ',
+  t: 'τ',
+  x: 'χ',
+  y: 'υ',
+  z: 'ζ',
 };
 
 /**

@@ -100,7 +100,13 @@ describe('mapCourse', () => {
           coefficient: 1.5,
         }),
       ),
-    ).toMatchObject({ grade: 3.5, passed: false, gradedIn: 'ΣΕΠΤ 2025-2026', ects: 6, coefficient: 1.5 });
+    ).toMatchObject({
+      grade: 3.5,
+      passed: false,
+      gradedIn: 'ΣΕΠΤ 2025-2026',
+      ects: 6,
+      coefficient: 1.5,
+    });
   });
 
   it('leaves an ungraded course without a grade', () => {

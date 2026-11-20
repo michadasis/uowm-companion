@@ -11,7 +11,12 @@ import {
   weekdayShort,
 } from '../timetable';
 
-const session = (day: number, startTime: string, course: string, endTime?: string): ClassSession => ({
+const session = (
+  day: number,
+  startTime: string,
+  course: string,
+  endTime?: string,
+): ClassSession => ({
   course,
   day,
   startTime,
@@ -69,7 +74,10 @@ describe('nextClass', () => {
       { course: 'Τώρα', day: 1, startTime: '11:00', endTime: '12:00' },
       { course: 'Μετά', day: 1, startTime: '13:00', endTime: '14:00' },
     ];
-    expect(nextClass(classes, monday)).toMatchObject({ session: { course: 'Τώρα' }, inProgress: true });
+    expect(nextClass(classes, monday)).toMatchObject({
+      session: { course: 'Τώρα' },
+      inProgress: true,
+    });
     expect(nextClass(classes.slice(1), monday)).toMatchObject({ daysAhead: 0, inProgress: false });
   });
 
