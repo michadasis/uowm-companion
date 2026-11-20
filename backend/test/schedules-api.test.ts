@@ -21,12 +21,12 @@ describe('GET /api/exams & /api/timetable', () => {
 
   it('reports a department that publishes no such schedule, without fetching', async () => {
     // Product and Systems Design Engineering has no exams source in the registry.
-    const { status, response } = await call(exams, '?dept=ide');
+    const { status, response } = await call(exams, '?dept=mst');
     const body = (await response.json()) as ScheduleResponse;
 
     expect(status).toBe(200);
     expect(body).toMatchObject({
-      dept: 'ide',
+      dept: 'mst',
       kind: 'exams',
       available: false,
       document: null,
@@ -36,7 +36,7 @@ describe('GET /api/exams & /api/timetable', () => {
   });
 
   it('lets the CDN cache a schedule for an hour', async () => {
-    const { response } = await call(exams, '?dept=ide');
+    const { response } = await call(exams, '?dept=mst');
     expect(response.headers.get('cache-control')).toBe(
       'public, max-age=0, s-maxage=3600, stale-while-revalidate=604800',
     );

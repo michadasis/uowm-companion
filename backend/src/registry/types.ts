@@ -73,7 +73,9 @@ export type ScheduleSource =
   | { adapter: 'document-page'; pageUrl: string; pick: 'first-link' | 'newest-upload' }
   | { adapter: 'menu-link'; pageUrl: string; label: string }
   | { adapter: 'embedded-sheet'; pageUrl: string }
-  | { adapter: 'wordpress-posts'; apiRoot: string; category?: number; search?: string };
+  | { adapter: 'wordpress-posts'; apiRoot: string; category?: number; search?: string }
+  /** A site's post listing, read for the newest post titled as the schedule. */
+  | { adapter: 'listing-posts'; listingUrl: string };
 
 export interface PageSource {
   adapter: 'html-page';

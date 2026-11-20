@@ -201,6 +201,8 @@
       "website": "https://ide.uowm.gr",
       "features": [
         "announcements",
+        "exams",
+        "timetable",
         "staff",
         "secretariat"
       ]
@@ -223,6 +225,8 @@
       "website": "https://iees.uowm.gr",
       "features": [
         "announcements",
+        "exams",
+        "timetable",
         "staff",
         "secretariat"
       ]
@@ -287,6 +291,7 @@
       "website": "https://rdcbs.uowm.gr",
       "features": [
         "announcements",
+        "exams",
         "staff",
         "secretariat"
       ]
@@ -531,6 +536,8 @@
       "website": "https://mw.uowm.gr",
       "features": [
         "announcements",
+        "exams",
+        "timetable",
         "staff",
         "secretariat"
       ]
@@ -553,6 +560,8 @@
       "website": "https://eetf.uowm.gr",
       "features": [
         "announcements",
+        "exams",
+        "timetable",
         "staff",
         "secretariat"
       ]

@@ -16,7 +16,15 @@ const greek = /[Ͱ-Ͽ]/;
 function sourceUrls(department: Department): string[] {
   const { announcements, exams, timetable, staff, secretariat } = department.sources;
   const schedule = (source: ScheduleSource | undefined) =>
-    source ? ['apiRoot' in source ? source.apiRoot : source.pageUrl] : [];
+    source
+      ? [
+          'apiRoot' in source
+            ? source.apiRoot
+            : 'listingUrl' in source
+              ? source.listingUrl
+              : source.pageUrl,
+        ]
+      : [];
   return [
     announcements.adapter === 'wordpress-rest' ? announcements.apiRoot : announcements.listingUrl,
     ...schedule(exams),

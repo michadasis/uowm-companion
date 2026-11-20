@@ -1,4 +1,10 @@
-import type { Department, PageSource, UniversitySources, WordPressRestSource } from './types.js';
+import type {
+  Department,
+  PageSource,
+  ScheduleSource,
+  UniversitySources,
+  WordPressRestSource,
+} from './types.js';
 
 function site(id: string): string {
   return `https://${id}.uowm.gr`;
@@ -6,6 +12,11 @@ function site(id: string): string {
 
 function wordpress(id: string, categories: number[]): WordPressRestSource {
   return { adapter: 'wordpress-rest', apiRoot: `${site(id)}/wp-json/`, categories };
+}
+
+/** A schedule posted to the department's WordPress, found by its title. */
+function posts(id: string, search: string): ScheduleSource {
+  return { adapter: 'wordpress-posts', apiRoot: `${site(id)}/wp-json/`, search };
 }
 
 function page(url: string): PageSource {
@@ -132,6 +143,8 @@ export const departments: readonly Department[] = [
     website: site('ide'),
     sources: {
       announcements: wordpress('ide', [3]),
+      timetable: posts('ide', 'ωρολόγιο'),
+      exams: posts('ide', 'εξεταστικ'),
       staff: [page(`${site('ide')}/prosopiko/`), page(`${site('ide')}/ektakto-prosopiko/`)],
       secretariat: page(`${site('ide')}/epikoinonia/`),
     },
@@ -152,6 +165,8 @@ export const departments: readonly Department[] = [
     website: site('iees'),
     sources: {
       announcements: wordpress('iees', [15]),
+      timetable: posts('iees', 'ωρολόγιο'),
+      exams: posts('iees', 'εξεταστικ'),
       staff: [
         page(`${site('iees')}/prosopiko/didaktiko/`),
         page(`${site('iees')}/prosopiko/dioikitiko/`),
@@ -242,6 +257,8 @@ export const departments: readonly Department[] = [
         listingUrl: `${site('rdcbs')}/category/anakoinoseis/`,
         postPathPrefix: '/anakoinoseis/',
       },
+      // Its WordPress API is closed; exam schedules are posted as announcements.
+      exams: { adapter: 'listing-posts', listingUrl: `${site('rdcbs')}/category/anakoinoseis/` },
       staff: [page(`${site('rdcbs')}/?page_id=1093`)],
       secretariat: page(`${site('rdcbs')}/epikoinonia/`),
     },
@@ -494,6 +511,8 @@ export const departments: readonly Department[] = [
     website: site('mw'),
     sources: {
       announcements: wordpress('mw', [52]),
+      timetable: posts('mw', 'ωρολόγιο'),
+      exams: posts('mw', 'εξεταστικ'),
       staff: [
         page(`${site('mw')}/meli-dep/`),
         page(`${site('mw')}/didaskontes-a-y-407/`),
@@ -515,6 +534,8 @@ export const departments: readonly Department[] = [
     website: site('eetf'),
     sources: {
       announcements: wordpress('eetf', [7]),
+      timetable: posts('eetf', 'ωρολόγιο'),
+      exams: posts('eetf', 'εξεταστικ'),
       staff: [
         page(`${site('eetf')}/prosopiko/didaktiko-erevnitiko-prosopiko-d-e-p/`),
         page(`${site('eetf')}/prosopiko/didaskontes-tou-p-d-40780/`),

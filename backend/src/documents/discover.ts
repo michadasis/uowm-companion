@@ -19,7 +19,7 @@ interface Link {
 
 function documentLinks(html: string, baseUrl: string): Link[] {
   const $ = load(html);
-  const content = $('.entry-content, article .entry-content, article').first();
+  const content = $('.entry-content, .post-content, article .entry-content, article').first();
   const scope = content.length ? content : $('body');
   const links: Link[] = [];
 
@@ -42,6 +42,24 @@ function documentLinks(html: string, baseUrl: string): Link[] {
   });
 
   return links;
+}
+
+/** The first link in a post to another page of the same site, if any. */
+function pageLinkIn(html: string, baseUrl: string): string | null {
+  const $ = load(html);
+  const host = new URL(baseUrl).host;
+  let found: string | null = null;
+  $('a[href]').each((_, el) => {
+    if (found) return;
+    try {
+      const url = new URL($(el).attr('href')!, baseUrl);
+      if (url.host === host && !attachmentFormat(url.href) && url.pathname.length > 1)
+        found = url.href;
+    } catch {
+      /* ignore an unparseable href */
+    }
+  });
+  return found;
 }
 
 function toDocument(link: Link): DiscoveredDocument | null {
@@ -201,7 +219,12 @@ async function fromWordPress(
     const folded = fold(title);
     if (!want.test(folded) || skip.test(folded)) continue;
 
-    const links = unique(documentLinks(post.content?.rendered ?? '', post.link ?? source.apiRoot));
+    const base = post.link ?? source.apiRoot;
+    let links = unique(documentLinks(post.content?.rendered ?? '', base));
+    // A post announcing a change may only point to the post that holds the
+    // schedule itself; follow it, once.
+    const onward = links.length === 0 ? pageLinkIn(post.content?.rendered ?? '', base) : null;
+    if (onward) links = unique(documentLinks(await fetchText(onward), onward));
     // Posts come newest first; once one is from a past term, so is every one after.
     const published = post.date ? new Date(post.date) : null;
     if (isPast([title, ...links.map((link) => fileNameOf(link.url))], published, kind, now)) {
@@ -215,6 +238,42 @@ async function fromWordPress(
     if (documents.length) return { label: title, documents };
   }
   return null;
+}
+
+/**
+ * The newest post a listing links to under the schedule's title, & the
+ * documents in it: for a site that posts its schedules as announcements but
+ * keeps its WordPress API closed. Links come in the listing's own order,
+ * newest first.
+ */
+async function fromListing(
+  listingUrl: string,
+  kind: ScheduleKind,
+  fetchText: (url: string) => Promise<string>,
+  now: Date,
+): Promise<Discovery | null> {
+  const $ = load(await fetchText(listingUrl));
+  const { want, skip } = titles[kind];
+  let post: { url: string; title: string } | null = null;
+  $('a[href]').each((_, el) => {
+    if (post) return;
+    const title = $(el).text().replace(/\s+/g, ' ').trim();
+    const folded = fold(title);
+    if (!want.test(folded) || skip.test(folded)) return;
+    try {
+      post = { url: new URL($(el).attr('href')!, listingUrl).href, title };
+    } catch {
+      /* ignore an unparseable href */
+    }
+  });
+  const found = post as { url: string; title: string } | null;
+  if (!found || isPast([found.title], null, kind, now)) return null;
+
+  const documents = unique(documentLinks(await fetchText(found.url), found.url))
+    .map(toDocument)
+    .filter((doc): doc is DiscoveredDocument => doc !== null)
+    .slice(0, maxDocuments);
+  return documents.length ? { label: found.title, documents } : null;
 }
 
 async function fromEmbeddedSheet(
@@ -260,6 +319,8 @@ export async function discoverDocuments(
 ): Promise<Discovery | null> {
   if (source.adapter === 'wordpress-posts') return fromWordPress(source, kind, fetchText, now);
   if (source.adapter === 'embedded-sheet') return fromEmbeddedSheet(source.pageUrl, fetchText);
+  if (source.adapter === 'listing-posts')
+    return fromListing(source.listingUrl, kind, fetchText, now);
   const document = await discoverDocument(source, fetchText);
   if (!document) return null;
   // A page's document carries no date, but its name usually says the year &

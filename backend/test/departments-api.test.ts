@@ -39,9 +39,12 @@ describe('GET /api/departments', () => {
 
   it('lists only the features a department has a source for', async () => {
     const { body } = await getDirectory();
-    const midwifery = body.departments.find((department) => department.id === 'mw');
+    // Management Science & Technology publishes no exam or class schedule.
+    const mst = body.departments.find((department) => department.id === 'mst');
 
-    expect(midwifery?.features).toEqual(['announcements', 'staff', 'secretariat']);
+    expect(mst?.features).not.toContain('exams');
+    expect(mst?.features).not.toContain('timetable');
+    expect(mst?.features).toContain('announcements');
   });
 
   it('lets the CDN cache the response', async () => {
