@@ -301,3 +301,29 @@ describe('fetchStudentProfile when Universis refuses the fuller ask', () => {
     fetchMock.mockRestore();
   });
 });
+
+describe('fetchStudentProfile, as the UoWM Universis answers', () => {
+  it('reads the name, gender & department', async () => {
+    const fetchMock = jest.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        person: {
+          givenName: 'ΙΩΑΝΝΗΣ',
+          gender: { id: 1, identifier: 'Α', alternateName: 'male', name: 'Άρρεν' },
+        },
+        department: { id: '1554', name: 'ΤΜΗΜΑ ΠΛΗΡΟΦΟΡΙΚΗΣ', abbreviation: 'cs' },
+        studyProgram: { id: 7, name: 'ΠΡΟΓΡΑΜΜΑ ΣΠΟΥΔΩΝ ΠΛΗΡΟΦΟΡΙΚΗΣ' },
+      }),
+    } as Response);
+    await expect(fetchStudentProfile('tok')).resolves.toEqual({
+      givenName: 'ΙΩΑΝΝΗΣ',
+      gender: 'male',
+      department: {
+        id: '1554',
+        code: 'cs',
+        names: ['ΤΜΗΜΑ ΠΛΗΡΟΦΟΡΙΚΗΣ', 'ΠΡΟΓΡΑΜΜΑ ΣΠΟΥΔΩΝ ΠΛΗΡΟΦΟΡΙΚΗΣ'],
+      },
+    });
+    fetchMock.mockRestore();
+  });
+});

@@ -8,7 +8,7 @@ import { queryClient } from '@/lib/query';
 import { givenNameFromToken, isTokenExpired, useUniversisAuth } from './auth';
 import { fetchStudentProfile, loadStudentCourses, UniversisError } from './client';
 import type { StudentProfile } from './client';
-import { matchDepartment } from './department';
+import { departmentOf } from './department';
 import { useSavedCourses } from './saved';
 import type { StudentCourse } from './types';
 
@@ -19,8 +19,8 @@ import type { StudentCourse } from './types';
  * Returns the department found, if one was.
  */
 export function applyProfile(token: string, profile: StudentProfile): string | null {
-  const departmentId = profile.departmentNames
-    ? matchDepartment(bundledDirectory, profile.departmentNames)
+  const departmentId = profile.department
+    ? departmentOf(bundledDirectory, profile.department)
     : null;
   useSavedCourses.getState().saveProfile({
     givenName: givenNameFromToken(token),

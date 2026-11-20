@@ -1,5 +1,6 @@
 import { courseKey } from './match';
 import type { StudentCourse } from './types';
+import type { UniversisDepartment } from './department';
 
 /** The University of Western Macedonia's Universis API. */
 export const UNIVERSIS_API = 'https://api1.uowm.gr/api';
@@ -170,13 +171,13 @@ async function getBody(path: string, token: string, options: RequestOptions): Pr
 export interface StudentProfile {
   givenName?: string;
   gender?: 'male' | 'female';
-  /** The department & study programme names, to find the student's department by. */
-  departmentNames?: string[];
+  /** What Universis says of the student's department, to find it in the app by. */
+  department?: UniversisDepartment;
 }
 
 function namesOf(value: unknown): string[] {
   if (!isObject(value)) return [];
-  return [value.name, value.alternateName, value.abbreviation]
+  return [value.name, value.alternateName]
     .map(text)
     .filter((name): name is string => name !== undefined);
 }
@@ -228,11 +229,25 @@ export async function fetchStudentProfile(
   const person = isObject(body.person) ? body.person : undefined;
   const givenName = text(person?.givenName) ?? text(person?.firstName) ?? text(body.givenName);
   const gender = genderOfPerson(person?.gender ?? body.gender);
-  const departmentNames = [...namesOf(body.department), ...namesOf(body.studyProgram)];
+  // Unexpanded, the department is its id alone.
+  const rawDepartment = body.department;
+  const departmentId =
+    typeof rawDepartment === 'string' || typeof rawDepartment === 'number'
+      ? String(rawDepartment)
+      : isObject(rawDepartment) && rawDepartment.id !== undefined && rawDepartment.id !== null
+        ? String(rawDepartment.id as string | number)
+        : undefined;
+  const code = isObject(rawDepartment) ? text(rawDepartment.abbreviation) : undefined;
+  const names = [...namesOf(rawDepartment), ...namesOf(body.studyProgram)];
+  const department: UniversisDepartment = {
+    ...(departmentId ? { id: departmentId } : {}),
+    ...(code ? { code } : {}),
+    ...(names.length > 0 ? { names } : {}),
+  };
   return {
     ...(givenName ? { givenName } : {}),
     ...(gender ? { gender } : {}),
-    ...(departmentNames.length > 0 ? { departmentNames } : {}),
+    ...(Object.keys(department).length > 0 ? { department } : {}),
   };
 }
 
