@@ -11,9 +11,13 @@ function cacheControl({ sMaxAge, staleWhileRevalidate }: CachePolicy): string {
   return `public, max-age=0, s-maxage=${sMaxAge}, stale-while-revalidate=${staleWhileRevalidate}`;
 }
 
+// The API is public & read-only, so any site may read it — the app's web
+// build among them.
+const cors = { 'Access-Control-Allow-Origin': '*' };
+
 export function json(body: unknown, cache: CachePolicy): Response {
   return Response.json(body, {
-    headers: { 'Cache-Control': cacheControl(cache) },
+    headers: { 'Cache-Control': cacheControl(cache), ...cors },
   });
 }
 
@@ -24,7 +28,7 @@ export function problem(
 ): Response {
   return Response.json(
     { error: message },
-    { status, headers: { 'Cache-Control': 'no-store', ...headers } },
+    { status, headers: { 'Cache-Control': 'no-store', ...cors, ...headers } },
   );
 }
 
