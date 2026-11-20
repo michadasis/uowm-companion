@@ -1,6 +1,7 @@
 import {
   fetchStudentCourses,
   fetchStudentDeclarations,
+  fetchStudentProfile,
   loadStudentCourses,
   mapCourse,
   UniversisError,
@@ -261,5 +262,42 @@ describe('loadStudentCourses', () => {
   it('fails with the expired-token error when both requests are refused', async () => {
     mockApi({ coursesStatus: 401, registrationsStatus: 401 });
     await expect(loadStudentCourses('tok', options)).rejects.toMatchObject({ status: 401 });
+  });
+});
+
+describe('fetchStudentProfile', () => {
+  const reply = (body: object) =>
+    jest
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue({ ok: true, json: async () => body } as Response);
+
+  it('reads the given name & the gender Universis keeps for the student', async () => {
+    const fetchMock = reply({ person: { givenName: 'ΜΑΡΙΑ', gender: { alternateName: 'Θ' } } });
+    await expect(fetchStudentProfile('tok')).resolves.toEqual({
+      givenName: 'ΜΑΡΙΑ',
+      gender: 'female',
+    });
+    fetchMock.mockRestore();
+  });
+
+  it('gives what it finds, & nothing it does not', async () => {
+    const fetchMock = reply({ person: {} });
+    await expect(fetchStudentProfile('tok')).resolves.toEqual({});
+    fetchMock.mockRestore();
+  });
+});
+
+describe('fetchStudentProfile when Universis refuses the fuller ask', () => {
+  it('falls back to a simpler one', async () => {
+    const fetchMock = jest
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce({ ok: false, status: 400 } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ person: { givenName: 'ΝΙΚΟΣ' } }),
+      } as Response);
+    await expect(fetchStudentProfile('tok')).resolves.toEqual({ givenName: 'ΝΙΚΟΣ' });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    fetchMock.mockRestore();
   });
 });

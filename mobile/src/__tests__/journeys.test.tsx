@@ -3,6 +3,8 @@ import { screen, userEvent } from '@testing-library/react-native';
 import { renderRouter } from 'expo-router/testing-library';
 
 import { defaultSettings, useSettings } from '@/features/settings/store';
+import { useUniversisAuth } from '@/features/universis/auth';
+import { useSavedCourses } from '@/features/universis/saved';
 import i18n from '@/i18n';
 
 jest.mock('expo-font', () => ({
@@ -13,6 +15,12 @@ jest.mock('expo-splash-screen', () => ({
   preventAutoHideAsync: jest.fn(() => Promise.resolve()),
   hide: jest.fn(),
 }));
+
+// The sign-in page is the University's own, in a native WebView.
+jest.mock('react-native-webview', () => {
+  const { View } = jest.requireActual<typeof import('react-native')>('react-native');
+  return { WebView: () => <View testID="universis-webview" /> };
+});
 
 // Each test boots the whole app, which takes longer than Jest's five
 // seconds on a busy CI runner.
@@ -54,6 +62,15 @@ describe('first launch', () => {
     expect(router.getPathname()).toBe('/');
     expect(useSettings.getState().departmentId).toBe('cs');
     expect(screen.getByTestId('home-today')).toHaveTextContent(/Πληροφορικής/);
+  });
+
+  it('offers to find the department from Universis before the list', async () => {
+    const { router, user } = await launch();
+    await user.press(await screen.findByRole('button', { name: 'Ξεκίνα' }));
+    await user.press(await screen.findByTestId('department-from-universis'));
+
+    expect(await screen.findByTestId('universis-login')).toBeOnTheScreen();
+    expect(router.getPathname()).toBe('/universis-login');
   });
 
   it('switches the whole app to English from the welcome screen', async () => {
@@ -119,6 +136,34 @@ describe('a returning student', () => {
     expect(await screen.findByTestId('more-screen')).toBeOnTheScreen();
     expect(router.getPathname()).toBe('/more');
     expect(screen.getByTestId('more-department')).toHaveTextContent(/Μαθηματικών/);
+  });
+
+  it('changes department while linked to Universis, without crashing', async () => {
+    useUniversisAuth.setState({ token: 'tok' });
+    useSavedCourses.setState({
+      courses: [{ name: 'Φυσική', passed: true, registered: true, semester: 1, grade: 8 }],
+      updatedAt: Date.now(),
+      givenName: 'ΙΩΑΝΝΗΣ',
+      gender: 'male',
+    });
+    const fetchMock = jest.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('offline'));
+    const { router, user } = await launch();
+    await screen.findByTestId('home-screen');
+
+    await user.press(screen.getByRole('tab', { name: 'Περισσότερα' }));
+    await user.press(await screen.findByTestId('more-department'));
+    await user.type(screen.getByLabelText('Αναζήτηση τμήματος'), 'μαθηματικών');
+    await user.press(await screen.findByTestId('department-math'));
+
+    expect(await screen.findByTestId('more-screen')).toBeOnTheScreen();
+    await user.press(screen.getByRole('tab', { name: 'Πρόγραμμα' }));
+    expect(await screen.findByTestId('schedule-screen')).toBeOnTheScreen();
+    await user.press(screen.getByRole('tab', { name: 'Αρχική' }));
+    expect(await screen.findByTestId('home-screen')).toBeOnTheScreen();
+    expect(router.getPathname()).toBe('/');
+    fetchMock.mockRestore();
+    useUniversisAuth.setState({ token: null });
+    useSavedCourses.setState({ courses: null, updatedAt: null, givenName: null, gender: null });
   });
 
   it('changes theme and language from the More tab', async () => {

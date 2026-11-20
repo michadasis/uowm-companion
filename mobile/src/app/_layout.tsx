@@ -84,10 +84,11 @@ export default function RootLayout() {
                 <Stack.Screen name="(tabs)" />
                 <Stack.Screen name="announcement/[id]" />
                 <Stack.Screen name="settings/department" />
-                <Stack.Screen name="universis-login" options={{ presentation: 'modal' }} />
                 <Stack.Screen name="grades" />
                 <Stack.Screen name="design-system" />
               </Stack.Protected>
+              {/* Open to both: a first launch signs in to find the department. */}
+              <Stack.Screen name="universis-login" options={{ presentation: 'modal' }} />
             </Stack>
           </NavigationTheme>
         </ThemeProvider>

@@ -6,9 +6,12 @@ import { WebView } from 'react-native-webview';
 import type { WebViewMessageEvent } from 'react-native-webview';
 
 import { createStyles, NavBar, Screen, Text, useTheme } from '@/design';
-import { useUniversisAuth } from '@/features/universis/auth';
+import { useSettings } from '@/features/settings/store';
+import { givenNameFromToken, useUniversisAuth } from '@/features/universis/auth';
+import { fetchStudentProfile } from '@/features/universis/client';
 import { INJECTED_TOKEN_HOOK, parseTokenMessage } from '@/features/universis/login';
-import { refreshStudentCourses } from '@/features/universis/useStudentCourses';
+import { useSavedCourses } from '@/features/universis/saved';
+import { applyProfile, refreshStudentCourses } from '@/features/universis/useStudentCourses';
 
 /** The Universis sign-in: the real web app in a WebView, token read on success. */
 export default function UniversisLoginScreen() {
@@ -18,16 +21,36 @@ export default function UniversisLoginScreen() {
   const styles = useStyles();
   const signIn = useUniversisAuth((s) => s.signIn);
   const [loading, setLoading] = useState(true);
+  // On a first launch, signing in is how the student's department is found.
+  const [finding, setFinding] = useState(false);
 
   const goBack = () => (router.canGoBack() ? router.back() : router.replace('/schedule'));
 
   const onMessage = (event: WebViewMessageEvent) => {
     const token = parseTokenMessage(event.nativeEvent.data);
     if (!token) return;
-    void signIn(token).then(() => {
-      // A fresh token means a fresh read, even if a saved copy is on hand.
+    const onboarding = useSettings.getState().departmentId === null;
+    void signIn(token).then(async () => {
+      // The token may name the student; greet them by it at once.
+      useSavedCourses.getState().saveProfile({ givenName: givenNameFromToken(token) });
+      if (!onboarding) {
+        // A fresh token means a fresh read, even if a saved copy is on hand.
+        refreshStudentCourses();
+        goBack();
+        return;
+      }
+      setFinding(true);
+      const found = await fetchStudentProfile(token)
+        .then((profile) => applyProfile(token, profile))
+        .catch(() => null);
       refreshStudentCourses();
-      goBack();
+      if (found) {
+        // Setting the department ends onboarding; Home is theirs.
+        router.replace('/');
+      } else {
+        // Universis named no department the app knows: the student picks it.
+        router.replace({ pathname: '/department', params: { universis: 'unmatched' } });
+      }
     });
   };
 
@@ -47,11 +70,11 @@ export default function UniversisLoginScreen() {
           // The student signs in on the University's own pages; we never see it.
           incognito={false}
         />
-        {loading ? (
+        {loading || finding ? (
           <View style={[styles.overlay, { backgroundColor: theme.colors.background }]}>
             <ActivityIndicator color={theme.colors.primary} />
             <Text variant="caption" color="textMuted">
-              {t('universis.loading')}
+              {finding ? t('universis.findingDepartment') : t('universis.loading')}
             </Text>
           </View>
         ) : null}

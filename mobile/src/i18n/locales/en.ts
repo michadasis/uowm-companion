@@ -35,6 +35,9 @@ export const en: Messages = {
     language: 'Language',
   },
   departmentPicker: {
+    fromUniversis: 'Find my department from Universis',
+    orPick: 'or pick it from the list',
+    universisUnmatched: 'Universis did not say which department you are in. Pick it from the list.',
     title: 'Which department are you in?',
     subtitle: 'The app adapts to it. You can change it at any time in the settings.',
     settingsTitle: 'My department',
@@ -197,6 +200,7 @@ export const en: Messages = {
     },
   },
   universis: {
+    findingDepartment: 'Finding your department…',
     grades: {
       title: 'Grades',
       average: 'Average',
@@ -282,6 +286,7 @@ export const en: Messages = {
       gradesHint: 'From Universis, saved on your device',
     },
     department: {
+      fromUniversis: 'From Universis',
       section: 'My department',
       change: 'Change department',
     },

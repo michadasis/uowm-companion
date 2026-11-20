@@ -63,3 +63,30 @@ export function isTokenExpired(token: string, now: number = Date.now()): boolean
     return false;
   }
 }
+
+/** The claims a JWT carries, read without checking it; null for one that won't read. */
+export function tokenClaims(token: string): Record<string, unknown> | null {
+  const payload = token.split('.')[1];
+  if (!payload) return null;
+  try {
+    const binary = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+    // atob gives bytes; a Greek name in them is UTF-8.
+    const json = decodeURIComponent(
+      Array.from(binary, (char) => `%${char.charCodeAt(0).toString(16).padStart(2, '0')}`).join(''),
+    );
+    const claims: unknown = JSON.parse(json);
+    return claims && typeof claims === 'object' ? (claims as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The given name a sign-in token states, if it states one. */
+export function givenNameFromToken(token: string): string | undefined {
+  const claims = tokenClaims(token);
+  for (const key of ['given_name', 'givenName', 'first_name', 'firstName']) {
+    const value = claims?.[key];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return undefined;
+}

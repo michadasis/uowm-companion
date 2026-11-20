@@ -1,6 +1,11 @@
 import * as SecureStore from 'expo-secure-store';
 
-import { hydrateUniversisAuth, isTokenExpired, useUniversisAuth } from '../auth';
+import {
+  givenNameFromToken,
+  hydrateUniversisAuth,
+  isTokenExpired,
+  useUniversisAuth,
+} from '../auth';
 
 beforeEach(async () => {
   await SecureStore.deleteItemAsync('universis_access_token');
@@ -50,5 +55,25 @@ describe('isTokenExpired', () => {
 
   it('treats a token it cannot read as live', () => {
     expect(isTokenExpired('opaque-token', now)).toBe(false);
+  });
+});
+
+describe('givenNameFromToken', () => {
+  const jwt = (claims: object) => {
+    const bytes = new TextEncoder().encode(JSON.stringify(claims));
+    const base64 = btoa(String.fromCharCode(...bytes))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+    return `h.${base64}.s`;
+  };
+
+  it('reads a Greek given name a token states', () => {
+    expect(givenNameFromToken(jwt({ given_name: 'Ιωάννης' }))).toBe('Ιωάννης');
+  });
+
+  it('gives nothing for a token that states none, or that is no JWT', () => {
+    expect(givenNameFromToken(jwt({ sub: 'x' }))).toBeUndefined();
+    expect(givenNameFromToken('opaque-token')).toBeUndefined();
   });
 });

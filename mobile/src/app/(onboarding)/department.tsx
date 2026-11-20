@@ -1,9 +1,9 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 
-import { Button, createStyles, NavBar, Screen, ScreenTitle } from '@/design';
+import { Button, createStyles, NavBar, Screen, ScreenTitle, Text } from '@/design';
 import { DepartmentPicker } from '@/features/departments/DepartmentPicker';
 import { useDirectory } from '@/features/departments/useDirectory';
 import { useSettings } from '@/features/settings/store';
@@ -18,6 +18,7 @@ export default function OnboardingDepartmentScreen() {
   // The choice is only saved on Continue. Saving it on the first tap would
   // end onboarding before the student had a chance to correct a slip.
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { universis } = useLocalSearchParams<{ universis?: string }>();
 
   return (
     <Screen edges={['top', 'bottom']} testID="onboarding-department-screen">
@@ -27,10 +28,32 @@ export default function OnboardingDepartmentScreen() {
         selectedId={selectedId}
         onSelect={setSelectedId}
         header={
-          <ScreenTitle
-            title={t('departmentPicker.title')}
-            subtitle={t('departmentPicker.subtitle')}
-          />
+          <View>
+            <ScreenTitle
+              title={t('departmentPicker.title')}
+              subtitle={t('departmentPicker.subtitle')}
+            />
+            {/* The quick way: Universis knows the department. */}
+            <View style={styles.universis}>
+              {universis === 'unmatched' ? (
+                <Text variant="callout" color="textMuted" testID="universis-unmatched">
+                  {t('departmentPicker.universisUnmatched')}
+                </Text>
+              ) : (
+                <>
+                  <Button
+                    label={t('departmentPicker.fromUniversis')}
+                    variant="secondary"
+                    onPress={() => router.push('/universis-login')}
+                    testID="department-from-universis"
+                  />
+                  <Text variant="caption" color="textSubtle" align="center">
+                    {t('departmentPicker.orPick')}
+                  </Text>
+                </>
+              )}
+            </View>
+          </View>
         }
       />
       <View style={styles.footer}>
@@ -52,6 +75,11 @@ export default function OnboardingDepartmentScreen() {
 }
 
 const useStyles = createStyles((theme) => ({
+  universis: {
+    paddingHorizontal: theme.spacing[4],
+    paddingBottom: theme.spacing[3],
+    gap: theme.spacing[2],
+  },
   footer: {
     paddingHorizontal: theme.spacing[4],
     paddingTop: theme.spacing[3],

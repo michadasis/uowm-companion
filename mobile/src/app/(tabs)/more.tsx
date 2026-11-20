@@ -18,6 +18,7 @@ import { describeDepartment } from '@/features/departments/describe';
 import { findDepartment, useDirectory } from '@/features/departments/useDirectory';
 import { useSettings } from '@/features/settings/store';
 import type { Language } from '@/features/settings/store';
+import { useSavedCourses } from '@/features/universis/saved';
 import { disconnectUniversis, useStudentCourses } from '@/features/universis/useStudentCourses';
 import { showDeveloperTools } from '@/lib/env';
 
@@ -33,6 +34,9 @@ export default function MoreScreen() {
   const setLanguage = useSettings((settings) => settings.setLanguage);
   const department = findDepartment(directory, departmentId);
   const universis = useStudentCourses();
+  // While linked, the department is the one Universis records: not changed by hand.
+  const universisDepartment = useSavedCourses((s) => s.departmentId);
+  const locked = universis.connected || universis.expired ? universisDepartment !== null : false;
 
   return (
     <Screen testID="more-screen">
@@ -44,24 +48,21 @@ export default function MoreScreen() {
           <ListRow
             icon="department"
             title={department?.shortName[language] ?? t('more.department.change')}
-            subtitle={department ? describeDepartment(directory, department, language) : undefined}
-            trailing="chevron"
-            onPress={() => router.push('/settings/department')}
+            subtitle={
+              department
+                ? locked
+                  ? `${describeDepartment(directory, department, language)}. ${t('more.department.fromUniversis')}`
+                  : describeDepartment(directory, department, language)
+                : undefined
+            }
+            trailing={locked ? undefined : 'chevron'}
+            onPress={locked ? undefined : () => router.push('/settings/department')}
             testID="more-department"
           />
         </Card>
 
         <SectionHeader title={t('more.studies.section')} />
         <Card padded={false} style={styles.card}>
-          <ListRow
-            icon="grades"
-            title={t('universis.grades.title')}
-            subtitle={t('more.studies.gradesHint')}
-            trailing="chevron"
-            onPress={() => router.push('/grades' as Href)}
-            testID="more-grades"
-          />
-          <View style={styles.divider} />
           {/* The link lives here, out of the way, rather than on the schedule. */}
           {universis.connected ? (
             <ListRow

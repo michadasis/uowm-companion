@@ -167,18 +167,73 @@ async function getBody(path: string, token: string, options: RequestOptions): Pr
   }
 }
 
+export interface StudentProfile {
+  givenName?: string;
+  gender?: 'male' | 'female';
+  /** The department & study programme names, to find the student's department by. */
+  departmentNames?: string[];
+}
+
+function namesOf(value: unknown): string[] {
+  if (!isObject(value)) return [];
+  return [value.name, value.alternateName, value.abbreviation]
+    .map(text)
+    .filter((name): name is string => name !== undefined);
+}
+
+function genderOfPerson(value: unknown): StudentProfile['gender'] {
+  const fields = isObject(value)
+    ? [value.alternateName, value.name, value.identifier, value.id]
+    : [value];
+  for (const field of fields) {
+    const word = (typeof field === 'string' || typeof field === 'number' ? String(field) : '')
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .trim()
+      .toLowerCase();
+    if (/^(m|male|α|αρρ|ανδ)/u.test(word)) return 'male';
+    if (/^(f|female|θ|θηλ|γυν)/u.test(word)) return 'female';
+  }
+  return undefined;
+}
+
 /**
- * The student's given name, as Universis keeps it — for the greeting on Home.
- * Undefined when the reply doesn't carry one.
+ * The student's given name & gender, as Universis keeps them — to greet them
+ * on Home as "Φοιτητής" or "Φοιτήτρια". Either may be missing.
  */
-export async function fetchStudentName(
+export async function fetchStudentProfile(
   token: string,
   options: RequestOptions = {},
-): Promise<string | undefined> {
-  const body = await getBody('students/me?$expand=person', token, options);
-  if (!isObject(body)) return undefined;
+): Promise<StudentProfile> {
+  // The fullest ask first; should this Universis refuse it, simpler ones.
+  let body: unknown;
+  let failure: unknown;
+  for (const path of [
+    'students/me?$expand=person($expand=gender),department,studyProgram',
+    'students/me?$expand=person,department',
+    'students/me?$expand=person',
+    'students/me',
+  ]) {
+    try {
+      body = await getBody(path, token, options);
+      break;
+    } catch (error) {
+      failure = error;
+      // A lapsed token fails them all alike.
+      if (error instanceof UniversisError && error.status === 401) throw error;
+    }
+  }
+  if (body === undefined) throw failure;
+  if (!isObject(body)) return {};
   const person = isObject(body.person) ? body.person : undefined;
-  return text(person?.givenName) ?? text(body.givenName);
+  const givenName = text(person?.givenName) ?? text(person?.firstName) ?? text(body.givenName);
+  const gender = genderOfPerson(person?.gender ?? body.gender);
+  const departmentNames = [...namesOf(body.department), ...namesOf(body.studyProgram)];
+  return {
+    ...(givenName ? { givenName } : {}),
+    ...(gender ? { gender } : {}),
+    ...(departmentNames.length > 0 ? { departmentNames } : {}),
+  };
 }
 
 async function getList(path: string, token: string, options: RequestOptions): Promise<Json[]> {

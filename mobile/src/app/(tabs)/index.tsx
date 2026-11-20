@@ -24,8 +24,11 @@ export default function HomeScreen() {
   const departmentId = useSettings((settings) => settings.departmentId);
   const department = findDepartment(directory, departmentId);
   const now = usePreviewNow();
-  // "Φοιτητής" or "Φοιτήτρια" only when the name tells; otherwise just the department.
-  const gender = genderOf(useSavedCourses((s) => s.givenName));
+  // "Φοιτητής" or "Φοιτήτρια" as Universis records it, or as the name tells;
+  // otherwise just the department.
+  const savedGender = useSavedCourses((s) => s.gender);
+  const givenName = useSavedCourses((s) => s.givenName);
+  const gender = savedGender ?? genderOf(givenName);
   const today = useToday(now, department?.city ?? null);
 
   return (

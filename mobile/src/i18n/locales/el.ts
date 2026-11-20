@@ -33,6 +33,9 @@ export const el = {
     language: 'Γλώσσα',
   },
   departmentPicker: {
+    fromUniversis: 'Βρες το τμήμα μου από το Universis',
+    orPick: 'ή διάλεξέ το από τη λίστα',
+    universisUnmatched: 'Το Universis δεν μας είπε σε ποιο τμήμα είσαι. Διάλεξέ το από τη λίστα.',
     title: 'Ποιο είναι το τμήμα σου;',
     subtitle: 'Η εφαρμογή προσαρμόζεται σε αυτό. Το αλλάζεις όποτε θέλεις από τις ρυθμίσεις.',
     settingsTitle: 'Το τμήμα μου',
@@ -195,6 +198,7 @@ export const el = {
     },
   },
   universis: {
+    findingDepartment: 'Βρίσκουμε το τμήμα σου…',
     grades: {
       title: 'Βαθμολογία',
       average: 'Μέσος όρος',
@@ -280,6 +284,7 @@ export const el = {
       gradesHint: 'Από το Universis, αποθηκευμένοι στη συσκευή σου',
     },
     department: {
+      fromUniversis: 'Από το Universis',
       section: 'Το τμήμα μου',
       change: 'Αλλαγή τμήματος',
     },

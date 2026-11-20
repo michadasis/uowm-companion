@@ -1,12 +1,37 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
+import { bundledDirectory } from '@/features/departments/useDirectory';
+import { useSettings } from '@/features/settings/store';
 import { queryClient } from '@/lib/query';
 
-import { isTokenExpired, useUniversisAuth } from './auth';
-import { loadStudentCourses, UniversisError, fetchStudentName } from './client';
+import { givenNameFromToken, isTokenExpired, useUniversisAuth } from './auth';
+import { fetchStudentProfile, loadStudentCourses, UniversisError } from './client';
+import type { StudentProfile } from './client';
+import { matchDepartment } from './department';
 import { useSavedCourses } from './saved';
 import type { StudentCourse } from './types';
+
+/**
+ * Keeps what Universis says of the student: the name to greet them by, as the
+ * token states it or the profile does; whether "Φοιτητής" or "Φοιτήτρια"; &
+ * their department, which then is theirs in the app — not picked by hand.
+ * Returns the department found, if one was.
+ */
+export function applyProfile(token: string, profile: StudentProfile): string | null {
+  const departmentId = profile.departmentNames
+    ? matchDepartment(bundledDirectory, profile.departmentNames)
+    : null;
+  useSavedCourses.getState().saveProfile({
+    givenName: givenNameFromToken(token),
+    ...(profile.givenName ? { givenName: profile.givenName } : {}),
+    ...(profile.gender ? { gender: profile.gender } : {}),
+    ...(departmentId ? { departmentId } : {}),
+  });
+  const settings = useSettings.getState();
+  if (departmentId && settings.departmentId !== departmentId) settings.setDepartment(departmentId);
+  return departmentId;
+}
 
 // The token is deliberately not part of the key: keys are written out with the
 // saved query cache, & a token belongs in the keychain alone.
@@ -51,15 +76,32 @@ export function useStudentCourses(): StudentCoursesState {
     if (token !== null && !live) void useUniversisAuth.getState().signOut();
   }, [token, live]);
 
+  // The name to greet the student by, read on its own when the courses came
+  // from the saved copy & never brought it — as after an update.
+  const givenName = useSavedCourses((s) => s.givenName);
+  const universisDepartment = useSavedCourses((s) => s.departmentId);
+  useQuery({
+    queryKey: ['universis', 'profile'],
+    queryFn: async ({ signal }) => {
+      const profile = await fetchStudentProfile(token!, { signal });
+      applyProfile(token!, profile);
+      return profile;
+    },
+    enabled: live && (givenName === null || universisDepartment === null),
+    staleTime: Infinity,
+    retry: 1,
+  });
+
   const query = useQuery({
     queryKey: coursesKey,
     queryFn: async ({ signal }) => {
-      const [courses, givenName] = await Promise.all([
+      const [courses, profile] = await Promise.all([
         loadStudentCourses(token!, { signal }),
-        // The name is a nicety: a failure to read it leaves the courses be.
-        fetchStudentName(token!, { signal }).catch(() => undefined),
+        // The profile is a nicety: a failure to read it leaves the courses be.
+        fetchStudentProfile(token!, { signal }).catch(() => ({})),
       ]);
-      useSavedCourses.getState().save(courses, givenName);
+      useSavedCourses.getState().save(courses);
+      applyProfile(token!, profile);
       return courses;
     },
     enabled: live,
