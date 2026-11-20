@@ -1,6 +1,6 @@
 import type { TFunction } from 'i18next';
 
-import type { CalendarHoliday } from '@/features/calendar/schema';
+import { holidayName } from '@/features/calendar/names';
 import { addDays, dateOf, isoDay } from '@/features/calendar/status';
 import type { DayStatus } from '@/features/calendar/status';
 
@@ -16,11 +16,6 @@ export interface TodayMessage {
   title: string;
   /** A sentence under the title; absent, the department's name goes there. */
   message?: string;
-}
-
-/** A holiday's name in the reader's language, falling back to the decision's wording. */
-export function holidayName(holiday: CalendarHoliday, t: TFunction): string {
-  return holiday.key ? t(`calendar.holidays.${holiday.key}`) : holiday.name;
 }
 
 /**

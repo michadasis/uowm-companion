@@ -24,3 +24,16 @@ export function fold(text: string): string {
     .replace(/\s+/g, ' ')
     .trim();
 }
+
+// Ticks a semester's letter is written with: the tonos sign, an apostrophe or
+// a typographic quote.
+const numeralTicks = /(?<=[Α-Ω])['΄’ʹ]/gu;
+
+/**
+ * A Greek numeral as it is typeset: the letter & the keraia (ʹ, U+0374) right
+ * against it. The tonos sign the data writes it with sets off with a gap in
+ * most fonts — "Α ΄" — & reads as broken; this is for display only.
+ */
+export function displayNumeral(text: string): string {
+  return text.replace(numeralTicks, 'ʹ');
+}

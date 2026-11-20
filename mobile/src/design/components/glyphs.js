@@ -7,6 +7,7 @@ export { ArrowLeftIcon } from 'phosphor-react-native/src/icons/ArrowLeft';
 export { ArrowSquareOutIcon } from 'phosphor-react-native/src/icons/ArrowSquareOut';
 export { CalendarBlankIcon } from 'phosphor-react-native/src/icons/CalendarBlank';
 export { ClockIcon } from 'phosphor-react-native/src/icons/Clock';
+export { ExamIcon } from 'phosphor-react-native/src/icons/Exam';
 export { FileIcon } from 'phosphor-react-native/src/icons/File';
 export { FileDocIcon } from 'phosphor-react-native/src/icons/FileDoc';
 export { FilePdfIcon } from 'phosphor-react-native/src/icons/FilePdf';

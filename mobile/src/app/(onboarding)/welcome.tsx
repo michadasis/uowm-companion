@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { BrandMark, Button, createStyles, Icon, Screen, SegmentedControl, Text } from '@/design';
 import type { IconName } from '@/design';
@@ -10,15 +10,15 @@ interface PromiseRowProps {
   icon: IconName;
   title: string;
   body: string;
+  last?: boolean;
 }
 
-function PromiseRow({ icon, title, body }: PromiseRowProps) {
+/** One thing the app does, as a line of a list rather than a tile. */
+function PromiseRow({ icon, title, body, last = false }: PromiseRowProps) {
   const styles = useStyles();
   return (
-    <View style={styles.promise}>
-      <View style={styles.promiseIcon}>
-        <Icon name={icon} color="onPrimaryMuted" />
-      </View>
+    <View style={[styles.promise, last ? null : styles.promiseRule]}>
+      <Icon name={icon} color="primary" />
       <View style={styles.promiseText}>
         <Text variant="subheading">{title}</Text>
         <Text variant="callout" color="textMuted">
@@ -38,6 +38,10 @@ export default function WelcomeScreen() {
 
   return (
     <Screen edges={['top', 'bottom']} testID="welcome-screen">
+      {/* The knot, large & faint, behind the page's corner. */}
+      <View style={styles.watermark} pointerEvents="none">
+        <BrandMark size={320} />
+      </View>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.language}>
           <SegmentedControl
@@ -53,10 +57,10 @@ export default function WelcomeScreen() {
         </View>
 
         <View style={styles.intro}>
-          <BrandMark />
-          <Text variant="overline" color="primary">
-            {t('app.name')}
-          </Text>
+          <View style={styles.brand}>
+            <BrandMark size={44} />
+            <Text variant="heading">{t('app.name')}</Text>
+          </View>
           <Text variant="display" accessibilityRole="header">
             {t('welcome.title')}
           </Text>
@@ -65,7 +69,7 @@ export default function WelcomeScreen() {
           </Text>
         </View>
 
-        <View style={styles.promises}>
+        <View>
           <PromiseRow
             icon="announcements"
             title={t('welcome.announcements.title')}
@@ -76,7 +80,17 @@ export default function WelcomeScreen() {
             title={t('welcome.schedule.title')}
             body={t('welcome.schedule.body')}
           />
-          <PromiseRow icon="menu" title={t('welcome.menu.title')} body={t('welcome.menu.body')} />
+          <PromiseRow
+            icon="date"
+            title={t('welcome.calendar.title')}
+            body={t('welcome.calendar.body')}
+          />
+          <PromiseRow
+            icon="menu"
+            title={t('welcome.menu.title')}
+            body={t('welcome.menu.body')}
+            last
+          />
         </View>
       </ScrollView>
 
@@ -95,11 +109,17 @@ export default function WelcomeScreen() {
 }
 
 const useStyles = createStyles((theme) => ({
+  watermark: {
+    position: 'absolute',
+    top: 56,
+    right: -150,
+    opacity: theme.scheme === 'dark' ? 0.06 : 0.09,
+  },
   content: {
     paddingHorizontal: theme.spacing[6],
     paddingTop: theme.spacing[4],
     paddingBottom: theme.spacing[6],
-    gap: theme.spacing[10],
+    gap: theme.spacing[8],
   },
   language: {
     alignSelf: 'flex-end',
@@ -107,21 +127,22 @@ const useStyles = createStyles((theme) => ({
   },
   intro: {
     gap: theme.spacing[3],
+    paddingTop: theme.spacing[6],
   },
-  promises: {
-    gap: theme.spacing[5],
+  brand: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing[3],
+    marginBottom: theme.spacing[2],
   },
   promise: {
     flexDirection: 'row',
     gap: theme.spacing[4],
+    paddingVertical: theme.spacing[4],
   },
-  promiseIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: theme.radius.md,
-    backgroundColor: theme.colors.primaryMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
+  promiseRule: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.colors.border,
   },
   promiseText: {
     flex: 1,

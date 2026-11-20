@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { RefreshControl, ScrollView, View } from 'react-native';
 import type { RefreshControlProps } from 'react-native';
 
-import { Card, Chip, createStyles, Icon, Text, useTheme } from '@/design';
+import { displayNumeral } from '@/lib/greek';
+import { Card, Chip, createStyles, Icon, PressableScale, Text, useTheme } from '@/design';
 import type { Language } from '@/features/settings/store';
 import { useSettings } from '@/features/settings/store';
 
@@ -32,6 +33,70 @@ export interface TimetableViewProps {
   refreshControl?: ReactElement<RefreshControlProps>;
   /** Injectable for tests; the current moment otherwise. */
   now?: Date;
+  /**
+   * Why there are no classes on a day of the week shown, from the academic
+   * calendar — a holiday, the exams — or null when they are held.
+   */
+  dayOff?: (date: Date) => string | null;
+}
+
+/**
+ * The dates of the week the strip shows: this one, or the coming one from
+ * Saturday on, when this week's classes are over.
+ */
+export function weekDates(now: Date): Map<number, Date> {
+  const today = todayWeekday(now);
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (today - 1), 12);
+  if (today >= 6) monday.setDate(monday.getDate() + 7);
+  const dates = new Map<number, Date>();
+  for (let day = 1; day <= 7; day++) {
+    dates.set(
+      day,
+      new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + day - 1, 12),
+    );
+  }
+  return dates;
+}
+
+/** A day of the strip: its short name over its date, marked if it is today or off. */
+function DayButton({
+  label,
+  date,
+  selected,
+  today,
+  off,
+  onPress,
+  testID,
+}: {
+  label: string;
+  date?: Date;
+  selected: boolean;
+  today: boolean;
+  off: boolean;
+  onPress: () => void;
+  testID?: string;
+}) {
+  const styles = useStyles();
+  return (
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      accessibilityLabel={date ? `${label} ${date.getDate()}` : label}
+      onPress={onPress}
+      style={[styles.dayButton, selected ? styles.daySelected : null]}
+      testID={testID}
+    >
+      <Text variant="caption" color={selected ? 'background' : off ? 'textDisabled' : 'textMuted'}>
+        {label}
+      </Text>
+      {date ? (
+        <Text variant="subheading" color={selected ? 'background' : off ? 'textDisabled' : 'text'}>
+          {date.getDate()}
+        </Text>
+      ) : null}
+      <View style={[styles.dayDot, today ? styles.dayDotToday : null]} />
+    </PressableScale>
+  );
 }
 
 type Status = 'now' | 'next' | undefined;
@@ -72,7 +137,7 @@ function ClassCard({ session, status }: { session: ClassSession; status: Status 
             </Text>
           ) : session.semester ? (
             <Text variant="caption" color="textSubtle">
-              {t('schedule.semester', { semester: session.semester })}
+              {displayNumeral(t('schedule.semester', { semester: session.semester }))}
             </Text>
           ) : null}
           {status ? <StatusBadge status={status} /> : null}
@@ -117,6 +182,7 @@ export function TimetableView({
   header,
   refreshControl,
   now = new Date(),
+  dayOff,
 }: TimetableViewProps) {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
@@ -150,7 +216,14 @@ export function TimetableView({
   const selected = week.find((d) => d.day === effectiveDay);
   const dayClasses = selected?.classes ?? [];
 
-  const isToday = selected?.day === today;
+  const dates = useMemo(() => weekDates(now), [now]);
+  const offReason = (day: number) => {
+    const date = dates.get(day);
+    return date && dayOff ? dayOff(date) : null;
+  };
+  const selectedOff = selected ? offReason(selected.day) : null;
+
+  const isToday = selected?.day === today && today <= 5;
   const { nowIndex, nextIndex } = isToday
     ? nowAndNext(dayClasses, now.getHours() * 60 + now.getMinutes())
     : { nowIndex: -1, nextIndex: -1 };
@@ -164,7 +237,11 @@ export function TimetableView({
       showsVerticalScrollIndicator={false}
       refreshControl={
         refreshControl ?? (
-          <RefreshControl refreshing={false} tintColor={theme.colors.primary} onRefresh={() => {}} />
+          <RefreshControl
+            refreshing={false}
+            tintColor={theme.colors.primary}
+            onRefresh={() => {}}
+          />
         )
       }
     >
@@ -187,7 +264,7 @@ export function TimetableView({
               label={
                 semester === PDE_GROUP
                   ? t('schedule.timetableView.pde')
-                  : t('schedule.semester', { semester })
+                  : displayNumeral(t('schedule.semester', { semester }))
               }
               selected={activeSemester === semester}
               onPress={() => setSemester(semester)}
@@ -202,17 +279,30 @@ export function TimetableView({
         contentContainerStyle={styles.days}
       >
         {week.map((day) => (
-          <Chip
+          <DayButton
             key={day.day}
             label={weekdayShort(day.day, language)}
+            date={dayOff ? dates.get(day.day) : undefined}
             selected={day.day === effectiveDay}
+            today={day.day === today}
+            off={offReason(day.day) !== null}
             onPress={() => setSelectedDay(day.day)}
             testID={`timetable-day-${day.day}`}
           />
         ))}
       </ScrollView>
 
-      <View style={styles.list}>
+      {selectedOff ? (
+        <View style={styles.offNotice} testID="timetable-day-off">
+          <Text variant="label" color="onSuccessMuted">
+            {selectedOff}
+          </Text>
+          <Text variant="caption" color="onSuccessMuted">
+            {t('calendar.noClassesThatDay')}
+          </Text>
+        </View>
+      ) : null}
+      <View style={[styles.list, selectedOff ? styles.listOff : null]}>
         {dayClasses.length > 0 ? (
           dayClasses.map((session, index) => (
             <ClassCard
@@ -244,6 +334,39 @@ const useStyles = createStyles((theme) => ({
   list: {
     paddingHorizontal: theme.spacing[4],
     gap: theme.spacing[3],
+  },
+  // A day without classes keeps its usual timetable in view, faded.
+  listOff: {
+    opacity: 0.72,
+  },
+  offNotice: {
+    marginHorizontal: theme.spacing[4],
+    backgroundColor: theme.colors.successMuted,
+    borderRadius: theme.radius.md,
+    paddingHorizontal: theme.spacing[3],
+    paddingVertical: theme.spacing[2],
+    gap: theme.spacing[0.5],
+  },
+  dayButton: {
+    minWidth: 52,
+    paddingHorizontal: theme.spacing[2],
+    paddingTop: theme.spacing[2],
+    paddingBottom: theme.spacing[1],
+    borderRadius: theme.radius.md,
+    alignItems: 'center',
+    gap: 2,
+  },
+  daySelected: {
+    backgroundColor: theme.colors.text,
+  },
+  dayDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    marginTop: 2,
+  },
+  dayDotToday: {
+    backgroundColor: theme.colors.brand,
   },
   card: {
     gap: theme.spacing[2],

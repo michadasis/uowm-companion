@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import {
   Card,
@@ -23,6 +23,32 @@ function itemText(item: MenuItem, language: Language): string {
   return language === 'en' ? item.en || item.el : item.el;
 }
 
+/**
+ * A meal as a printed menu sets it: one card, a section per course, each
+ * headed by its name & divided from the next by a hairline.
+ */
+function MenuCard({ sections }: { sections: { key: string; label: string; items: string[] }[] }) {
+  const styles = useStyles();
+  return (
+    <Card style={styles.menuCard}>
+      {sections.map((section, index) => (
+        <View key={section.key} style={[styles.section, index > 0 ? styles.sectionRule : null]}>
+          <Text variant="label" color="primary">
+            {section.label}
+          </Text>
+          <View style={styles.items}>
+            {section.items.map((item, itemIndex) => (
+              <Text key={itemIndex} variant="body">
+                {item}
+              </Text>
+            ))}
+          </View>
+        </View>
+      ))}
+    </Card>
+  );
+}
+
 function MealCourses({ meal, language }: { meal: Meal; language: Language }) {
   const { t } = useTranslation();
   const styles = useStyles();
@@ -38,20 +64,13 @@ function MealCourses({ meal, language }: { meal: Meal; language: Language }) {
 
   return (
     <View style={styles.courses}>
-      {filled.map((course: Course) => (
-        <Card key={course} style={styles.courseCard}>
-          <Text variant="overline" color="primary">
-            {t(`menu.courses.${course}`)}
-          </Text>
-          <View style={styles.items}>
-            {meal[course].map((item, index) => (
-              <Text key={index} variant="body">
-                {itemText(item, language)}
-              </Text>
-            ))}
-          </View>
-        </Card>
-      ))}
+      <MenuCard
+        sections={filled.map((course: Course) => ({
+          key: course,
+          label: t(`menu.courses.${course}`),
+          items: meal[course].map((item) => itemText(item, language)),
+        }))}
+      />
     </View>
   );
 }
@@ -119,20 +138,15 @@ export function MenuView() {
 
       {meal === 'breakfast' ? (
         <View style={styles.courses}>
-          {data.breakfast.map((group) => (
-            <Card key={group.category} style={styles.courseCard}>
-              <Text variant="overline" color="primary">
-                {t(`menu.breakfastCategories.${group.category}`, { defaultValue: group.category })}
-              </Text>
-              <View style={styles.items}>
-                {group.items.map((item, index) => (
-                  <Text key={index} variant="body">
-                    {itemText(item, language)}
-                  </Text>
-                ))}
-              </View>
-            </Card>
-          ))}
+          <MenuCard
+            sections={data.breakfast.map((group) => ({
+              key: group.category,
+              label: t(`menu.breakfastCategories.${group.category}`, {
+                defaultValue: group.category,
+              }),
+              items: group.items.map((item) => itemText(item, language)),
+            }))}
+          />
         </View>
       ) : (
         <>
@@ -181,8 +195,16 @@ const useStyles = createStyles((theme) => ({
     paddingTop: theme.spacing[2],
     gap: theme.spacing[3],
   },
-  courseCard: {
+  menuCard: {
+    paddingVertical: theme.spacing[1],
+  },
+  section: {
     gap: theme.spacing[2],
+    paddingVertical: theme.spacing[3],
+  },
+  sectionRule: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.colors.border,
   },
   items: {
     gap: theme.spacing[1],

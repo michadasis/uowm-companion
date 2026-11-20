@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import { Card, createStyles, Icon, Text } from '@/design';
 import type { Language } from '@/features/settings/store';
 
-import { formatDate } from './format';
+import { formatListDate } from './format';
 import type { Announcement } from './schema';
 
 export interface AnnouncementCardProps {
@@ -15,23 +15,20 @@ export interface AnnouncementCardProps {
 export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProps) {
   const { i18n } = useTranslation();
   const styles = useStyles();
-  const date = formatDate(announcement.date, i18n.language as Language);
+  const date = formatListDate(announcement.date, i18n.language as Language);
   const attachments = announcement.attachments.length;
 
   return (
     <Card onPress={onPress} accessibilityLabel={announcement.title} style={styles.card}>
       <View style={styles.meta}>
         {date ? (
-          <View style={styles.metaItem}>
-            <Icon name="date" size={14} color="textSubtle" />
-            <Text variant="caption" color="textSubtle">
-              {date}
-            </Text>
-          </View>
+          <Text variant="caption" color="textSubtle">
+            {date}
+          </Text>
         ) : null}
         {attachments > 0 ? (
           <View style={styles.metaItem}>
-            <Icon name="file" size={14} color="textSubtle" />
+            <Icon name="file" size={13} color="textSubtle" />
             <Text variant="caption" color="textSubtle">
               {attachments}
             </Text>
@@ -57,7 +54,8 @@ const useStyles = createStyles((theme) => ({
   },
   meta: {
     flexDirection: 'row',
-    gap: theme.spacing[4],
+    alignItems: 'center',
+    gap: theme.spacing[3],
   },
   metaItem: {
     flexDirection: 'row',

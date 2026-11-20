@@ -52,7 +52,7 @@ export default function MoreScreen() {
         <SectionHeader title={t('more.studies.section')} />
         <Card padded={false} style={styles.card}>
           <ListRow
-            icon="schedule"
+            icon="grades"
             title={t('universis.grades.title')}
             subtitle={t('more.studies.gradesHint')}
             trailing="chevron"

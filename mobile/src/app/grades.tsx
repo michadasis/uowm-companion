@@ -20,14 +20,10 @@ import {
 } from '@/design';
 import { formatUpdatedAt } from '@/features/announcements/format';
 import { ExpiredNotice } from '@/features/universis/ExpiredNotice';
-import {
-  bySemester,
-  formatGrade,
-  semesterLetter,
-  summarise,
-} from '@/features/universis/grades';
+import { bySemester, formatGrade, semesterLetter, summarise } from '@/features/universis/grades';
 import type { StudentCourse } from '@/features/universis/types';
 import { useStudentCourses } from '@/features/universis/useStudentCourses';
+import { displayNumeral } from '@/lib/greek';
 
 type Show = 'all' | 'passed' | 'owed';
 
@@ -146,7 +142,11 @@ export default function GradesScreen() {
           </Text>
         ) : null}
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chips}
+        >
           {(['all', 'passed', 'owed'] as const).map((value) => (
             <Chip
               key={value}
@@ -163,7 +163,9 @@ export default function GradesScreen() {
             <SectionHeader
               title={
                 group.semester > 0
-                  ? t('universis.grades.semester', { letter: semesterLetter(group.semester) })
+                  ? displayNumeral(
+                      t('universis.grades.semester', { letter: semesterLetter(group.semester) }),
+                    )
                   : t('universis.grades.noSemester')
               }
             />

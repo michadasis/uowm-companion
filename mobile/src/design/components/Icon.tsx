@@ -29,6 +29,7 @@ const icons = {
   designSystem: glyphs.SparkleIcon,
   externalLink: glyphs.ArrowSquareOutIcon,
   date: glyphs.CalendarBlankIcon,
+  grades: glyphs.ExamIcon,
   time: glyphs.ClockIcon,
   filePdf: glyphs.FilePdfIcon,
   fileDoc: glyphs.FileDocIcon,

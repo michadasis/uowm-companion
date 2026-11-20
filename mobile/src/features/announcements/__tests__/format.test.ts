@@ -1,4 +1,4 @@
-import { formatDate, formatUpdatedAt } from '../format';
+import { formatDate, formatListDate, formatUpdatedAt } from '../format';
 
 describe('formatDate', () => {
   it('writes the date in Greek & in English', () => {
@@ -18,5 +18,20 @@ describe('formatUpdatedAt', () => {
     // The exact string depends on the test machine's zone; the shape is what
     // matters.
     expect(formatUpdatedAt(when, 'en')).toMatch(/Nov\s+14/);
+  });
+});
+
+describe('formatListDate', () => {
+  const now = new Date('2026-11-20T12:00:00');
+
+  it('says how many days ago within the week', () => {
+    expect(formatListDate('2026-11-20T08:00:00', 'el', now)).toBe('Σήμερα');
+    expect(formatListDate('2026-11-19T08:00:00', 'el', now)).toBe('Χθες');
+    expect(formatListDate('2026-11-17T08:00:00', 'el', now)).toBe('Πριν από 3 ημέρες');
+  });
+
+  it('gives the day & month after that, & the year only when it is not this one', () => {
+    expect(formatListDate('2026-11-09T08:00:00', 'el', now)).toBe('9 Νοεμβρίου');
+    expect(formatListDate('2025-11-09T08:00:00', 'el', now)).toBe('9 Νοεμβρίου 2025');
   });
 });

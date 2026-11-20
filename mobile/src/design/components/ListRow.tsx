@@ -11,7 +11,7 @@ import { Text } from './Text';
 export interface ListRowProps {
   title: string;
   subtitle?: string;
-  /** An icon in a tinted tile at the start of the row. */
+  /** An icon at the start of the row. */
   icon?: IconName;
   /** A short value at the end of the row, such as the current setting. */
   value?: string;
@@ -45,7 +45,7 @@ export function ListRow({
     <>
       {icon ? (
         <View style={styles.iconTile}>
-          <Icon name={icon} color="onPrimaryMuted" />
+          <Icon name={icon} color="primary" />
         </View>
       ) : null}
       <View style={styles.text}>
@@ -110,11 +110,9 @@ const useStyles = createStyles((theme) => ({
   pressed: {
     backgroundColor: theme.colors.pressed,
   },
+  // The icon stands bare, in a column of its own so the titles line up.
   iconTile: {
-    width: 40,
-    height: 40,
-    borderRadius: theme.radius.md,
-    backgroundColor: theme.colors.primaryMuted,
+    width: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },

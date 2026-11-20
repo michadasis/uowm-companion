@@ -5,6 +5,7 @@ export const ArrowLeftIcon: Icon;
 export const ArrowSquareOutIcon: Icon;
 export const CalendarBlankIcon: Icon;
 export const ClockIcon: Icon;
+export const ExamIcon: Icon;
 export const FileIcon: Icon;
 export const FileDocIcon: Icon;
 export const FilePdfIcon: Icon;

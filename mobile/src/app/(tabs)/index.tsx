@@ -1,4 +1,3 @@
-import { useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { ScrollView } from 'react-native';
 
@@ -13,6 +12,7 @@ import {
 import { TodayHero } from '@/features/home/TodayHero';
 import { useSettings } from '@/features/settings/store';
 import type { Language } from '@/features/settings/store';
+import { usePreviewNow } from '@/lib/usePreviewNow';
 
 export default function HomeScreen() {
   const { i18n } = useTranslation();
@@ -21,10 +21,7 @@ export default function HomeScreen() {
   const directory = useDirectory();
   const departmentId = useSettings((settings) => settings.departmentId);
   const department = findDepartment(directory, departmentId);
-  // A development build can be shown another day, for previews: /?today=2026-12-28.
-  const { today } = useLocalSearchParams<{ today?: string }>();
-  const now =
-    __DEV__ && today && /^\d{4}-\d{2}-\d{2}$/.test(today) ? new Date(`${today}T10:00`) : new Date();
+  const now = usePreviewNow();
 
   return (
     <Screen testID="home-screen">

@@ -1,27 +1,31 @@
 import { useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { RefreshControl, ScrollView, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 import {
-  Button,
-  Card,
   CardSkeleton,
   createStyles,
+  Icon,
   OfflineNotice,
+  PressableScale,
   SkeletonGroup,
   StateView,
   Text,
   useTheme,
 } from '@/design';
 import { formatUpdatedAt } from '@/features/announcements/format';
+import { dayOffReason } from '@/features/calendar/names';
+import { useCalendar } from '@/features/calendar/useCalendar';
 import { BlockRenderer } from '@/features/content/BlockRenderer';
 import { openExternal } from '@/features/content/links';
+import { findDepartment, useDirectory } from '@/features/departments/useDirectory';
 import { useSettings } from '@/features/settings/store';
 import type { Language } from '@/features/settings/store';
 import { CourseFilterBar } from '@/features/universis/CourseFilterBar';
 import { filterByCourses, selectedCourseKeys } from '@/features/universis/match';
 import { disconnectUniversis, useStudentCourses } from '@/features/universis/useStudentCourses';
+import { usePreviewNow } from '@/lib/usePreviewNow';
 
 import { ExamsAgenda } from './ExamsAgenda';
 import type { ScheduleKind } from './schema';
@@ -48,6 +52,10 @@ export function ScheduleView({ scope, kind }: ScheduleViewProps) {
     kind,
   );
   const offline = fetchStatus === 'paused';
+  const { data: calendar } = useCalendar();
+  const now = usePreviewNow();
+  const directory = useDirectory();
+  const city = findDepartment(directory, scope)?.city ?? null;
 
   const courseFilter = useSettings((s) => s.courseFilter);
   const setCourseFilter = useSettings((s) => s.setCourseFilter);
@@ -128,23 +136,31 @@ export function ScheduleView({ scope, kind }: ScheduleViewProps) {
       })}
     />
   ) : null;
+  const fileIcon =
+    document.format === 'pdf'
+      ? 'filePdf'
+      : document.format.startsWith('xls')
+        ? 'fileXls'
+        : 'fileDoc';
+  // The source document, one slim line: the student came for the classes.
   const documentCard = (
-    <Card style={styles.docCard}>
-      <View style={styles.docText}>
-        <Text variant="overline" color="textSubtle">
+    <PressableScale
+      accessibilityRole="link"
+      accessibilityLabel={`${t('schedule.viewDocument')}: ${document.label}`}
+      onPress={() => openExternal(document.url)}
+      style={styles.source}
+    >
+      <Icon name={fileIcon} size={18} color="textSubtle" />
+      <View style={styles.sourceText}>
+        <Text variant="caption" color="textSubtle" numberOfLines={1}>
           {t(`schedule.original.${kind}`)}
         </Text>
-        <Text variant="subheading" numberOfLines={2}>
+        <Text variant="label" numberOfLines={1}>
           {document.label}
         </Text>
       </View>
-      <Button
-        label={t('schedule.viewDocument')}
-        variant="secondary"
-        icon="externalLink"
-        onPress={() => openExternal(document.url)}
-      />
-    </Card>
+      <Icon name="externalLink" size={18} color="primary" />
+    </PressableScale>
   );
 
   // When the document parsed into structured items, those are the screen; the
@@ -175,6 +191,8 @@ export function ScheduleView({ scope, kind }: ScheduleViewProps) {
         personalised={courseKeys !== null}
         refreshControl={refreshControl}
         header={structuredHeader}
+        dayOff={calendar ? (date) => dayOffReason(calendar, date, city, t) : undefined}
+        now={now}
       />
     );
   }
@@ -214,11 +232,20 @@ const useStyles = createStyles((theme) => ({
     paddingTop: theme.spacing[2],
     gap: theme.spacing[3],
   },
-  docCard: {
+  source: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: theme.spacing[3],
+    minHeight: theme.size.touchTarget,
+    paddingHorizontal: theme.spacing[3],
+    paddingVertical: theme.spacing[2],
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.border,
   },
-  docText: {
-    gap: theme.spacing[0.5],
+  sourceText: {
+    flex: 1,
   },
   original: {
     gap: theme.spacing[4],

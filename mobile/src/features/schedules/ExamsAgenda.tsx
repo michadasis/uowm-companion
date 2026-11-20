@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import type { RefreshControlProps } from 'react-native';
 
+import { displayNumeral } from '@/lib/greek';
 import { Card, createStyles, Icon, SectionHeader, Text } from '@/design';
 import type { Language } from '@/features/settings/store';
 
@@ -35,7 +36,7 @@ function ExamCard({ exam }: { exam: Exam }) {
         ) : null}
         {exam.semester ? (
           <Text variant="caption" color="textSubtle">
-            {t('schedule.semester', { semester: exam.semester })}
+            {displayNumeral(t('schedule.semester', { semester: exam.semester }))}
           </Text>
         ) : null}
       </View>

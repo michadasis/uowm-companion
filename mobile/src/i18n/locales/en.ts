@@ -27,6 +27,10 @@ export const en: Messages = {
       title: 'Restaurant',
       body: 'What is for breakfast, lunch and dinner today.',
     },
+    calendar: {
+      title: 'Holidays and exam periods',
+      body: "From the academic calendar, with your city's own holidays.",
+    },
     start: 'Get started',
     language: 'Language',
   },
@@ -97,6 +101,12 @@ export const en: Messages = {
   },
   calendar: {
     tomorrow: 'tomorrow',
+    off: {
+      exams: 'Exam period',
+      break: 'No-classes week',
+      term: 'Between terms',
+    },
+    noClassesThatDay: 'No classes are held that day.',
     holidays: {
       'national-day': 'National holiday',
       polytechnic: 'Polytechnic uprising anniversary',

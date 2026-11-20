@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { ScrollView, View } from 'react-native';
 
-import { Button, Chip, createStyles, Icon, Text } from '@/design';
+import { Button, Chip, createStyles, Icon, PressableScale, Text } from '@/design';
 
 import { ExpiredNotice } from './ExpiredNotice';
 import type { CourseFilter } from './types';
@@ -51,17 +51,20 @@ export function CourseFilterBar({
 
   if (status === 'disconnected') {
     return (
-      <View style={styles.prompt}>
+      <PressableScale
+        accessibilityRole="button"
+        accessibilityLabel={`${t('universis.link.cta')}: ${t('universis.link.hint')}`}
+        onPress={onConnect}
+        style={styles.prompt}
+      >
+        <Icon name="department" size={18} color="accent" />
         <Text variant="caption" color="textMuted" style={styles.grow}>
           {t('universis.link.hint')}
         </Text>
-        <Button
-          label={t('universis.link.cta')}
-          variant="secondary"
-          icon="department"
-          onPress={onConnect}
-        />
-      </View>
+        <Text variant="label" color="primary">
+          {t('universis.link.cta')}
+        </Text>
+      </PressableScale>
     );
   }
 
@@ -129,9 +132,11 @@ const useStyles = createStyles((theme) => ({
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing[3],
-    backgroundColor: theme.colors.surfaceMuted,
+    minHeight: theme.size.touchTarget,
+    backgroundColor: theme.colors.accentMuted,
     borderRadius: theme.radius.md,
-    padding: theme.spacing[3],
+    paddingHorizontal: theme.spacing[3],
+    paddingVertical: theme.spacing[2],
   },
   grow: {
     flex: 1,
