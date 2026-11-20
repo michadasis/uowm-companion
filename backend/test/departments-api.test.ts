@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import endpoint from '../api/departments.js';
 import type { Directory } from '../src/departments/directory.js';
+import { departments } from '../src/registry/departments.js';
 
 const url = 'https://backend.test/api/departments';
 
@@ -38,13 +39,28 @@ describe('GET /api/departments', () => {
   });
 
   it('lists only the features a department has a source for', async () => {
-    const { body } = await getDirectory();
-    // Management Science & Technology publishes no exam or class schedule.
-    const mst = body.departments.find((department) => department.id === 'mst');
+    // Every department has both schedules now; take one away to see it go.
+    const mst = departments.find((department) => department.id === 'mst')!;
+    const sources = mst.sources as { exams?: unknown; timetable?: unknown };
+    const { exams, timetable } = sources;
+    delete sources.exams;
+    delete sources.timetable;
+    try {
+      const { body } = await getDirectory();
+      const listed = body.departments.find((department) => department.id === 'mst');
+      expect(listed?.features).not.toContain('exams');
+      expect(listed?.features).not.toContain('timetable');
+      expect(listed?.features).toContain('announcements');
+    } finally {
+      Object.assign(sources, { exams, timetable });
+    }
+  });
 
-    expect(mst?.features).not.toContain('exams');
-    expect(mst?.features).not.toContain('timetable');
-    expect(mst?.features).toContain('announcements');
+  it('has an exam & a class schedule source for every department', async () => {
+    const { body } = await getDirectory();
+    for (const department of body.departments) {
+      expect(department.features).toEqual(expect.arrayContaining(['exams', 'timetable']));
+    }
   });
 
   it('lets the CDN cache the response', async () => {

@@ -42,7 +42,7 @@ function columnsOf(row: Inline[]): Map<Column, number> {
 const letters = ['Α', 'Β', 'Γ', 'Δ', 'Ε', 'ΣΤ', 'Ζ', 'Η', 'Θ', 'Ι'];
 
 /** "6ο ΕΞΑΜΗΝΟ" -> "ΣΤ΄"; a semester already written in letters is kept. */
-function semesterOf(text: string): string | undefined {
+export function semesterOf(text: string): string | undefined {
   if (!text) return undefined;
   const number = /(\d{1,2})/.exec(text)?.[1];
   if (number) return letters[Number(number) - 1] ? `${letters[Number(number) - 1]}΄` : undefined;
@@ -71,7 +71,7 @@ const monthNames: [RegExp, number][] = [
   [/δεκεμβρ/u, 12],
 ];
 
-function dateOf(text: string, now: Date): string | undefined {
+export function dateOf(text: string, now: Date): string | undefined {
   const written = /(\d{1,2})\s+([α-ω]+)\s*(\d{4})?/u.exec(fold(text));
   const named = written ? monthNames.find(([stem]) => stem.test(written[2]!))?.[1] : undefined;
   if (written && named) text = `${written[1]}/${named}${written[3] ? `/${written[3]}` : ''}`;
@@ -98,7 +98,7 @@ function dateOf(text: string, now: Date): string | undefined {
   return date.toISOString().slice(0, 10);
 }
 
-function timesOf(text: string): { startTime?: string; endTime?: string } {
+export function timesOf(text: string): { startTime?: string; endTime?: string } {
   const pad = (time: string) => time.replace(/^(\d):/, '0$1:').replace('.', ':');
   const range = /(\d{1,2}[:.]\d{2})\s*[-–—]\s*(\d{1,2}[:.]\d{2})/.exec(text);
   if (range) return { startTime: pad(range[1]!), endTime: pad(range[2]!) };
@@ -114,6 +114,44 @@ function timesOf(text: string): { startTime?: string; endTime?: string } {
 
 // A row that only names a semester, heading the exams under it.
 const semesterRow = /^(ΣΤ|[Α-Ι])['΄’]?\s*εξαμην/iu;
+
+// A course code in brackets ends a course's name: "(ΥΕ272/Υ118)", "( ΥΕ243)".
+const courseCode = /\(\s*[Α-ΩA-Z]{1,3}\s?\d{2,4}(?:\s*\/\s*[Α-ΩA-Z]{1,3}\s?\d{2,4})*\s*\)/gu;
+
+/**
+ * The courses a cell holds. A department that sets the courses sharing a
+ * sitting in one cell ends each with its code; split there, every course is
+ * its own exam. A cell with one code, or none, is one course.
+ */
+function coursesIn(cell: string): string[] {
+  const ends = [...cell.matchAll(courseCode)].map((match) => match.index + match[0].length);
+  if (ends.length < 2) return [cell];
+  const courses: string[] = [];
+  let start = 0;
+  for (const end of ends) {
+    const course = cell.slice(start, end).trim();
+    if (course) courses.push(course);
+    start = end;
+  }
+  // Words after the last code belong to the last course.
+  const rest = cell.slice(start).trim();
+  if (rest && courses.length) courses[courses.length - 1] += ` ${rest}`;
+  return courses;
+}
+
+/**
+ * The examiners for each of a cell's courses: a name of two words for each,
+ * when the names come to exactly that; otherwise every course gets them all.
+ */
+function examinersFor(examiner: string, courses: number): string[][] {
+  const all = examiner.split(/\s*[,/]\s*|\n/).filter(Boolean);
+  if (courses < 2) return [all];
+  const words = examiner.trim().split(/\s+/);
+  if (all.length === 1 && words.length === courses * 2) {
+    return Array.from({ length: courses }, (_, i) => [words.slice(i * 2, i * 2 + 2).join(' ')]);
+  }
+  return Array.from({ length: courses }, () => all);
+}
 
 /**
  * Parses an exam schedule laid out as a table with a header row — a date, a
@@ -162,13 +200,18 @@ export function parseExamTable(blocks: Block[], now: Date = new Date()): Exam[] 
       const examiner = at(row, 'examiner');
       // A room left as a dash or a stray stroke is no room.
       const room = at(row, 'room').replace(/^[\s_–-]+|[\s_–-]+$/g, '');
-      exams.push({
-        course,
-        ...(date ? { date } : {}),
-        ...times,
-        ...(room ? { room } : {}),
-        ...(semester ? { semester } : {}),
-        ...(examiner ? { examiners: examiner.split(/\s*[,/]\s*|\n/).filter(Boolean) } : {}),
+      const courses = coursesIn(course);
+      const examiners = examiner ? examinersFor(examiner, courses.length) : [];
+      courses.forEach((name, index) => {
+        const theirs = examiners[index] ?? [];
+        exams.push({
+          course: name,
+          ...(date ? { date } : {}),
+          ...times,
+          ...(room ? { room } : {}),
+          ...(semester ? { semester } : {}),
+          ...(theirs.length ? { examiners: theirs } : {}),
+        });
       });
     }
   }

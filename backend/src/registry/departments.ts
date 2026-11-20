@@ -69,6 +69,7 @@ export const departments: readonly Department[] = [
     website: site('mech'),
     sources: {
       announcements: wordpress('mech', [5, 7, 8]),
+      exams: posts('mech', 'εξετ'),
       timetable: { adapter: 'menu-link', pageUrl: `${site('mech')}/`, label: 'Ωρολόγιο Πρόγραμμα' },
       staff: [
         page(`${site('mech')}/dep/`),
@@ -119,6 +120,7 @@ export const departments: readonly Department[] = [
     website: site('mre'),
     sources: {
       announcements: wordpress('mre', [54]),
+      exams: posts('mre', 'εξετ'),
       timetable: { adapter: 'menu-link', pageUrl: `${site('mre')}/`, label: 'Ωρολόγιο Πρόγραμμα' },
       staff: [
         page(`${site('mre')}/to-tmima/prosopiko-2/prosopiko/`),
@@ -196,6 +198,15 @@ export const departments: readonly Department[] = [
         listingUrl: `${site('mst')}/epikairotita/anakoinoseis/`,
         postPathPrefix: '/nea/',
       },
+      // Its WordPress API is closed. Exam schedules are posted among the
+      // announcements (its "Εξετάσεις" category stopped in 2022); the current
+      // timetable is linked from the menu, which the home page carries.
+      exams: {
+        adapter: 'listing-posts',
+        listingUrl: `${site('mst')}/epikairotita/anakoinoseis/`,
+        pages: 5,
+      },
+      timetable: { adapter: 'listing-posts', listingUrl: `${site('mst')}/` },
       staff: [
         page(`${site('mst')}/meli-dep/`),
         page(`${site('mst')}/ektakto-epistimoniko-prosopiko/`),
@@ -258,7 +269,16 @@ export const departments: readonly Department[] = [
         postPathPrefix: '/anakoinoseis/',
       },
       // Its WordPress API is closed; exam schedules are posted as announcements.
-      exams: { adapter: 'listing-posts', listingUrl: `${site('rdcbs')}/category/anakoinoseis/` },
+      exams: {
+        adapter: 'listing-posts',
+        listingUrl: `${site('rdcbs')}/category/anakoinoseis/`,
+        pages: 5,
+      },
+      timetable: {
+        adapter: 'listing-posts',
+        listingUrl: `${site('rdcbs')}/category/anakoinoseis/`,
+        pages: 5,
+      },
       staff: [page(`${site('rdcbs')}/?page_id=1093`)],
       secretariat: page(`${site('rdcbs')}/epikoinonia/`),
     },
@@ -273,6 +293,7 @@ export const departments: readonly Department[] = [
     website: site('econ'),
     sources: {
       announcements: wordpress('econ', [2]),
+      exams: posts('econ', 'εξετ'),
       timetable: { adapter: 'menu-link', pageUrl: `${site('econ')}/`, label: 'Ωρολόγιο Πρόγραμμα' },
       staff: [page(`${site('econ')}/anthopino-dynamiko/`)],
       secretariat: page(`${site('econ')}/epikoinonia/`),
@@ -339,6 +360,12 @@ export const departments: readonly Department[] = [
     website: site('eled'),
     sources: {
       announcements: wordpress('eled', [13]),
+      // Its exam schedules are uploaded & linked now & then, but never posted.
+      exams: {
+        adapter: 'wordpress-media',
+        apiRoot: `${site('eled')}/wp-json/`,
+        search: 'εξεταστικ',
+      },
       timetable: { adapter: 'menu-link', pageUrl: `${site('eled')}/`, label: 'Ωρολόγιο Πρόγραμμα' },
       staff: [
         page(`${site('eled')}/prosopiko/didaktiko-erevnitiko-prosopiko-dep/`),

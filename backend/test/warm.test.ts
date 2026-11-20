@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { departments } from '../src/registry/departments.js';
 import { warm, warmPaths } from '../src/warm.js';
 
 describe('warmPaths', () => {
@@ -8,7 +9,8 @@ describe('warmPaths', () => {
     expect(announcements[0]).toBe('/api/announcements?scope=university');
     expect(announcements).toContain('/api/announcements?dept=cs');
     expect(warmPaths('timetable')).toContain('/api/timetable?dept=cs');
-    expect(warmPaths('timetable')).not.toContain('/api/timetable?dept=mst');
+    // Every department has a timetable source now.
+    expect(warmPaths('timetable')).toHaveLength(departments.length);
     expect(warmPaths('menu')).toEqual(['/api/menu']);
   });
 });

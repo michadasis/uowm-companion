@@ -82,7 +82,9 @@ type ScheduleKind = 'exams' | 'timetable';
 const titles: Record<ScheduleKind, { want: RegExp; skip: RegExp }> = {
   exams: {
     want: /εξεταστικ|προγραμμα εξετασεων/,
-    skip: /κατατακτηρ|δρομολογ|πτυχιακ|διπλωματικ|αλλαγη|αιθουσ|μεταπτυχ|παραταση|δηλωση|υλη/,
+    // An interim sitting (εμβόλιμη) is for a few students, as those of the
+    // former TEI; it would hide the main schedule.
+    skip: /κατατακτηρ|δρομολογ|πτυχιακ|διπλωματικ|αλλαγη|αιθουσ|μεταπτυχ|παραταση|δηλωση|υλη|εμβολιμ/,
   },
   timetable: {
     want: /ωρολογι|προγραμμα (μαθηματων|διδασκαλιας)/,
@@ -254,32 +256,108 @@ async function fromWordPress(
  */
 async function fromListing(
   listingUrl: string,
+  pages: number,
   kind: ScheduleKind,
   fetchText: (url: string) => Promise<string>,
   now: Date,
 ): Promise<Discovery | null> {
-  const $ = load(await fetchText(listingUrl));
   const { want, skip } = titles[kind];
-  let post: { url: string; title: string } | null = null;
-  $('a[href]').each((_, el) => {
-    if (post) return;
-    const title = $(el).text().replace(/\s+/g, ' ').trim();
-    const folded = fold(title);
-    if (!want.test(folded) || skip.test(folded)) return;
+  let found: { url: string; title: string } | null = null;
+  // Older posts are on the listing's later pages, at WordPress's /page/N/.
+  for (let page = 1; page <= pages && !found; page++) {
+    const pageUrl = page === 1 ? listingUrl : new URL(`page/${page}/`, listingUrl).href;
+    let html: string;
     try {
-      post = { url: new URL($(el).attr('href')!, listingUrl).href, title };
-    } catch {
-      /* ignore an unparseable href */
+      html = await fetchText(pageUrl);
+    } catch (error) {
+      // A listing shorter than the pages asked for ends in a 404.
+      if (page > 1) break;
+      throw error;
     }
-  });
-  const found = post as { url: string; title: string } | null;
-  if (!found || isPast([found.title], null, kind, now)) return null;
+    const $ = load(html);
+    $('a[href]').each((_, el) => {
+      if (found) return;
+      const title = $(el).text().replace(/\s+/g, ' ').trim();
+      const folded = fold(title);
+      if (!want.test(folded) || skip.test(folded)) return;
+      try {
+        found = { url: new URL($(el).attr('href')!, pageUrl).href, title };
+      } catch {
+        /* ignore an unparseable href */
+      }
+    });
+  }
+  const post = found as { url: string; title: string } | null;
+  // A title that already names a past term spares fetching the post.
+  if (!post || isPast([post.title], null, kind, now)) return null;
 
-  const documents = unique(documentLinks(await fetchText(found.url), found.url))
+  // A listing may link the schedule's file itself rather than a post.
+  const direct = toDocument({ url: post.url, label: post.title, uploadStamp: 0 });
+  const links = direct
+    ? [{ url: post.url, label: post.title, uploadStamp: 0 }]
+    : unique(documentLinks(await fetchText(post.url), post.url));
+  // The listing gives no date: a post's title may not name its year, but its
+  // files' names & upload months do.
+  const uploads = links.map((link) => uploadedOn(link.url)).filter((d): d is Date => d !== null);
+  const newest = uploads.length ? new Date(Math.max(...uploads.map((d) => d.getTime()))) : null;
+  if (isPast([post.title, ...links.map((link) => fileNameOf(link.url))], newest, kind, now)) {
+    return null;
+  }
+
+  const documents = links
     .map(toDocument)
     .filter((doc): doc is DiscoveredDocument => doc !== null)
     .slice(0, maxDocuments);
-  return documents.length ? { label: found.title, documents } : null;
+  return documents.length ? { label: post.title, documents } : null;
+}
+
+interface WordPressMedia {
+  date?: string;
+  source_url?: string;
+  title?: { rendered?: string };
+}
+
+/**
+ * The newest upload whose file name names the schedule: for a department that
+ * uploads its schedule, links it from a page or a menu now & then, but never
+ * posts it. A file name reads like a title once its dashes are spaces.
+ */
+async function fromMedia(
+  source: Extract<ScheduleSource, { adapter: 'wordpress-media' }>,
+  kind: ScheduleKind,
+  fetchText: (url: string) => Promise<string>,
+  now: Date,
+): Promise<Discovery | null> {
+  const params = new URLSearchParams({
+    search: source.search,
+    per_page: '20',
+    orderby: 'date',
+    order: 'desc',
+    _fields: 'date,source_url,title',
+  });
+  const media = JSON.parse(
+    await fetchText(`${source.apiRoot}wp/v2/media?${params.toString()}`),
+  ) as unknown;
+  if (!Array.isArray(media)) return null;
+
+  const { want, skip } = titles[kind];
+  for (const item of media as WordPressMedia[]) {
+    const url = item.source_url;
+    if (!url) continue;
+    const name = fileNameOf(url)
+      .replace(/\.[a-z0-9]+$/i, '')
+      .replace(/[-_]+/g, ' ')
+      .trim();
+    const folded = fold(name);
+    if (!want.test(folded) || skip.test(folded)) continue;
+    const document = toDocument({ url, label: name, uploadStamp: 0 });
+    if (!document) continue;
+    // Uploads come newest first; once one is from a past term, so is every one after.
+    const published = item.date ? new Date(item.date) : uploadedOn(url);
+    if (isPast([name], published, kind, now)) return null;
+    return { label: name, documents: [document] };
+  }
+  return null;
 }
 
 async function fromEmbeddedSheet(
@@ -326,7 +404,8 @@ export async function discoverDocuments(
   if (source.adapter === 'wordpress-posts') return fromWordPress(source, kind, fetchText, now);
   if (source.adapter === 'embedded-sheet') return fromEmbeddedSheet(source.pageUrl, fetchText);
   if (source.adapter === 'listing-posts')
-    return fromListing(source.listingUrl, kind, fetchText, now);
+    return fromListing(source.listingUrl, source.pages ?? 1, kind, fetchText, now);
+  if (source.adapter === 'wordpress-media') return fromMedia(source, kind, fetchText, now);
   const document = await discoverDocument(source, fetchText);
   if (!document) return null;
   // A page's document carries no date, but its name usually says the year &

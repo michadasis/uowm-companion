@@ -75,29 +75,33 @@ WordPress site: 20 serve announcements through the REST API, two through their
 category archive page. Exam schedules and timetables have no common home, so a
 feature is listed only where there is a dependable source for it.
 
-Departments: 22, announcements 22, exam schedules 17, timetables 20, staff 22.
+Departments: 22, announcements 22, exam schedules 22, timetables 22, staff 22.
 
 Timetables and exam schedules are read from whatever the department publishes:
 a page, a PDF, a Word file (DOCX or the older DOC) or a spreadsheet. Tables are
 rebuilt from the documents' text, including PDFs printed sideways and lists
 spread over several pages, so they become screens rather than files. An exam
-schedule from a sitting that has ended is not shown as if it were current.
+schedule from a sitting that has ended is not shown as if it were current, and
+neither is a timetable from a past term: Regional and Cross-Border Development
+has published none since spring 2024-25, so the app says there is none yet. A
+few documents are laid out in ways no parser reads yet (Mechanical and Mineral
+Resources Engineering's exam schedules); those are shown as written.
 
 | Department | City | Announcements | Exams | Timetable | Staff |
 | --- | --- | :-: | :-: | :-: | :-: |
 | Electrical and Computer Engineering | Kozani | yes | yes | yes | yes |
-| Mechanical Engineering | Kozani | yes | - | yes | yes |
+| Mechanical Engineering | Kozani | yes | yes | yes | yes |
 | Chemical Engineering | Kozani | yes | yes | yes | yes |
-| Mineral Resources Engineering | Kozani | yes | - | yes | yes |
+| Mineral Resources Engineering | Kozani | yes | yes | yes | yes |
 | Product and Systems Design Engineering | Kozani | yes | yes | yes | yes |
 | International and European Economic Studies | Kozani | yes | yes | yes | yes |
-| Management Science and Technology | Kozani | yes | - | - | yes |
+| Management Science and Technology | Kozani | yes | yes | yes | yes |
 | Accounting and Finance | Kozani | yes | yes | yes | yes |
-| Regional and Cross-Border Development Studies | Kozani | yes | yes | - | yes |
-| Economics | Kastoria | yes | - | yes | yes |
+| Regional and Cross-Border Development Studies | Kozani | yes | yes | yes | yes |
+| Economics | Kastoria | yes | yes | yes | yes |
 | Business Administration | Grevena | yes | yes | yes | yes |
 | Statistics | Grevena | yes | yes | yes | yes |
-| Primary Education | Florina | yes | - | yes | yes |
+| Primary Education | Florina | yes | yes | yes | yes |
 | Early Childhood Education | Florina | yes | yes | yes | yes |
 | Psychology | Florina | yes | yes | yes | yes |
 | Communication and Digital Media | Kastoria | yes | yes | yes | yes |

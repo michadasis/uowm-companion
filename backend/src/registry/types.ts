@@ -68,6 +68,10 @@ export type AnnouncementsSource = WordPressRestSource | HtmlListingSource;
  * - `wordpress-posts`: each new schedule is published as a post, its document
  *   attached. The posts are found by category, by a search, or both, & the
  *   newest one whose title names the right kind of schedule is taken.
+ * - `listing-posts`: as above, for a site whose WordPress API is closed: its
+ *   post listing is read, newest first, over as many pages as given.
+ * - `wordpress-media`: the schedule is uploaded but never posted; the newest
+ *   upload whose file name names the right kind of schedule is taken.
  */
 export type ScheduleSource =
   | { adapter: 'document-page'; pageUrl: string; pick: 'first-link' | 'newest-upload' }
@@ -75,7 +79,8 @@ export type ScheduleSource =
   | { adapter: 'embedded-sheet'; pageUrl: string }
   | { adapter: 'wordpress-posts'; apiRoot: string; category?: number; search?: string }
   /** A site's post listing, read for the newest post titled as the schedule. */
-  | { adapter: 'listing-posts'; listingUrl: string };
+  | { adapter: 'listing-posts'; listingUrl: string; pages?: number }
+  | { adapter: 'wordpress-media'; apiRoot: string; search: string };
 
 export interface PageSource {
   adapter: 'html-page';

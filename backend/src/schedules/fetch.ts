@@ -5,6 +5,7 @@ import { fetchBuffer, fetchText, isTransient } from '../http/fetch.js';
 import type { Department } from '../registry/index.js';
 
 import { parseClassTable } from './parse/classTable.js';
+import { parseExamGrid } from './parse/examGrid.js';
 import { parseExamList } from './parse/examList.js';
 import { parseExamTable } from './parse/examTable.js';
 import { plausibleClasses, plausibleExams } from './parse/plausible.js';
@@ -97,13 +98,12 @@ export async function fetchSchedule(
 
 /**
  * The exams in a schedule, read by whichever parser recognises its layout: a
- * list of day & time lines, or a table with a header row. Both are tried; the
+ * list of day & time lines, a table with a header row, or a week's grid. All are tried; the
  * one that finds more is the one that matched.
  */
 function parseExams(blocks: Block[]): ReturnType<typeof parseExamList> {
-  const fromList = parseExamList(blocks);
-  const fromTable = parseExamTable(blocks);
-  const best = fromTable.length > fromList.length ? fromTable : fromList;
+  const found = [parseExamList(blocks), parseExamTable(blocks), parseExamGrid(blocks)];
+  const best = found.reduce((most, exams) => (exams.length > most.length ? exams : most));
   // An agenda that doesn't hold together is worse than none: the app then
   // shows the document as written.
   if (!plausibleExams(best)) return [];

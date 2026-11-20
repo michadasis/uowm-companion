@@ -135,6 +135,7 @@
       "website": "https://mech.uowm.gr",
       "features": [
         "announcements",
+        "exams",
         "timetable",
         "staff",
         "secretariat"
@@ -180,6 +181,7 @@
       "website": "https://mre.uowm.gr",
       "features": [
         "announcements",
+        "exams",
         "timetable",
         "staff",
         "secretariat"
@@ -249,6 +251,8 @@
       "website": "https://mst.uowm.gr",
       "features": [
         "announcements",
+        "exams",
+        "timetable",
         "staff",
         "secretariat"
       ]
@@ -292,6 +296,7 @@
       "features": [
         "announcements",
         "exams",
+        "timetable",
         "staff",
         "secretariat"
       ]
@@ -312,6 +317,7 @@
       "website": "https://econ.uowm.gr",
       "features": [
         "announcements",
+        "exams",
         "timetable",
         "staff",
         "secretariat"
@@ -381,6 +387,7 @@
       "website": "https://eled.uowm.gr",
       "features": [
         "announcements",
+        "exams",
         "timetable",
         "staff",
         "secretariat"

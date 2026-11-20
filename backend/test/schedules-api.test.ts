@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import exams from '../api/exams.js';
 import timetable from '../api/timetable.js';
+import { departments } from '../src/registry/departments.js';
 import type { ScheduleResponse } from '../src/schedules/types.js';
 
 async function call(endpoint: typeof exams, query: string) {
@@ -20,25 +21,31 @@ describe('GET /api/exams & /api/timetable', () => {
   });
 
   it('reports a department that publishes no such schedule, without fetching', async () => {
-    // Product and Systems Design Engineering has no exams source in the registry.
-    const { status, response } = await call(exams, '?dept=mst');
-    const body = (await response.json()) as ScheduleResponse;
+    // Every department has an exams source now; take one away.
+    const sources = departments.find((department) => department.id === 'mst')!.sources as {
+      exams?: unknown;
+    };
+    const source = sources.exams;
+    delete sources.exams;
+    try {
+      const { status, response } = await call(exams, '?dept=mst');
+      const body = (await response.json()) as ScheduleResponse;
 
-    expect(status).toBe(200);
-    expect(body).toMatchObject({
-      dept: 'mst',
-      kind: 'exams',
-      available: false,
-      document: null,
-      exams: [],
-      original: [],
-    });
-  });
-
-  it('lets the CDN cache a schedule for an hour', async () => {
-    const { response } = await call(exams, '?dept=mst');
-    expect(response.headers.get('cache-control')).toBe(
-      'public, max-age=0, s-maxage=3600, stale-while-revalidate=604800',
-    );
+      expect(status).toBe(200);
+      expect(body).toMatchObject({
+        dept: 'mst',
+        kind: 'exams',
+        available: false,
+        document: null,
+        exams: [],
+        original: [],
+      });
+      // Cached for an hour like any schedule.
+      expect(response.headers.get('cache-control')).toBe(
+        'public, max-age=0, s-maxage=3600, stale-while-revalidate=604800',
+      );
+    } finally {
+      sources.exams = source;
+    }
   });
 });

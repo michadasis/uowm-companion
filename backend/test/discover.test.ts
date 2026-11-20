@@ -376,3 +376,91 @@ describe('discoverDocuments from a post listing', () => {
     ).toBeNull();
   });
 });
+
+describe('discoverDocuments from a listing over several pages', () => {
+  const listing = 'https://rdcbs.uowm.gr/category/anakoinoseis/';
+  const post = 'https://rdcbs.uowm.gr/anakoinoseis/neo-orologio/';
+
+  it('reads on to later pages for the newest such post', async () => {
+    const fetchText = pages({
+      [listing]: '<a href="/anakoinoseis/a/">Δηλώσεις μαθημάτων</a>',
+      [`${listing}page/2/`]: `<a href="${post}">ΝΕΟ – ΩΡΟΛΟΓΙΟ ΠΡΟΓΡΑΜΜΑ ΜΑΘΗΜΑΤΩΝ</a>`,
+      [post]:
+        '<div class="post-content"><a href="/wp-content/uploads/2026/10/orologio.docx">Ωρολόγιο</a></div>',
+    });
+    const found = await discoverDocuments(
+      { adapter: 'listing-posts', listingUrl: listing, pages: 3 },
+      'timetable',
+      fetchText,
+      new Date('2026-11-20T12:00:00Z'),
+    );
+    expect(found?.documents.map((doc) => doc.url)).toEqual([
+      'https://rdcbs.uowm.gr/wp-content/uploads/2026/10/orologio.docx',
+    ]);
+  });
+
+  it("judges a post whose title names no year by its files' names & upload months", async () => {
+    const fetchText = pages({
+      [listing]: `<a href="${post}">ΝΕΟ – ΩΡΟΛΟΓΙΟ ΠΡΟΓΡΑΜΜΑ ΜΑΘΗΜΑΤΩΝ</a>`,
+      [post]:
+        '<div class="post-content"><a href="/wp-content/uploads/2025/03/ΩΡΟΛΟΓΙΟ-ΕΑΡΙΝΟΥ-2024-2025.docx">Ωρολόγιο</a></div>',
+    });
+    const found = await discoverDocuments(
+      { adapter: 'listing-posts', listingUrl: listing, pages: 2 },
+      'timetable',
+      fetchText,
+      new Date('2026-11-20T12:00:00Z'),
+    );
+    expect(found).toBeNull();
+  });
+});
+
+describe('discoverDocuments from the media library', () => {
+  const apiRoot = 'https://eled.uowm.gr/wp-json/';
+  const source: ScheduleSource = { adapter: 'wordpress-media', apiRoot, search: 'εξεταστικ' };
+  const media = (items: object[]) =>
+    pages({
+      [`${apiRoot}wp/v2/media?search=%CE%B5%CE%BE%CE%B5%CF%84%CE%B1%CF%83%CF%84%CE%B9%CE%BA&per_page=20&orderby=date&order=desc&_fields=date%2Csource_url%2Ctitle`]:
+        JSON.stringify(items),
+    });
+
+  it('takes the newest upload named as the schedule, past the bus timetable', async () => {
+    const fetchText = media([
+      {
+        date: '2026-08-31T10:00:00',
+        source_url:
+          'https://eled.uowm.gr/wp-content/uploads/2026/08/Πρόγραμμα-αστικών-δρομολογίων-Εξεταστικής.pdf',
+      },
+      {
+        date: '2026-07-31T10:00:00',
+        source_url:
+          'https://eled.uowm.gr/wp-content/uploads/2026/07/Πρόγραμμα-εξεταστικής-του-ΠΤΔΕ_Σεπτέμβριος-2026.pdf',
+      },
+    ]);
+    const found = await discoverDocuments(
+      source,
+      'exams',
+      fetchText,
+      new Date('2026-08-20T12:00:00Z'),
+    );
+    expect(found?.label).toBe('Πρόγραμμα εξεταστικής του ΠΤΔΕ Σεπτέμβριος 2026');
+    expect(found?.documents).toHaveLength(1);
+  });
+
+  it('gives none once that sitting is over', async () => {
+    const fetchText = media([
+      {
+        date: '2026-07-31T10:00:00',
+        source_url:
+          'https://eled.uowm.gr/wp-content/uploads/2026/07/Πρόγραμμα-εξεταστικής-του-ΠΤΔΕ_Σεπτέμβριος-2026.pdf',
+      },
+    ]);
+    const found = await discoverDocuments(
+      source,
+      'exams',
+      fetchText,
+      new Date('2026-11-20T12:00:00Z'),
+    );
+    expect(found).toBeNull();
+  });
+});
