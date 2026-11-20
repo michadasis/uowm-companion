@@ -275,7 +275,12 @@ export const departments: readonly Department[] = [
     sources: {
       announcements: wordpress('ba', [3]),
       exams: { adapter: 'wordpress-posts', apiRoot: `${site('ba')}/wp-json/`, category: 102 },
-      timetable: { adapter: 'menu-link', pageUrl: `${site('ba')}/`, label: 'Ωρολόγιο Πρόγραμμα' },
+      // The menu still points at last term's; each new one is posted.
+      timetable: {
+        adapter: 'wordpress-posts',
+        apiRoot: `${site('ba')}/wp-json/`,
+        search: 'ωρολόγιο',
+      },
       staff: [
         page(`${site('ba')}/προσωπικό/didaktiko-prosopiko/d-e-p/`),
         page(`${site('ba')}/προσωπικό/didaktiko-prosopiko/e-di-p/`),
@@ -343,10 +348,11 @@ export const departments: readonly Department[] = [
         category: 23,
         search: 'εξεταστικής',
       },
+      // The timetable page lists only regulations now; each term's is posted.
       timetable: {
-        adapter: 'document-page',
-        pageUrl: `${site('nured')}/orologio-programma-tmimatos/`,
-        pick: 'first-link',
+        adapter: 'wordpress-posts',
+        apiRoot: `${site('nured')}/wp-json/`,
+        search: 'ωρολόγιο',
       },
       staff: [
         page(`${site('nured')}/didaktiko-erevnitiko-prosopiko-d-e-p/`),
@@ -424,7 +430,8 @@ export const departments: readonly Department[] = [
       timetable: {
         adapter: 'document-page',
         pageUrl: `${site('math')}/programma-mathimaton/`,
-        pick: 'first-link',
+        // The exam rules are linked first; the term's timetable is the newest.
+        pick: 'newest-upload',
       },
       staff: [
         page(`${site('math')}/meli-dep-2/`),
@@ -527,7 +534,12 @@ export const departments: readonly Department[] = [
     sources: {
       announcements: wordpress('agro', [1, 44]),
       exams: { adapter: 'menu-link', pageUrl: `${site('agro')}/`, label: 'Πρόγραμμα Εξεταστικής' },
-      timetable: { adapter: 'menu-link', pageUrl: `${site('agro')}/`, label: 'Ωρολόγιο Πρόγραμμα' },
+      // The menu's page holds a 2023-24 timetable; each new one is posted.
+      timetable: {
+        adapter: 'wordpress-posts',
+        apiRoot: `${site('agro')}/wp-json/`,
+        search: 'ωρολόγιο',
+      },
       staff: [
         page(`${site('agro')}/διδακτικό-ερευνητικό-προσωπικό/`),
         page(`${site('agro')}/εργαστηριακό-διδακτικό-προσωπικό/`),

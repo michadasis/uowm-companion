@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { discoverDocument, discoverDocuments } from '../src/documents/discover.js';
+import {
+  academicYearIn,
+  discoverDocument,
+  discoverDocuments,
+  sittingEndsIn,
+} from '../src/documents/discover.js';
 import type { ScheduleSource } from '../src/registry/index.js';
 
 function pages(map: Record<string, string>) {
@@ -162,11 +167,11 @@ describe('discoverDocuments', () => {
     const fetchText = vi.fn(() =>
       Promise.resolve(
         JSON.stringify([
-          post('2026-10-26T10:00:00', 'Κατατακτήριες εξετάσεις 2026', '<a href="/k.pdf">k</a>'),
-          post('2026-09-01T10:00:00', 'Αστικά δρομολόγια εξεταστικής', '<a href="/d.pdf">d</a>'),
+          post('2026-11-14T10:00:00', 'Κατατακτήριες εξετάσεις 2026', '<a href="/k.pdf">k</a>'),
+          post('2026-11-12T10:00:00', 'Αστικά δρομολόγια εξεταστικής', '<a href="/d.pdf">d</a>'),
           post(
-            '2026-07-16T10:00:00',
-            'ΠΡΟΓΡΑΜΜΑ ΕΞΕΤΑΣΤΙΚΗΣ ΣΕΠΤΕΜΒΡΙΟΥ 2026',
+            '2026-11-10T10:00:00',
+            'ΠΡΟΓΡΑΜΜΑ ΕΞΕΤΑΣΤΙΚΗΣ ΙΑΝΟΥΑΡΙΟΥ-ΦΕΒΡΟΥΑΡΙΟΥ 2027',
             '<a href="/e.pdf">e</a>',
           ),
         ]),
@@ -235,5 +240,82 @@ describe('discoverDocuments', () => {
 
     const found = await discoverDocuments(source, 'exams', fetchText, now);
     expect(found?.documents).toHaveLength(1);
+  });
+});
+
+describe('telling a past term from the current one', () => {
+  it('reads the academic year a title or file name gives, in any of its spellings', () => {
+    expect(academicYearIn('ΩΡΟΛΟΓΙΟ ΠΡΟΓΡΑΜΜΑ 2026-2027')).toBe(2026);
+    expect(academicYearIn('AF-Πρόγραμμα-μαθημάτων-Χειμ-2026-27.pdf')).toBe(2026);
+    expect(academicYearIn('MECH_schedule_winter_26-27_v2-2.pdf')).toBe(2026);
+    expect(academicYearIn('Πρόγραμμα εαρινό 2025 – 2026')).toBe(2025);
+    expect(academicYearIn('2026-10-08-AF-Πρόγραμμα')).toBeUndefined();
+    expect(academicYearIn('ώρες 09-10')).toBeUndefined();
+  });
+
+  it('reads when a sitting a title names is over', () => {
+    expect(sittingEndsIn('ΠΡΟΓΡΑΜΜΑ ΕΞΕΤΑΣΤΙΚΗΣ ΣΕΠΤΕΜΒΡΙΟΥ 2026')?.toISOString()).toBe(
+      '2026-10-01T00:00:00.000Z',
+    );
+    expect(sittingEndsIn('Εξεταστική Ιανουαρίου-Φεβρουαρίου 2027')?.toISOString()).toBe(
+      '2027-03-01T00:00:00.000Z',
+    );
+    expect(sittingEndsIn('Πρόγραμμα Εξεταστικής')).toBeUndefined();
+  });
+
+  const now = new Date('2026-11-16T12:00:00Z');
+
+  it("drops a page's timetable for a past year, though its folder is years old either way", async () => {
+    const page = (file: string) =>
+      pages({
+        'https://mech.uowm.gr/': `<a href="https://mech.uowm.gr/wp-content/uploads/2019/10/${file}">Ωρολόγιο Πρόγραμμα</a>`,
+      });
+    const source: ScheduleSource = {
+      adapter: 'menu-link',
+      pageUrl: 'https://mech.uowm.gr/',
+      label: 'Ωρολόγιο Πρόγραμμα',
+    };
+    expect(
+      await discoverDocuments(source, 'timetable', page('MECH_schedule_winter_26-27.pdf'), now),
+    ).not.toBeNull();
+    expect(
+      await discoverDocuments(source, 'timetable', page('MECH_schedule_spring_25-26.pdf'), now),
+    ).toBeNull();
+  });
+
+  it('drops an exam schedule for a sitting over by more than a week', async () => {
+    const posted = (title: string) =>
+      vi.fn(() =>
+        Promise.resolve(
+          JSON.stringify([
+            {
+              date: '2026-08-20T10:00:00',
+              title: { rendered: title },
+              content: { rendered: '<a href="/e.pdf">e</a>' },
+              link: 'https://ece.uowm.gr/e/',
+            },
+          ]),
+        ),
+      );
+    const source: ScheduleSource = {
+      adapter: 'wordpress-posts',
+      apiRoot: 'https://ece.uowm.gr/wp-json/',
+    };
+    expect(
+      await discoverDocuments(
+        source,
+        'exams',
+        posted('Πρόγραμμα εξεταστικής Σεπτεμβρίου 2026'),
+        now,
+      ),
+    ).toBeNull();
+    expect(
+      await discoverDocuments(
+        source,
+        'exams',
+        posted('Πρόγραμμα εξεταστικής Ιανουαρίου 2027'),
+        now,
+      ),
+    ).not.toBeNull();
   });
 });

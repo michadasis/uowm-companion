@@ -33,11 +33,11 @@ function documentLinks(html: string, baseUrl: string): Link[] {
       return;
     }
     if (!asScheduleFormat(attachmentFormat(url.href))) return;
-    const month = /\/uploads\/(\d{4})\/(\d{2})\//.exec(url.pathname);
+    const uploaded = uploadedOn(url.href);
     links.push({
       url: url.href,
       label: $(el).text().replace(/\s+/g, ' ').trim(),
-      uploadStamp: month ? Number(month[1]) * 100 + Number(month[2]) : 0,
+      uploadStamp: uploaded ? uploaded.getUTCFullYear() * 100 + uploaded.getUTCMonth() + 1 : 0,
     });
   });
 
@@ -73,8 +73,93 @@ const titles: Record<ScheduleKind, { want: RegExp; skip: RegExp }> = {
 };
 
 // A schedule posted longer ago than this belongs to a term that is over; it
-// is better to say there is none than to show last year's as current.
-const staleAfterDays = 300;
+// is better to say there is none than to show last year's as current. A
+// semester's timetable is replaced every term; an exam schedule can be the
+// one for the coming sitting, posted months ahead.
+const staleAfterDays: Record<ScheduleKind, number> = { timetable: 200, exams: 300 };
+
+function isStale(published: Date, kind: ScheduleKind, now: Date): boolean {
+  return now.getTime() - published.getTime() > staleAfterDays[kind] * 86_400_000;
+}
+
+/**
+ * The academic year a title or file name says a schedule is for, as the year
+ * it starts in: "2026-2027", "2026-27" & "26-27" all give 2026. The latest
+ * one named wins; none gives undefined.
+ */
+export function academicYearIn(text: string): number | undefined {
+  const years: number[] = [];
+  for (const [, a, b] of text.matchAll(/(20\d{2})\s*[-–/_]\s*(20\d{2})(?!\d)/g)) {
+    if (Number(b) === Number(a) + 1) years.push(Number(a));
+  }
+  for (const [, a, b] of text.matchAll(/(20\d{2})\s*[-–/_]\s*(\d{2})(?!\d)/g)) {
+    if (Number(b) === (Number(a) + 1) % 100) years.push(Number(a));
+  }
+  for (const [, a, b] of text.matchAll(/(?<!\d)(\d{2})\s*[-–_]\s*(\d{2})(?!\d)/g)) {
+    if (Number(a) >= 20 && Number(a) <= 60 && Number(b) === Number(a) + 1)
+      years.push(2000 + Number(a));
+  }
+  return years.length ? Math.max(...years) : undefined;
+}
+
+// The months exam sittings are named by, as their folded stems.
+const sittingMonths: [RegExp, number][] = [
+  [/ιανουαρ/u, 1],
+  [/φεβρουαρ/u, 2],
+  [/ιουνι/u, 6],
+  [/ιουλι/u, 7],
+  [/σεπτεμβρ/u, 9],
+];
+
+/**
+ * When an exam sitting a title names is over: "Σεπτεμβρίου 2026" ends with
+ * September 2026, "Ιανουαρίου-Φεβρουαρίου 2027" with February. Undefined when
+ * the title names no such month with its year.
+ */
+export function sittingEndsIn(text: string): Date | undefined {
+  const folded = fold(text);
+  const months = sittingMonths.filter(([stem]) => stem.test(folded)).map(([, month]) => month);
+  const years = [...folded.matchAll(/(?<!\d)(20\d{2})(?!\d)/g)].map((match) => Number(match[1]));
+  if (months.length === 0 || years.length === 0) return undefined;
+  // The first day of the month after the last one named.
+  return new Date(Date.UTC(Math.max(...years), Math.max(...months), 1));
+}
+
+// The month (0-based) from which a schedule for the new academic year is
+// expected: a September exam sitting still belongs to the year before.
+const yearTurnsIn: Record<ScheduleKind, number> = { timetable: 7, exams: 9 };
+
+/**
+ * Whether a schedule belongs to a term that is over. The academic year its
+ * title or file names decides; failing that, how long ago it was posted.
+ */
+function isPast(texts: string[], published: Date | null, kind: ScheduleKind, now: Date): boolean {
+  if (kind === 'exams') {
+    const ends = sittingEndsIn(texts.join(' '));
+    if (ends) return now.getTime() > ends.getTime() + 7 * 86_400_000;
+  }
+  const named = academicYearIn(texts.join(' '));
+  if (named !== undefined) {
+    const current =
+      now.getUTCMonth() >= yearTurnsIn[kind] ? now.getUTCFullYear() : now.getUTCFullYear() - 1;
+    return named < current;
+  }
+  return published !== null && isStale(published, kind, now);
+}
+
+function fileNameOf(url: string): string {
+  try {
+    return decodeURIComponent(new URL(url).pathname.split('/').pop() ?? '');
+  } catch {
+    return url;
+  }
+}
+
+/** When a WordPress upload was made, from its /uploads/YYYY/MM/ path: mid-month. */
+function uploadedOn(url: string): Date | null {
+  const month = /\/uploads\/(?:sites\/\d+\/)?(\d{4})\/(\d{2})\//.exec(url);
+  return month ? new Date(Date.UTC(Number(month[1]), Number(month[2]) - 1, 15)) : null;
+}
 
 // A post can carry a schedule per semester or per sitting; past a handful the
 // rest are rarely more of the same schedule.
@@ -116,11 +201,13 @@ async function fromWordPress(
     const folded = fold(title);
     if (!want.test(folded) || skip.test(folded)) continue;
 
-    // Posts come newest first; once one is too old, so is every one after.
-    const published = post.date ? new Date(post.date) : null;
-    if (published && now.getTime() - published.getTime() > staleAfterDays * 86_400_000) return null;
-
     const links = unique(documentLinks(post.content?.rendered ?? '', post.link ?? source.apiRoot));
+    // Posts come newest first; once one is from a past term, so is every one after.
+    const published = post.date ? new Date(post.date) : null;
+    if (isPast([title, ...links.map((link) => fileNameOf(link.url))], published, kind, now)) {
+      return null;
+    }
+
     const documents = links
       .map(toDocument)
       .filter((doc): doc is DiscoveredDocument => doc !== null)
@@ -174,7 +261,13 @@ export async function discoverDocuments(
   if (source.adapter === 'wordpress-posts') return fromWordPress(source, kind, fetchText, now);
   if (source.adapter === 'embedded-sheet') return fromEmbeddedSheet(source.pageUrl, fetchText);
   const document = await discoverDocument(source, fetchText);
-  return document ? { label: document.label, documents: [document] } : null;
+  if (!document) return null;
+  // A page's document carries no date, but its name usually says the year &
+  // its upload path the month (though a page can keep a years-old folder).
+  if (isPast([document.label, fileNameOf(document.url)], uploadedOn(document.url), kind, now)) {
+    return null;
+  }
+  return { label: document.label, documents: [document] };
 }
 
 /**
