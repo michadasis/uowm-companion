@@ -48,8 +48,8 @@ emails, directions, the share sheet and an explicit "View on website" action.
 
 This is a monorepo with two packages:
 
-- `mobile/` — the Expo app (React Native, TypeScript, Expo Router).
-- `backend/` — the serverless API (TypeScript). Only the backend
+- `mobile/` - the Expo app (React Native, TypeScript, Expo Router).
+- `backend/` - the serverless API (TypeScript). Only the backend
   talks to the university's websites; the app talks to the backend, and falls back
   to what it bundles and what it has cached. The one exception is Universis, which
   the app calls itself with the student's token, so their grades never pass
