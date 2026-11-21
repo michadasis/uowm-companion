@@ -1,4 +1,8 @@
-# UoWM Companion
+<div align="center">
+  <img src="mobile/assets/icon.png" width="100" style="border-radius: 20px" />
+  <h1>UoWM Companion</h1>
+  <p>Announcements, schedules, the restaurant menu and your grades, for every department of the University of Western Macedonia.</p>
+</div>
 
 A native app for students of the University of Western Macedonia that compiles announcements,
 exam schedules, timetables, the student restaurant menu and student grades for all 22 departments,
