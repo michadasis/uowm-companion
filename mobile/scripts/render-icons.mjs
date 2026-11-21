@@ -2,7 +2,7 @@
 //   npm run icons
 // The SVG of each is written beside the PNGs in assets/brand, for reference.
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { Resvg } from '@resvg/resvg-js';
@@ -25,11 +25,21 @@ const outputs = [
   // The splash shows the mark alone, on paper or night per theme.
   { file: 'splash-icon.png', size: 512, svg: markSvg({ scale: 1.9 }) },
   { file: 'favicon.png', size: 96, svg: markSvg({ background: palette.ink, scale: 1.6 }) },
+  // The README's icon, its corners rounded in the image itself: GitHub drops
+  // the style that would round them.
+  {
+    file: 'brand/readme-icon.png',
+    size: 256,
+    svg: markSvg({ background: palette.ink, scale: 1.15 }).replace(
+      /<rect width="1024" height="1024" fill="([^"]+)"\/>/,
+      '<rect width="1024" height="1024" rx="225" fill="$1"/>',
+    ),
+  },
 ];
 
 for (const { file, size, svg } of outputs) {
   const png = new Resvg(svg, { fitTo: { mode: 'width', value: size } }).render().asPng();
   writeFileSync(join(assets, file), png);
-  writeFileSync(join(assets, 'brand', file.replace(/\.png$/, '.svg')), svg);
+  writeFileSync(join(assets, 'brand', basename(file).replace(/\.png$/, '.svg')), svg);
   console.log(`${file} ${size}×${size}`);
 }

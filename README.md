@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="mobile/assets/icon.png" width="100" style="border-radius: 20px" />
+  <img src="mobile/assets/brand/readme-icon.png" width="100" />
   <h1>UoWM Companion</h1>
   <p>Announcements, schedules, the restaurant menu and your grades, for every department of the University of Western Macedonia.</p>
 </div>
