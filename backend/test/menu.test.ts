@@ -5,17 +5,30 @@ import type { BreakfastRow, MenuItemRow, MenuMetaRow } from '../src/menu/types.j
 import { currentCycleWeek } from '../src/menu/week.js';
 
 describe('currentCycleWeek', () => {
-  it('counts weeks from the anchor Monday, wrapping around the cycle', () => {
-    // 6 Jan 2025 is the anchor (week 1 of a 2-week cycle).
-    expect(currentCycleWeek(new Date('2025-01-06T10:00:00Z'), 2)).toBe(1);
-    expect(currentCycleWeek(new Date('2025-01-12T10:00:00Z'), 2)).toBe(1);
-    expect(currentCycleWeek(new Date('2025-01-13T10:00:00Z'), 2)).toBe(2);
-    expect(currentCycleWeek(new Date('2025-01-20T10:00:00Z'), 2)).toBe(1);
+  it('counts weeks from Monday 8 September 2025, wrapping around the cycle', () => {
+    expect(currentCycleWeek(new Date('2025-09-08T10:00:00Z'), 2)).toBe(1);
+    expect(currentCycleWeek(new Date('2025-09-14T10:00:00Z'), 2)).toBe(1);
+    expect(currentCycleWeek(new Date('2025-09-15T10:00:00Z'), 2)).toBe(2);
+    expect(currentCycleWeek(new Date('2025-09-22T10:00:00Z'), 2)).toBe(1);
+  });
+
+  it('agrees with the restaurant app on a week the old anchor got wrong', () => {
+    // Monday 23 November 2026 is week 2; counting from 6 January 2025 said 1.
+    expect(currentCycleWeek(new Date('2026-11-23T10:00:00Z'), 2)).toBe(2);
   });
 
   it('works for a longer cycle & before the anchor', () => {
-    expect(currentCycleWeek(new Date('2025-01-27T00:00:00Z'), 4)).toBe(4);
-    expect(currentCycleWeek(new Date('2024-12-30T00:00:00Z'), 2)).toBe(2);
+    expect(currentCycleWeek(new Date('2025-09-29T10:00:00Z'), 4)).toBe(4);
+    expect(currentCycleWeek(new Date('2025-09-01T10:00:00Z'), 2)).toBe(2);
+  });
+
+  it('turns the week at midnight in Greece, not at midnight UTC', () => {
+    // 00:30 on Monday in Athens (UTC+2 in winter) is still Sunday in UTC.
+    expect(currentCycleWeek(new Date('2025-11-30T22:30:00Z'), 2)).toBe(1);
+    expect(currentCycleWeek(new Date('2025-11-30T21:30:00Z'), 2)).toBe(2);
+    // & in summer time (UTC+3).
+    expect(currentCycleWeek(new Date('2026-06-14T21:30:00Z'), 2)).toBe(1);
+    expect(currentCycleWeek(new Date('2026-06-14T20:30:00Z'), 2)).toBe(2);
   });
 });
 
@@ -41,7 +54,7 @@ const breakfast: BreakfastRow[] = [
 ];
 
 describe('buildMenuResponse', () => {
-  const now = new Date('2025-01-06T10:00:00Z');
+  const now = new Date('2025-09-08T10:00:00Z');
 
   it('lays the week out by day, meal & course', () => {
     const menu = buildMenuResponse(
