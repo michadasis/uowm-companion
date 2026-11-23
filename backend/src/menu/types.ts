@@ -17,6 +17,12 @@ export interface MenuDay {
   dinner: Meal;
 }
 
+/** One week of the cycle: the days that have food, Monday first. */
+export interface MenuWeek {
+  week: number;
+  days: MenuDay[];
+}
+
 export interface BreakfastGroup {
   category: string;
   items: MenuItem[];
@@ -29,6 +35,13 @@ export interface MenuResponse {
   /** The week that is current now, so the app can mark or default to it. */
   currentWeek: number;
   days: MenuDay[];
+  /**
+   * Every week of the cycle, so the app can show any date's menu & work out
+   * the current week itself, counting from `cycleAnchor`.
+   */
+  weeks: MenuWeek[];
+  /** The Monday (YYYY-MM-DD) that week 1 of the cycle is counted from. */
+  cycleAnchor: string;
   /** Breakfast is the same every day, so it is given once. */
   breakfast: BreakfastGroup[];
   sourceUrl: string | null;

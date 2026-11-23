@@ -6,8 +6,9 @@ import type {
   MenuItemRow,
   MenuMetaRow,
   MenuResponse,
+  MenuWeek,
 } from './types.js';
-import { currentCycleWeek } from './week.js';
+import { currentCycleWeek, cycleAnchor } from './week.js';
 
 const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 const courses = ['first', 'main', 'extra'] as const;
@@ -31,10 +32,22 @@ function hasAnything(meal: Meal): boolean {
   return courses.some((course) => meal[course].length > 0);
 }
 
+/** The days of one week that actually have food, in week order. */
+function daysOf(items: MenuItemRow[], week: number): MenuDay[] {
+  const weekRows = items.filter((row) => row.week_num === week);
+  const days: MenuDay[] = [];
+  for (const day of dayOrder) {
+    const lunch = mealFrom(weekRows, day, 'lunch');
+    const dinner = mealFrom(weekRows, day, 'dinner');
+    if (hasAnything(lunch) || hasAnything(dinner)) days.push({ day, lunch, dinner });
+  }
+  return days;
+}
+
 /**
- * Builds the menu response for one week out of the rows read from the
- * database: the days that actually have food, in week order, with breakfast
- * given once since it does not change from day to day.
+ * Builds the menu response out of the rows read from the database: the
+ * requested week, every week of the cycle, & breakfast given once since it
+ * does not change from day to day.
  */
 export function buildMenuResponse(
   meta: MenuMetaRow,
@@ -42,13 +55,9 @@ export function buildMenuResponse(
   breakfast: BreakfastRow[],
   options: { week: number; now: Date },
 ): MenuResponse {
-  const weekRows = items.filter((row) => row.week_num === options.week);
-
-  const days: MenuDay[] = [];
-  for (const day of dayOrder) {
-    const lunch = mealFrom(weekRows, day, 'lunch');
-    const dinner = mealFrom(weekRows, day, 'dinner');
-    if (hasAnything(lunch) || hasAnything(dinner)) days.push({ day, lunch, dinner });
+  const weeks: MenuWeek[] = [];
+  for (let week = 1; week <= meta.cycle_weeks; week++) {
+    weeks.push({ week, days: daysOf(items, week) });
   }
 
   const groups = new Map<string, BreakfastGroup>();
@@ -65,7 +74,9 @@ export function buildMenuResponse(
     cycleWeeks: meta.cycle_weeks,
     week: options.week,
     currentWeek: currentCycleWeek(options.now, meta.cycle_weeks),
-    days,
+    days: daysOf(items, options.week),
+    weeks,
+    cycleAnchor,
     breakfast: breakfastGroups,
     sourceUrl: meta.source_pdf_url,
   };

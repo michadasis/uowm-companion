@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { buildMenuResponse } from '../src/menu/map.js';
 import type { BreakfastRow, MenuItemRow, MenuMetaRow } from '../src/menu/types.js';
-import { currentCycleWeek } from '../src/menu/week.js';
+import { currentCycleWeek, cycleAnchor } from '../src/menu/week.js';
 
 describe('currentCycleWeek', () => {
   it('counts weeks from Monday 8 September 2025, wrapping around the cycle', () => {
@@ -118,5 +118,24 @@ describe('buildMenuResponse', () => {
       currentWeek: 1,
       sourceUrl: meta.source_pdf_url,
     });
+  });
+
+  it('gives every week of the cycle & the Monday they are counted from', () => {
+    const menu = buildMenuResponse(
+      meta,
+      [
+        item({ week_num: 1, day_name: 'monday', item_gr: 'Φακές', item_en: 'Lentils' }),
+        item({ week_num: 2, day_name: 'tuesday', item_gr: 'Ψάρι', item_en: 'Fish' }),
+      ],
+      [],
+      { week: 1, now },
+    );
+
+    expect(menu.cycleAnchor).toBe(cycleAnchor);
+    expect(menu.weeks.map((w) => [w.week, w.days.map((d) => d.day)])).toEqual([
+      [1, ['monday']],
+      [2, ['tuesday']],
+    ]);
+    expect(menu.days).toEqual(menu.weeks[0]!.days);
   });
 });
