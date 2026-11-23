@@ -57,11 +57,35 @@ describe('todayMessage', () => {
     });
   });
 
-  it('wishes happy holidays over Christmas, back on Thursday 7 January', () => {
+  it('wishes happy holidays over Christmas & counts the days to Thursday 7 January', () => {
     expect(say('2026-12-28')).toMatchObject({
       title: 'Καλές γιορτές!',
-      message: 'Τα μαθήματα ξαναρχίζουν την Πέμπτη 7 Ιανουαρίου.',
+      message: 'Τα μαθήματα ξαναρχίζουν σε 10 μέρες, την Πέμπτη 7 Ιανουαρίου.',
     });
+    expect(say('2027-01-05').message).toBe(
+      'Τα μαθήματα ξαναρχίζουν σε 2 μέρες, την Πέμπτη 7 Ιανουαρίου.',
+    );
+    expect(say('2027-01-06').message).toBe('Τα μαθήματα ξαναρχίζουν αύριο.');
+  });
+
+  it('counts the days to the term over the summer', () => {
+    const summer = {
+      ...calendar,
+      periods: [
+        ...calendar.periods,
+        {
+          kind: 'teaching' as const,
+          term: 'winter' as const,
+          from: '2027-09-27',
+          to: '2027-12-22',
+          name: 'Χειμερινό εξάμηνο',
+        },
+      ],
+    };
+    const now = at('2027-08-17');
+    expect(todayMessage(dayStatus(summer, now, 'kozani'), now, 'el', i18n.t).message).toBe(
+      'Το εξάμηνο ξεκινάει σε 41 μέρες, τη Δευτέρα 27 Σεπτεμβρίου.',
+    );
   });
 
   it('wishes luck in the exams & warns of a holiday coming', () => {

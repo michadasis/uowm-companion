@@ -36,6 +36,12 @@ export function onDay(date: Date, now: Date, language: string, t: TFunction): st
   return `${article} ${formatted}`;
 }
 
+/** Whole days from today to a date: 1 for tomorrow. */
+function daysUntil(date: Date, now: Date): number {
+  const day = 24 * 60 * 60 * 1000;
+  return Math.round((dateOf(isoDay(date)).getTime() - dateOf(isoDay(now)).getTime()) / day);
+}
+
 // "την Τρίτη…" opening a sentence.
 const capitalise = (text: string, language: string): string =>
   text.charAt(0).toLocaleUpperCase(language) + text.slice(1);
@@ -79,6 +85,13 @@ function compose(
   const greeting = t(`home.greeting.${dayPart(now)}`);
   const resumes = (date?: Date) =>
     date ? t('home.today.resumes', { when: onDay(date, now, language, t) }) : undefined;
+  // Over a long break, how many days are left is the point: "in 10 days, on
+  // Thursday 7 January". From the day before, "tomorrow" says it all.
+  const counted = (key: 'resumes' | 'termStarts', date: Date) => {
+    const days = daysUntil(date, now);
+    const when = onDay(date, now, language, t);
+    return days >= 2 ? t(`home.today.${key}In`, { days, when }) : t(`home.today.${key}`, { when });
+  };
 
   if (!status) return { tone: 'calm', title: greeting };
 
@@ -89,7 +102,7 @@ function compose(
         tone: 'rest',
         badge: holidayName(status.holiday, t),
         title: t(easter ? 'home.today.easter' : 'home.today.christmas'),
-        message: resumes(status.resumes),
+        message: status.resumes ? counted('resumes', status.resumes) : undefined,
       };
     }
     case 'holiday': {
@@ -155,9 +168,7 @@ function compose(
         title: t(summer ? 'home.today.summer' : 'home.today.offTitle'),
         message:
           status.next?.kind === 'teaching'
-            ? t('home.today.termStarts', {
-                when: onDay(dateOf(status.next.from), now, language, t),
-              })
+            ? counted('termStarts', dateOf(status.next.from))
             : status.next
               ? t('home.today.examsStart', {
                   when: onDay(dateOf(status.next.from), now, language, t),
