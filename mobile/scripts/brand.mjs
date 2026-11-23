@@ -5,8 +5,8 @@
 //
 // Drawn on a 1024 grid, centred, filling the middle 47% of it, so it sits
 // inside the safe zone of Android's adaptive icon as drawn. Every part is a
-// filled path, so the mark sits on any background. src/design/components/
-// BrandMark.tsx draws the same paths: keep the two in step.
+// filled path, so the mark sits on any background. src/design/brand.ts holds
+// the same paths for the app: keep the two in step.
 
 export const paths = {
   /** The two halves of the ring. */
