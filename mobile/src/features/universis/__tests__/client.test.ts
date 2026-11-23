@@ -327,11 +327,30 @@ describe('fetchStudentProfile, as the UoWM Universis answers', () => {
     // The address the live API answers on, checked in the browser: one slash
     // between /api & the path. Without it the API says 404, & no department.
     expect(fetchMock).toHaveBeenCalledWith(
-      'https://api1.uowm.gr/api/students/me?$expand=person($expand=gender),department,studyProgram',
+      'https://api1.uowm.gr/api/students/me?$expand=person($expand=gender),department,studyProgram,studentStatus',
       expect.objectContaining({
         headers: expect.objectContaining({ Authorization: 'Bearer tok' }),
       }),
     );
     fetchMock.mockRestore();
+  });
+
+  it('says whether the student is still studying, from their status', async () => {
+    const status = async (studentStatus: unknown) => {
+      const fetchMock = jest.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => ({ person: { givenName: 'ΝΙΚΟΣ' }, studentStatus }),
+      } as Response);
+      const profile = await fetchStudentProfile('tok');
+      fetchMock.mockRestore();
+      return profile.active;
+    };
+
+    expect(await status({ id: 1, alternateName: 'active', name: 'Ενεργός' })).toBe(true);
+    expect(await status({ id: 3, alternateName: 'erased', name: 'Διαγραμμένος' })).toBe(false);
+    expect(await status({ id: 2, alternateName: 'graduated' })).toBe(false);
+    // A bare id says nothing either way.
+    expect(await status(3)).toBeUndefined();
+    expect(await status(undefined)).toBeUndefined();
   });
 });

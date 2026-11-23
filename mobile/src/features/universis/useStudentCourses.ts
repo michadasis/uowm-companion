@@ -19,6 +19,9 @@ import type { StudentCourse } from './types';
  * Returns the department found, if one was.
  */
 export function applyProfile(token: string, profile: StudentProfile): string | null {
+  // A student Universis no longer counts as studying, as when erased, gives
+  // the app nothing: the department & the rest stay as they were.
+  if (profile.active === false) return null;
   const departmentId = profile.department
     ? departmentOf(bundledDirectory, profile.department)
     : null;
@@ -98,8 +101,14 @@ export function useStudentCourses(): StudentCoursesState {
       const [courses, profile] = await Promise.all([
         loadStudentCourses(token!, { signal }),
         // The profile is a nicety: a failure to read it leaves the courses be.
-        fetchStudentProfile(token!, { signal }).catch(() => ({})),
+        fetchStudentProfile(token!, { signal }).catch((): StudentProfile => ({})),
       ]);
+      if (profile.active === false) {
+        // No longer studying, as when erased: the last declaration is history
+        // & nothing from Universis is shown. The link goes, the app carries on.
+        await disconnectUniversis();
+        return [];
+      }
       useSavedCourses.getState().save(courses);
       applyProfile(token!, profile);
       return courses;

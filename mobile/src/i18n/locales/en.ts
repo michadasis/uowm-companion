@@ -252,6 +252,11 @@ export const en: Messages = {
       short: 'Grades as of {{time}}',
       shortUndated: 'Saved grades',
     },
+    inactive: {
+      title: 'Your studies are not active in Universis',
+      message:
+        'The app therefore does not bring in grades or declared courses from Universis. The timetable, announcements and menu stay as they are.',
+    },
   },
   menu: {
     title: 'Menu',

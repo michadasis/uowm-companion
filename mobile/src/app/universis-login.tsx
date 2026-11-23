@@ -5,7 +5,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import type { WebViewMessageEvent } from 'react-native-webview';
 
-import { createStyles, NavBar, Screen, Text, useTheme } from '@/design';
+import { createStyles, NavBar, Screen, StateView, Text, useTheme } from '@/design';
 import { useSettings } from '@/features/settings/store';
 import { givenNameFromToken, isTokenExpired, useUniversisAuth } from '@/features/universis/auth';
 import { fetchStudentProfile, UniversisError } from '@/features/universis/client';
@@ -24,6 +24,8 @@ export default function UniversisLoginScreen() {
   const [loading, setLoading] = useState(true);
   // On a first launch, signing in is how the student's department is found.
   const [finding, setFinding] = useState(false);
+  // Signed in, but Universis no longer counts them as studying.
+  const [inactive, setInactive] = useState(false);
 
   const goBack = () => (router.canGoBack() ? router.back() : router.replace('/schedule'));
 
@@ -42,18 +44,9 @@ export default function UniversisLoginScreen() {
     const onboarding = useSettings.getState().departmentId === null;
 
     void (async () => {
-      if (!onboarding) {
-        settled.current = true;
-        await signIn(token);
-        useSavedCourses.getState().saveProfile({ givenName: givenNameFromToken(token) });
-        // A fresh token means a fresh read, even if a saved copy is on hand.
-        refreshStudentCourses();
-        goBack();
-        return;
-      }
-
-      // On a first launch the student's department is read with the token.
-      setFinding(true);
+      // The profile is read before the token is kept: it says whether the
+      // student is still studying, & on a first launch it names the department.
+      if (onboarding) setFinding(true);
       let profile: StudentProfile | null;
       try {
         profile = await fetchStudentProfile(token);
@@ -68,8 +61,21 @@ export default function UniversisLoginScreen() {
         profile = null;
       }
       settled.current = true;
+      if (profile?.active === false) {
+        // Erased or otherwise no longer studying: nothing from Universis is
+        // kept, & the timetable, announcements & the rest stay as they were.
+        setFinding(false);
+        setInactive(true);
+        return;
+      }
       await signIn(token);
       useSavedCourses.getState().saveProfile({ givenName: givenNameFromToken(token) });
+      if (!onboarding) {
+        // A fresh token means a fresh read, even if a saved copy is on hand.
+        refreshStudentCourses();
+        goBack();
+        return;
+      }
       const found = profile ? applyProfile(token, profile) : null;
       refreshStudentCourses();
       if (found) {
@@ -98,7 +104,18 @@ export default function UniversisLoginScreen() {
           // The student signs in on the University's own pages; we never see it.
           incognito={false}
         />
-        {loading || finding ? (
+        {inactive ? (
+          <View style={[styles.cover, { backgroundColor: theme.colors.background }]}>
+            <StateView
+              kind="empty"
+              icon="department"
+              title={t('universis.inactive.title')}
+              message={t('universis.inactive.message')}
+              action={{ label: t('common.back'), onPress: goBack }}
+              testID="universis-inactive"
+            />
+          </View>
+        ) : loading || finding ? (
           <View style={[styles.overlay, { backgroundColor: theme.colors.background }]}>
             <ActivityIndicator color={theme.colors.primary} />
             <Text variant="caption" color="textMuted">
@@ -114,6 +131,13 @@ export default function UniversisLoginScreen() {
 const useStyles = createStyles(() => ({
   webWrap: {
     flex: 1,
+  },
+  cover: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   overlay: {
     position: 'absolute',

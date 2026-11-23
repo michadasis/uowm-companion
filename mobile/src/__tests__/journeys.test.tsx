@@ -1,11 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { act, screen, userEvent } from '@testing-library/react-native';
+import { act, screen, userEvent, waitFor, within } from '@testing-library/react-native';
 import { renderRouter } from 'expo-router/testing-library';
 
 import { defaultSettings, useSettings } from '@/features/settings/store';
 import { useUniversisAuth } from '@/features/universis/auth';
 import { useSavedCourses } from '@/features/universis/saved';
 import i18n from '@/i18n';
+import { queryClient } from '@/lib/query';
 
 jest.mock('expo-font', () => ({
   useFonts: () => [true, null],
@@ -239,5 +240,112 @@ describe('a returning student', () => {
     await user.press(screen.getByRole('radio', { name: 'English' }));
     expect(await screen.findByRole('radio', { name: 'Dark' })).toBeChecked();
     expect(screen.getByRole('tab', { name: 'More' })).toBeSelected();
+  });
+});
+
+describe('a student Universis no longer counts as studying', () => {
+  const inAnHour = () => Math.floor(Date.now() / 1000) + 3600;
+
+  // Universis for an erased student: the sign-in still works & the courses &
+  // the last declaration are still there, with a status that says they left.
+  const erased = () =>
+    jest.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+      const url = String(input);
+      const body = url.includes('/registrations')
+        ? {
+            value: [
+              {
+                registrationYear: { id: 2023 },
+                registrationPeriod: { id: 2 },
+                classes: [{ course: { name: 'ΓΕΝΙΚΗ ΛΟΓΙΣΤΙΚΗ' }, isPassed: 0 }],
+              },
+            ],
+          }
+        : url.includes('/courses')
+          ? { value: [{ course: { name: 'ΓΕΝΙΚΗ ΛΟΓΙΣΤΙΚΗ' }, isPassed: 0, grade: 0.3 }] }
+          : {
+              person: { givenName: 'ΙΩΑΝΝΗΣ' },
+              department: { id: '1548', name: 'ΤΜΗΜΑ ΟΙΚΟΝΟΜΙΚΩΝ ΕΠΙΣΤΗΜΩΝ', abbreviation: 'econ' },
+              studentStatus: { id: 3, alternateName: 'erased', name: 'Διαγραμμένος' },
+            };
+      return Promise.resolve({ ok: true, status: 200, json: async () => body } as Response);
+    });
+
+  beforeEach(() => {
+    queryClient.clear();
+  });
+
+  afterEach(async () => {
+    jest.restoreAllMocks();
+    await useUniversisAuth.getState().signOut();
+    useSavedCourses.setState({
+      courses: null,
+      updatedAt: null,
+      givenName: null,
+      gender: null,
+      departmentId: null,
+    });
+  });
+
+  it('signs in without taking anything from Universis or changing the department', async () => {
+    useSettings.setState({ departmentId: 'cs' });
+    erased();
+    const { router, user } = await launch();
+    await screen.findByTestId('home-screen');
+    await user.press(screen.getByRole('tab', { name: 'Περισσότερα' }));
+    await user.press(await screen.findByTestId('more-universis-connect'));
+    await screen.findByTestId('universis-webview');
+
+    await act(async () => sendFromPage!(tokenMessage(jwt(inAnHour(), 'erased'))));
+
+    const notice = await screen.findByTestId('universis-inactive');
+    expect(useUniversisAuth.getState().token).toBeNull();
+    expect(useSavedCourses.getState().courses).toBeNull();
+    expect(useSettings.getState().departmentId).toBe('cs');
+
+    await user.press(within(notice).getByRole('button', { name: 'Πίσω' }));
+    expect(await screen.findByTestId('more-screen')).toBeOnTheScreen();
+    expect(router.getPathname()).toBe('/more');
+    expect(screen.getByTestId('more-universis-connect')).toBeOnTheScreen();
+  });
+
+  it('on a first launch, leaves the department to the list', async () => {
+    erased();
+    const { user } = await launch();
+    await user.press(await screen.findByRole('button', { name: 'Ξεκίνα' }));
+    await user.press(await screen.findByTestId('department-from-universis'));
+    await screen.findByTestId('universis-webview');
+
+    await act(async () => sendFromPage!(tokenMessage(jwt(inAnHour(), 'erased'))));
+
+    const notice = await screen.findByTestId('universis-inactive');
+    expect(useSettings.getState().departmentId).toBeNull();
+    expect(useUniversisAuth.getState().token).toBeNull();
+
+    await user.press(within(notice).getByRole('button', { name: 'Πίσω' }));
+    expect(await screen.findByTestId('onboarding-department-screen')).toBeOnTheScreen();
+  });
+
+  it('lets go of a link Universis stops counting, keeping the department', async () => {
+    useSettings.setState({ departmentId: 'cs', courseFilter: 'registered' });
+    // Kept in the keychain, as a real sign-in leaves it, so launch reads it back.
+    await useUniversisAuth.getState().signIn(jwt(inAnHour(), 'was-studying'));
+    useSavedCourses.setState({
+      courses: [{ name: 'Φυσική', passed: false, registered: true, semester: 1, grade: 3 }],
+      updatedAt: Date.now(),
+      givenName: 'ΙΩΑΝΝΗΣ',
+      gender: 'male',
+      departmentId: 'cs',
+    });
+    erased();
+    await launch();
+    await screen.findByTestId('home-screen');
+
+    await waitFor(() => {
+      expect(useUniversisAuth.getState().token).toBeNull();
+      expect(useSavedCourses.getState().courses).toBeNull();
+    });
+    expect(useSettings.getState().departmentId).toBe('cs');
+    expect(screen.queryByTestId('home-grades')).not.toBeOnTheScreen();
   });
 });

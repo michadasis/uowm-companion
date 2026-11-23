@@ -174,6 +174,18 @@ export interface StudentProfile {
   gender?: 'male' | 'female';
   /** What Universis says of the student's department, to find it in the app by. */
   department?: UniversisDepartment;
+  /**
+   * False when Universis no longer counts the student as studying: erased,
+   * graduated or suspended. Absent when it doesn't say.
+   */
+  active?: boolean;
+}
+
+// The status as Universis names it, "active" for a student who is studying.
+// Sent as a bare id it can't be read, so it says nothing either way.
+function activeOf(value: unknown): boolean | undefined {
+  const name = isObject(value) ? text(value.alternateName) : undefined;
+  return name === undefined ? undefined : name.toLowerCase() === 'active';
 }
 
 function namesOf(value: unknown): string[] {
@@ -211,7 +223,7 @@ export async function fetchStudentProfile(
   let body: unknown;
   let failure: unknown;
   for (const path of [
-    '/students/me?$expand=person($expand=gender),department,studyProgram',
+    '/students/me?$expand=person($expand=gender),department,studyProgram,studentStatus',
     '/students/me?$expand=person,department',
     '/students/me?$expand=person',
     '/students/me',
@@ -245,10 +257,12 @@ export async function fetchStudentProfile(
     ...(code ? { code } : {}),
     ...(names.length > 0 ? { names } : {}),
   };
+  const active = activeOf(body.studentStatus);
   return {
     ...(givenName ? { givenName } : {}),
     ...(gender ? { gender } : {}),
     ...(Object.keys(department).length > 0 ? { department } : {}),
+    ...(active !== undefined ? { active } : {}),
   };
 }
 
