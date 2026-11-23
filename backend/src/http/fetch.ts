@@ -1,6 +1,6 @@
 // Identifies the backend to the sites it reads, names the app & links the
 // repo, so an administrator who sees it in their logs knows what it is.
-export const userAgent = 'UoWMCompanion/1.0 (+https://github.com/michadasis/uowm-companion)';
+export const userAgent = 'UoWMCompanion/1.1 (+https://github.com/michadasis/uowm-companion)';
 
 const defaultTimeoutMs = 15_000;
 

@@ -23,7 +23,7 @@ const applicationId = `io.github.michadasis.uowmcompanion${idSuffix[variant]}`;
 const config: ExpoConfig = {
   name: names[variant],
   slug: 'uowm-companion',
-  version: '1.0.1',
+  version: '1.1.0',
   scheme: 'uowmcompanion',
   orientation: 'portrait',
   userInterfaceStyle: 'automatic',
@@ -31,7 +31,7 @@ const config: ExpoConfig = {
   android: {
     package: applicationId,
     // Raised with every release, so a phone takes the new APK as an update.
-    versionCode: 2,
+    versionCode: 3,
     adaptiveIcon: {
       backgroundColor: '#1F1B16',
       foregroundImage: './assets/adaptive-icon-foreground.png',
