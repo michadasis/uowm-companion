@@ -18,6 +18,7 @@ import type { IconName } from '@/design';
 import { weekDates } from '@/features/calendar/status';
 import type { Language } from '@/features/settings/store';
 
+import { daysForDate } from './cycle';
 import { dayLabel } from './format';
 import type { Course, MealKind, Meal, MenuDay, MenuItem } from './schema';
 import { courses } from './schema';
@@ -167,7 +168,7 @@ export function MenuView({ now = new Date() }: { now?: Date }) {
   // No network at all, or a request that tried & could not get through.
   const offline = fetchStatus === 'paused' || isNetworkError(error);
 
-  const days = data?.days ?? [];
+  const days = data ? daysForDate(data, now) : [];
   const defaultDay = days.find((d) => d.day === todayName(now))?.day ?? days[0]?.day;
   const [day, setDay] = useState<string | undefined>(undefined);
   const [meal, setMeal] = useState<MealKind>('lunch');

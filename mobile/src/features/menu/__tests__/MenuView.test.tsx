@@ -34,12 +34,12 @@ const menu: MenuResponse = {
   sourceUrl: 'https://uowm.gr/menu.pdf',
 };
 
-function renderMenu() {
+function renderMenu(now?: Date) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   );
-  return render(<MenuView />, { wrapper });
+  return render(<MenuView now={now} />, { wrapper });
 }
 
 beforeEach(() => jest.clearAllMocks());
@@ -89,5 +89,24 @@ describe('MenuView', () => {
     await renderMenu();
 
     expect(await screen.findByRole('button', { name: 'Δοκίμασε ξανά' })).toBeOnTheScreen();
+  });
+  it('shows the week the phone is in, worked out from every week of the cycle', async () => {
+    const none = { first: [], main: [], extra: [] };
+    const lunch = (main: string) => ({ ...none, main: [{ el: main, en: main }] });
+    getJson.mockResolvedValue({
+      ...menu,
+      // The backend's own idea of the week, which a kept copy can outlive.
+      week: 1,
+      days: [{ day: 'monday', lunch: lunch('Φασολάδα'), dinner: none }],
+      weeks: [
+        { week: 1, days: [{ day: 'monday', lunch: lunch('Φασολάδα'), dinner: none }] },
+        { week: 2, days: [{ day: 'monday', lunch: lunch('Γεμιστά'), dinner: none }] },
+      ],
+      cycleAnchor: '2025-09-08',
+    } satisfies MenuResponse);
+    // Monday 13 October 2025 is week 2 of the cycle.
+    await renderMenu(new Date(2025, 9, 13, 12));
+
+    expect(await screen.findByText('Γεμιστά')).toBeOnTheScreen();
   });
 });

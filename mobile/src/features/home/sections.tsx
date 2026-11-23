@@ -19,6 +19,7 @@ import { useCalendar } from '@/features/calendar/useCalendar';
 import { formatDayHeading } from '@/features/schedules/agenda';
 import { formatClassTime, weekdayLabel } from '@/features/schedules/timetable';
 import { useSchedule } from '@/features/schedules/useSchedule';
+import { daysForDate } from '@/features/menu/cycle';
 import { useMenu, todayName } from '@/features/menu/useMenu';
 import { useSettings } from '@/features/settings/store';
 import type { Language } from '@/features/settings/store';
@@ -194,7 +195,8 @@ export function TodayMenuSection() {
   const styles = useStyles();
   const { data, isLoading } = useMenu();
 
-  const today = data?.days.find((day) => day.day === todayName());
+  const now = new Date();
+  const today = data ? daysForDate(data, now).find((day) => day.day === todayName(now)) : undefined;
   const mains = today?.lunch.main ?? [];
 
   return (

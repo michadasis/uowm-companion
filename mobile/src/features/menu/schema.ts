@@ -14,6 +14,11 @@ const menuDay = z.object({
   dinner: meal,
 });
 
+const menuWeek = z.object({
+  week: z.number(),
+  days: z.array(menuDay),
+});
+
 const breakfastGroup = z.object({
   category: z.string(),
   items: z.array(menuItem),
@@ -24,6 +29,9 @@ export const menuResponseSchema = z.object({
   week: z.number(),
   currentWeek: z.number(),
   days: z.array(menuDay),
+  // Missing from a menu kept from before the backend sent every week.
+  weeks: z.array(menuWeek).optional(),
+  cycleAnchor: z.string().optional(),
   breakfast: z.array(breakfastGroup),
   sourceUrl: z.string().nullable(),
 });
