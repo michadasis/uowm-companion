@@ -20,6 +20,7 @@ import { formatDayHeading } from '@/features/schedules/agenda';
 import { formatClassTime, weekdayLabel } from '@/features/schedules/timetable';
 import { useSchedule } from '@/features/schedules/useSchedule';
 import { daysForDate } from '@/features/menu/cycle';
+import { closureMessage, closureOn } from '@/features/menu/closure';
 import { mealFor } from '@/features/menu/hours';
 import { useMenu, todayName } from '@/features/menu/useMenu';
 import { useSettings } from '@/features/settings/store';
@@ -189,7 +190,7 @@ export function NextUpSection({
   );
 }
 
-export function TodayMenuSection() {
+export function TodayMenuSection({ city }: { city: string | null }) {
   const { t, i18n } = useTranslation();
   const language = i18n.language as Language;
   const router = useRouter();
@@ -207,6 +208,9 @@ export function TodayMenuSection() {
     meal === 'breakfast'
       ? (data?.breakfast ?? []).map((group) => group.items.map(text).join(', '))
       : (today?.[meal].main ?? []).map(text);
+  // Over a break the food may be on the menu with no one serving it.
+  const { data: calendar } = useCalendar();
+  const closure = calendar ? closureOn(calendar, now, city) : null;
 
   return (
     <View>
@@ -216,6 +220,8 @@ export function TodayMenuSection() {
       />
       {isLoading ? (
         <Loading />
+      ) : closure ? (
+        <EmptyHint icon="date" text={closureMessage(closure, t)} />
       ) : lines.length > 0 ? (
         <Card
           onPress={() => router.push('/menu')}

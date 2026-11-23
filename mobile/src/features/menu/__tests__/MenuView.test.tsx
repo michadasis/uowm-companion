@@ -7,6 +7,7 @@ import * as api from '@/lib/api';
 
 import { MenuView } from '../MenuView';
 import type { MenuResponse } from '../schema';
+import type { AcademicCalendar } from '@/features/calendar/schema';
 
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual<typeof import('@/lib/api')>('@/lib/api'),
@@ -14,6 +15,18 @@ jest.mock('@/lib/api', () => ({
   getJson: jest.fn(),
 }));
 const getJson = api.getJson as jest.MockedFunction<typeof api.getJson>;
+
+/** Answers the menu, & the academic calendar when there is one. */
+function serve(menuBody: unknown, calendar?: AcademicCalendar) {
+  getJson.mockImplementation((path: string) => {
+    if (path.startsWith('/api/calendar')) {
+      return calendar
+        ? Promise.resolve(calendar as never)
+        : Promise.reject(new Error('no calendar'));
+    }
+    return Promise.resolve(menuBody as never);
+  });
+}
 
 const menu: MenuResponse = {
   cycleWeeks: 2,
@@ -47,7 +60,7 @@ beforeEach(() => jest.clearAllMocks());
 
 describe('MenuView', () => {
   it('shows the lunch of the first day with its courses', async () => {
-    getJson.mockResolvedValue(menu);
+    serve(menu);
     await renderMenu();
 
     expect(await screen.findByText('Μοσχαράκι κοκκινιστό')).toBeOnTheScreen();
@@ -56,7 +69,7 @@ describe('MenuView', () => {
   });
 
   it('switches to breakfast, which is grouped by category', async () => {
-    getJson.mockResolvedValue(menu);
+    serve(menu);
     const user = userEvent.setup();
     await renderMenu();
     await screen.findByText('Μοσχαράκι κοκκινιστό');
@@ -68,7 +81,7 @@ describe('MenuView', () => {
   });
 
   it('says when a meal has no menu', async () => {
-    getJson.mockResolvedValue(menu);
+    serve(menu);
     const user = userEvent.setup();
     await renderMenu();
     await screen.findByText('Μοσχαράκι κοκκινιστό');
@@ -79,7 +92,7 @@ describe('MenuView', () => {
   });
 
   it('explains when there is no menu at all', async () => {
-    getJson.mockResolvedValue({ ...menu, days: [] });
+    serve({ ...menu, days: [] });
     await renderMenu();
 
     expect(await screen.findByRole('header', { name: 'Κανένα μενού ακόμα' })).toBeOnTheScreen();
@@ -91,10 +104,11 @@ describe('MenuView', () => {
 
     expect(await screen.findByRole('button', { name: 'Δοκίμασε ξανά' })).toBeOnTheScreen();
   });
+
   it('shows the week the phone is in, worked out from every week of the cycle', async () => {
     const none = { first: [], main: [], extra: [] };
     const lunch = (main: string) => ({ ...none, main: [{ el: main, en: main }] });
-    getJson.mockResolvedValue({
+    serve({
       ...menu,
       // The backend's own idea of the week, which a kept copy can outlive.
       week: 1,
@@ -110,8 +124,9 @@ describe('MenuView', () => {
 
     expect(await screen.findByText('Γεμιστά')).toBeOnTheScreen();
   });
+
   it('opens on dinner once lunch is over', async () => {
-    getJson.mockResolvedValue(menu);
+    serve(menu);
     await renderMenu(new Date(2026, 10, 23, 18, 30));
 
     expect(await screen.findByText('Δεν υπάρχει μενού γι’ αυτό το γεύμα.')).toBeOnTheScreen();
@@ -119,10 +134,52 @@ describe('MenuView', () => {
   });
 
   it('opens on breakfast in the morning', async () => {
-    getJson.mockResolvedValue(menu);
+    serve(menu);
     await renderMenu(new Date(2026, 10, 23, 8, 15));
 
     expect(await screen.findByText('Τσάι')).toBeOnTheScreen();
     expect(screen.getByRole('radio', { name: 'Πρωινό', checked: true })).toBeOnTheScreen();
+  });
+
+  describe('when the restaurant may be closed', () => {
+    const calendar: AcademicCalendar = {
+      academicYear: '2026-2027',
+      periods: [
+        { kind: 'exams', term: 'spring', from: '2027-06-07', to: '2027-06-25', name: 'Εξεταστική' },
+        { kind: 'resits', term: null, from: '2027-08-30', to: '2027-09-24', name: 'Επαναληπτική' },
+      ],
+      holidays: [
+        { from: '2026-12-24', to: '2027-01-06', name: 'Διακοπές Χριστουγέννων', key: 'christmas' },
+      ],
+      source: { url: 'https://www.uowm.gr/', label: 'ΠΔΜ' },
+    };
+
+    it('says so over the Christmas break', async () => {
+      serve(menu, calendar);
+      await renderMenu(new Date(2026, 11, 28, 13));
+
+      expect(
+        await screen.findByText(
+          'Η λέσχη μπορεί να είναι κλειστή λόγω των διακοπών των Χριστουγέννων.',
+        ),
+      ).toBeOnTheScreen();
+    });
+
+    it('says so over the summer, after the spring exams', async () => {
+      serve(menu, calendar);
+      await renderMenu(new Date(2027, 6, 6, 13));
+
+      expect(
+        await screen.findByText('Η λέσχη μπορεί να είναι κλειστή για τις καλοκαιρινές διακοπές.'),
+      ).toBeOnTheScreen();
+    });
+
+    it('says nothing on an ordinary day', async () => {
+      serve(menu, calendar);
+      await renderMenu();
+      await screen.findByText('Μοσχαράκι κοκκινιστό');
+
+      expect(screen.queryByTestId('menu-closure')).toBeNull();
+    });
   });
 });

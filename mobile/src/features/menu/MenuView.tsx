@@ -13,13 +13,16 @@ import {
   SkeletonGroup,
   StateView,
   Text,
+  useTheme,
 } from '@/design';
 import type { IconName } from '@/design';
 import { weekDates } from '@/features/calendar/status';
+import { useCalendar } from '@/features/calendar/useCalendar';
 import type { Language } from '@/features/settings/store';
 
 import { daysForDate } from './cycle';
 import { dayLabel } from './format';
+import { closureMessage, closureOn } from './closure';
 import { mealFor } from './hours';
 import type { Course, MealKind, Meal, MenuDay, MenuItem } from './schema';
 import { courses } from './schema';
@@ -161,11 +164,35 @@ function MealPicker({ value, onChange }: { value: MealKind; onChange: (meal: Mea
   );
 }
 
-export function MenuView({ now = new Date() }: { now?: Date }) {
+/**
+ * Says the restaurant may be closed for the summer, or not open yet, in the
+ * look of the app's other notices.
+ */
+function ClosureBanner({ message }: { message: string }) {
+  const theme = useTheme();
+  const styles = useStyles();
+  return (
+    <View accessible accessibilityRole="alert" style={styles.closure} testID="menu-closure">
+      <Icon name="date" size={theme.size.icon.sm} color="onPrimaryMuted" />
+      <Text variant="label" color="onPrimaryMuted" style={styles.closureText}>
+        {message}
+      </Text>
+    </View>
+  );
+}
+
+export interface MenuViewProps {
+  now?: Date;
+  /** The student's city, for its own holidays. */
+  city?: string | null;
+}
+
+export function MenuView({ now = new Date(), city = null }: MenuViewProps) {
   const { t, i18n } = useTranslation();
   const language = i18n.language as Language;
   const styles = useStyles();
   const { data, isLoading, isError, fetchStatus, refetch, error } = useMenu();
+  const { data: calendar } = useCalendar();
   // No network at all, or a request that tried & could not get through.
   const offline = fetchStatus === 'paused' || isNetworkError(error);
 
@@ -177,6 +204,11 @@ export function MenuView({ now = new Date() }: { now?: Date }) {
   const selectedDay = day ?? defaultDay;
   const activeDay: MenuDay | undefined = days.find((d) => d.day === selectedDay);
   const dates = weekDates(now, false);
+  // Whether the restaurant may be closed on the day being looked at.
+  const closure = calendar
+    ? closureOn(calendar, dates.get(weekdayOf[selectedDay ?? ''] ?? 0) ?? now, city)
+    : null;
+  const notice = closure ? closureMessage(closure, t) : null;
 
   const header = (
     <ScreenTitle title={t('menu.title')} tone="amber" icon="mainDish">
@@ -221,6 +253,11 @@ export function MenuView({ now = new Date() }: { now?: Date }) {
   return (
     <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       {header}
+      {notice ? (
+        <View style={styles.closureSlot}>
+          <ClosureBanner message={notice} />
+        </View>
+      ) : null}
 
       {meal === 'breakfast' ? (
         <View style={[styles.courses, styles.afterHeader]}>
@@ -288,6 +325,23 @@ const useStyles = createStyles((theme) => ({
     paddingTop: theme.spacing[4],
     paddingBottom: theme.spacing[2],
     gap: theme.spacing[1],
+  },
+  closureSlot: {
+    paddingHorizontal: theme.spacing[4],
+    paddingTop: theme.spacing[4],
+  },
+  closure: {
+    minHeight: 40,
+    paddingHorizontal: theme.spacing[3],
+    paddingVertical: theme.spacing[2],
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.primaryMuted,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing[2],
+  },
+  closureText: {
+    flex: 1,
   },
   afterHeader: {
     paddingTop: theme.spacing[4],

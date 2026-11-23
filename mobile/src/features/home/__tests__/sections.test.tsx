@@ -172,7 +172,7 @@ describe('TodayMenuSection', () => {
   it("shows today's lunch mains at midday", async () => {
     at(13);
     respond({ '/api/menu': menu });
-    await renderSection(<TodayMenuSection />);
+    await renderSection(<TodayMenuSection city={null} />);
 
     expect(await screen.findByText('Μουσακάς')).toBeOnTheScreen();
     expect(screen.getByText('Μεσημεριανό')).toBeOnTheScreen();
@@ -181,7 +181,7 @@ describe('TodayMenuSection', () => {
   it("shows tonight's dinner once lunch is over", async () => {
     at(16);
     respond({ '/api/menu': menu });
-    await renderSection(<TodayMenuSection />);
+    await renderSection(<TodayMenuSection city={null} />);
 
     expect(await screen.findByText('Φακές')).toBeOnTheScreen();
     expect(screen.getByText('Βραδινό')).toBeOnTheScreen();
@@ -190,10 +190,28 @@ describe('TodayMenuSection', () => {
   it('shows breakfast in the morning, a line per group', async () => {
     at(8, 30);
     respond({ '/api/menu': menu });
-    await renderSection(<TodayMenuSection />);
+    await renderSection(<TodayMenuSection city={null} />);
 
     expect(await screen.findByText('Τσάι, Γάλα')).toBeOnTheScreen();
     expect(screen.getByText('Πρωινό')).toBeOnTheScreen();
+  });
+
+  it('says the restaurant may be closed over the Easter break', async () => {
+    at(13, 0, new Date(2027, 3, 28));
+    respond({
+      '/api/menu': menu,
+      '/api/calendar': {
+        academicYear: '2026-2027',
+        periods: [],
+        holidays: [{ from: '2027-04-26', to: '2027-05-09', name: 'Διακοπές Πάσχα', key: 'easter' }],
+        source: { url: 'https://www.uowm.gr/', label: 'ΠΔΜ' },
+      },
+    });
+    await renderSection(<TodayMenuSection city={null} />);
+
+    expect(
+      await screen.findByText('Η λέσχη μπορεί να είναι κλειστή λόγω των διακοπών του Πάσχα.'),
+    ).toBeOnTheScreen();
   });
 });
 

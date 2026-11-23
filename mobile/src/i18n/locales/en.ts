@@ -279,6 +279,14 @@ export const en: Messages = {
     today: 'Today',
     week: 'Week {{week}}',
     noMeal: 'No menu for this meal.',
+    closure: {
+      holiday: 'The restaurant may be closed for the holiday: {{name}}.',
+      local: 'The restaurant may be closed for the local holiday.',
+      christmas: 'The restaurant may be closed for the Christmas holidays.',
+      easter: 'The restaurant may be closed for the Easter holidays.',
+      summer: 'The restaurant may be closed for the summer break.',
+      reopening: 'The restaurant may not have reopened yet for the new academic year.',
+    },
     empty: {
       title: 'No menu yet',
       message: "The student restaurant's menu will show up here.",

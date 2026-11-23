@@ -61,7 +61,7 @@ export default function HomeScreen() {
           <>
             <NextUpSection scope={departmentId} city={department?.city ?? null} now={now} />
             <GradesSection />
-            <TodayMenuSection />
+            <TodayMenuSection city={department?.city ?? null} />
             <LatestAnnouncementsSection scope={departmentId} />
           </>
         ) : null}
