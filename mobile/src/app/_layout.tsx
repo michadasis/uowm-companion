@@ -11,18 +11,20 @@ import {
   ThemeProvider as NavigationThemeProvider,
 } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { ThemeProvider, useTheme } from '@/design';
 import { useSettings, useSettingsHydrated } from '@/features/settings/store';
+import { AnimatedSplash } from '@/features/splash/AnimatedSplash';
 import { hydrateUniversisAuth } from '@/features/universis/auth';
 import { connectQueryClientToDevice, persistOptions, queryClient } from '@/lib/query';
 
 // Held until the fonts and the saved settings are in, so the first frame is
 // already in the right typeface, theme and language, on the right screen.
+// AnimatedSplash then takes over from it on the same frame & plays the mark.
 void SplashScreen.preventAutoHideAsync();
 
 /** Gives the navigator's own surfaces the app's colours. */
@@ -61,13 +63,11 @@ export default function RootLayout() {
 
   useEffect(() => connectQueryClientToDevice(), []);
   useEffect(() => void hydrateUniversisAuth(), []);
+  const [splashShown, setSplashShown] = useState(true);
 
   // A font that fails to load is not worth a blank screen: the system font
   // takes over.
   const ready = hydrated && (fontsLoaded || fontError !== null);
-  useEffect(() => {
-    if (ready) SplashScreen.hide();
-  }, [ready]);
 
   if (!ready) return null;
 
@@ -93,6 +93,7 @@ export default function RootLayout() {
           </NavigationTheme>
         </ThemeProvider>
       </PersistQueryClientProvider>
+      {splashShown && <AnimatedSplash onDone={() => setSplashShown(false)} />}
     </GestureHandlerRootView>
   );
 }

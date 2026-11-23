@@ -37,7 +37,8 @@ const outputs = [
     svg: markSvg({ ...white, scale: iconScale }),
   },
   // The splash shows the mark alone, on paper or night per theme. Its ring
-  // stays inside the image, which is drawn as a square & would clip it.
+  // stays inside the image, which is drawn as a square & would clip it. The
+  // in-app splash (src/features/splash/timeline.ts) starts from this frame.
   { file: 'splash-icon.png', size: 512, svg: markSvg({ scale: 1.75 }) },
   { file: 'favicon.png', size: 96, svg: markSvg({ background: palette.ink, scale: 1.6 }) },
   // The README's icon, its corners rounded in the image itself: GitHub drops
