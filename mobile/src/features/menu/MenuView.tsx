@@ -20,6 +20,7 @@ import type { Language } from '@/features/settings/store';
 
 import { daysForDate } from './cycle';
 import { dayLabel } from './format';
+import { mealFor } from './hours';
 import type { Course, MealKind, Meal, MenuDay, MenuItem } from './schema';
 import { courses } from './schema';
 import { todayName, useMenu } from './useMenu';
@@ -171,7 +172,8 @@ export function MenuView({ now = new Date() }: { now?: Date }) {
   const days = data ? daysForDate(data, now) : [];
   const defaultDay = days.find((d) => d.day === todayName(now))?.day ?? days[0]?.day;
   const [day, setDay] = useState<string | undefined>(undefined);
-  const [meal, setMeal] = useState<MealKind>('lunch');
+  // Opens on the meal being served, or the next one.
+  const [meal, setMeal] = useState<MealKind>(() => mealFor(now));
   const selectedDay = day ?? defaultDay;
   const activeDay: MenuDay | undefined = days.find((d) => d.day === selectedDay);
   const dates = weekDates(now, false);

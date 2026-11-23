@@ -34,7 +34,8 @@ const menu: MenuResponse = {
   sourceUrl: 'https://uowm.gr/menu.pdf',
 };
 
-function renderMenu(now?: Date) {
+// Monday 23 November 2026 at 13:00, when lunch is served.
+function renderMenu(now = new Date(2026, 10, 23, 13)) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
@@ -108,5 +109,20 @@ describe('MenuView', () => {
     await renderMenu(new Date(2025, 9, 13, 12));
 
     expect(await screen.findByText('Γεμιστά')).toBeOnTheScreen();
+  });
+  it('opens on dinner once lunch is over', async () => {
+    getJson.mockResolvedValue(menu);
+    await renderMenu(new Date(2026, 10, 23, 18, 30));
+
+    expect(await screen.findByText('Δεν υπάρχει μενού γι’ αυτό το γεύμα.')).toBeOnTheScreen();
+    expect(screen.getByRole('radio', { name: 'Βραδινό', checked: true })).toBeOnTheScreen();
+  });
+
+  it('opens on breakfast in the morning', async () => {
+    getJson.mockResolvedValue(menu);
+    await renderMenu(new Date(2026, 10, 23, 8, 15));
+
+    expect(await screen.findByText('Τσάι')).toBeOnTheScreen();
+    expect(screen.getByRole('radio', { name: 'Πρωινό', checked: true })).toBeOnTheScreen();
   });
 });

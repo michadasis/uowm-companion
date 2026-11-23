@@ -20,6 +20,7 @@ import { formatDayHeading } from '@/features/schedules/agenda';
 import { formatClassTime, weekdayLabel } from '@/features/schedules/timetable';
 import { useSchedule } from '@/features/schedules/useSchedule';
 import { daysForDate } from '@/features/menu/cycle';
+import { mealFor } from '@/features/menu/hours';
 import { useMenu, todayName } from '@/features/menu/useMenu';
 import { useSettings } from '@/features/settings/store';
 import type { Language } from '@/features/settings/store';
@@ -197,7 +198,15 @@ export function TodayMenuSection() {
 
   const now = new Date();
   const today = data ? daysForDate(data, now).find((day) => day.day === todayName(now)) : undefined;
-  const mains = today?.lunch.main ?? [];
+  // The meal being served, or the next one. Breakfast is the same every day,
+  // so it is shown a line per group rather than dish by dish.
+  const meal = mealFor(now);
+  const text = (item: { el: string; en: string }) =>
+    language === 'en' ? item.en || item.el : item.el;
+  const lines =
+    meal === 'breakfast'
+      ? (data?.breakfast ?? []).map((group) => group.items.map(text).join(', '))
+      : (today?.[meal].main ?? []).map(text);
 
   return (
     <View>
@@ -207,19 +216,19 @@ export function TodayMenuSection() {
       />
       {isLoading ? (
         <Loading />
-      ) : mains.length > 0 ? (
+      ) : lines.length > 0 ? (
         <Card
           onPress={() => router.push('/menu')}
           accessibilityLabel={t('home.menuToday.title')}
           style={styles.card}
         >
           <Text variant="label" color="primary">
-            {t('menu.meals.lunch')}
+            {t(`menu.meals.${meal}`)}
           </Text>
           <View style={styles.items}>
-            {mains.map((item, index) => (
+            {lines.map((line, index) => (
               <Text key={index} variant="body" numberOfLines={1}>
-                {language === 'en' ? item.en || item.el : item.el}
+                {line}
               </Text>
             ))}
           </View>

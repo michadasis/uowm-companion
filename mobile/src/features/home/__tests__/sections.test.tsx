@@ -5,7 +5,6 @@ import type { ReactNode } from 'react';
 
 import '@/i18n';
 import * as api from '@/lib/api';
-import { todayName } from '@/features/menu/useMenu';
 import { useSettings } from '@/features/settings/store';
 import { useSavedCourses } from '@/features/universis/saved';
 
@@ -136,26 +135,65 @@ describe('NextUpSection', () => {
 });
 
 describe('TodayMenuSection', () => {
-  it("shows today's lunch mains", async () => {
-    respond({
-      '/api/menu': {
-        cycleWeeks: 2,
-        week: 1,
-        currentWeek: 1,
-        days: [
-          {
-            day: todayName(),
-            lunch: { first: [], main: [{ el: 'Μουσακάς', en: 'Moussaka' }], extra: [] },
-            dinner: { first: [], main: [], extra: [] },
-          },
-        ],
-        breakfast: [],
-        sourceUrl: null,
+  const none = { first: [], main: [], extra: [] };
+  const menu = {
+    cycleWeeks: 2,
+    week: 1,
+    currentWeek: 1,
+    days: [
+      {
+        day: 'monday',
+        lunch: { ...none, main: [{ el: 'Μουσακάς', en: 'Moussaka' }] },
+        dinner: { ...none, main: [{ el: 'Φακές', en: 'Lentils' }] },
       },
+    ],
+    breakfast: [
+      {
+        category: 'drinks',
+        items: [
+          { el: 'Τσάι', en: 'Tea' },
+          { el: 'Γάλα', en: 'Milk' },
+        ],
+      },
+    ],
+    sourceUrl: null,
+  };
+
+  // Monday 23 November 2026, at the given time.
+  function at(hours: number, minutes = 0, date = new Date(2026, 10, 23)) {
+    jest.useFakeTimers({
+      now: new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes),
+      advanceTimers: true,
     });
+  }
+
+  afterEach(() => jest.useRealTimers());
+
+  it("shows today's lunch mains at midday", async () => {
+    at(13);
+    respond({ '/api/menu': menu });
     await renderSection(<TodayMenuSection />);
 
     expect(await screen.findByText('Μουσακάς')).toBeOnTheScreen();
+    expect(screen.getByText('Μεσημεριανό')).toBeOnTheScreen();
+  });
+
+  it("shows tonight's dinner once lunch is over", async () => {
+    at(16);
+    respond({ '/api/menu': menu });
+    await renderSection(<TodayMenuSection />);
+
+    expect(await screen.findByText('Φακές')).toBeOnTheScreen();
+    expect(screen.getByText('Βραδινό')).toBeOnTheScreen();
+  });
+
+  it('shows breakfast in the morning, a line per group', async () => {
+    at(8, 30);
+    respond({ '/api/menu': menu });
+    await renderSection(<TodayMenuSection />);
+
+    expect(await screen.findByText('Τσάι, Γάλα')).toBeOnTheScreen();
+    expect(screen.getByText('Πρωινό')).toBeOnTheScreen();
   });
 });
 
