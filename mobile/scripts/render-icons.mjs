@@ -14,14 +14,20 @@ mkdirSync(join(assets, 'brand'), { recursive: true });
 
 const white = { ring: '#FFFFFF', north: '#FFFFFF', south: '#FFFFFF' };
 
+// The launcher shows the middle two thirds of the adaptive icon; at this
+// scale the ring spans about 58% of that, the size other apps' marks take,
+// so the icon doesn't look zoomed in beside them.
+const iconScale = 0.7;
+
 const outputs = [
-  // The launcher icon, where nothing crops it: the mark larger, on ink.
-  { file: 'icon.png', size: 1024, svg: markSvg({ background: palette.ink, scale: 1.15 }) },
+  // The launcher icon, where nothing crops it: the mark on ink, at the size
+  // it takes in the adaptive icon.
+  { file: 'icon.png', size: 1024, svg: markSvg({ background: palette.ink, scale: iconScale * 1.15 }) },
   // Android's adaptive icon crops to a circle or squircle inside the middle
-  // two thirds; the mark as drawn fits there. Ink is its background colour.
-  { file: 'adaptive-icon-foreground.png', size: 1024, svg: markSvg() },
+  // two thirds. Ink is its background colour.
+  { file: 'adaptive-icon-foreground.png', size: 1024, svg: markSvg({ scale: iconScale }) },
   // Themed icons (Android 13+) tint a single-colour shape.
-  { file: 'adaptive-icon-monochrome.png', size: 1024, svg: markSvg(white) },
+  { file: 'adaptive-icon-monochrome.png', size: 1024, svg: markSvg({ ...white, scale: iconScale }) },
   // The splash shows the mark alone, on paper or night per theme.
   { file: 'splash-icon.png', size: 512, svg: markSvg({ scale: 1.9 }) },
   { file: 'favicon.png', size: 96, svg: markSvg({ background: palette.ink, scale: 1.6 }) },
@@ -30,7 +36,7 @@ const outputs = [
   {
     file: 'brand/readme-icon.png',
     size: 256,
-    svg: markSvg({ background: palette.ink, scale: 1.15 }).replace(
+    svg: markSvg({ background: palette.ink, scale: iconScale * 1.15 }).replace(
       /<rect width="1024" height="1024" fill="([^"]+)"\/>/,
       '<rect width="1024" height="1024" rx="225" fill="$1"/>',
     ),
