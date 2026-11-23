@@ -22,6 +22,10 @@ import { AnimatedSplash } from '@/features/splash/AnimatedSplash';
 import { hydrateUniversisAuth } from '@/features/universis/auth';
 import { connectQueryClientToDevice, persistOptions, queryClient } from '@/lib/query';
 
+// A screen that throws while drawing shows its error here instead of closing
+// the app.
+export { AppErrorBoundary as ErrorBoundary } from '@/features/errors/AppErrorBoundary';
+
 // Held until the fonts and the saved settings are in, so the first frame is
 // already in the right typeface, theme and language, on the right screen.
 // AnimatedSplash then takes over from it on the same frame & plays the mark.

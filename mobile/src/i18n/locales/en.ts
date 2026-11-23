@@ -340,6 +340,12 @@ export const en: Messages = {
       message: 'This did not load. It is not your fault.',
       retry: 'Try again',
     },
+    crash: {
+      title: 'The app stopped on an error',
+      message: 'Try again. If it keeps happening, the details below help get it fixed.',
+      unlink: 'Sign out of Universis',
+      details: 'Details',
+    },
   },
   common: {
     back: 'Back',
