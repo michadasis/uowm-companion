@@ -377,6 +377,122 @@ describe('parseTimetableGrid, cells with no italic teacher', () => {
     ]);
   });
 
+  it('reads the room after the last dash of a one-line class', () => {
+    expect(details('Studio 3 - Ιδεασμός - 2104')).toEqual([
+      { course: 'Studio 3 - Ιδεασμός', teacher: undefined, room: '2104' },
+    ]);
+  });
+
+  it('opens a room set within a line, the teacher after it', () => {
+    expect(details('ΨΥΧΟΛΟΓΙΑ ΤΩΝ ΕΞΑΡΤΗΣΕΩΝ, Ψ-\nΕΕ608 Αίθ. Α4 ΦΛΩΡΑ ΑΙΚΑΤΕΡΙΝΗ')).toEqual([
+      {
+        course: 'ΨΥΧΟΛΟΓΙΑ ΤΩΝ ΕΞΑΡΤΗΣΕΩΝ, Ψ- ΕΕ608',
+        teacher: 'ΦΛΩΡΑ ΑΙΚΑΤΕΡΙΝΗ',
+        room: 'Αίθ. Α4',
+      },
+    ]);
+    expect(details('ΘΕΜΑΤΑ ΠΑΙΔΟΝΕΥΡΟΨΥΧΟΛΟΓΙΑΣ, Ψ-ΕΕ607 Αίθ. Α4 ΑΝΤΥΠΑ ΑΡΓΥΡΩ\nΔΕΣΠΟΙΝΑ')).toEqual(
+      [
+        {
+          course: 'ΘΕΜΑΤΑ ΠΑΙΔΟΝΕΥΡΟΨΥΧΟΛΟΓΙΑΣ, Ψ-ΕΕ607',
+          teacher: 'ΑΝΤΥΠΑ ΑΡΓΥΡΩ ΔΕΣΠΟΙΝΑ',
+          room: 'Αίθ. Α4',
+        },
+      ],
+    );
+  });
+
+  it("reads a teacher's short code by a room number", () => {
+    expect(details('ΥΠΑΙΘΡΙΑ ΕΚΜΕΤΑΛΛΕΥΣΗ (Θ) ΠΑΥ 4203')).toEqual([
+      { course: 'ΥΠΑΙΘΡΙΑ ΕΚΜΕΤΑΛΛΕΥΣΗ (Θ)', teacher: 'ΠΑΥ', room: '4203' },
+    ]);
+    expect(details('ΟΔΟΠΟΙΙΑ\nΓΚΟΥ\n4403')).toEqual([
+      { course: 'ΟΔΟΠΟΙΙΑ', teacher: 'ΓΚΟΥ', room: '4403' },
+    ]);
+  });
+
+  it('reads a teacher set above the title', () => {
+    expect(details('Σαμαρά Ελπ.\nΕπιχειρηματικά Σχέδια\n(Επιλογής)\n1308')).toEqual([
+      { course: 'Επιχειρηματικά Σχέδια (Επιλογής)', teacher: 'Σαμαρά Ελπ.', room: '1308' },
+    ]);
+  });
+
+  it('reads teachers by slashes, & a second room joined on', () => {
+    expect(details('Θέρμανση\nΑΠ3_9\nΚαραγιαννάκης/Κορρές\n& ΑΠ3_2')).toEqual([
+      { course: 'Θέρμανση', teacher: 'Καραγιαννάκης/Κορρές', room: 'ΑΠ3_9 & ΑΠ3_2' },
+    ]);
+  });
+
+  it("reads a sheet's names in title case under titles in capitals", () => {
+    expect(details('ΕΘ503 -\nΟΡΘΟΠΑΙΔΙΚΗ\nΘ\nΑ.Δ 3\nΟΛΕΣ\nΧρυσάνθου\nΧρύσανθος')).toEqual([
+      { course: 'ΟΡΘΟΠΑΙΔΙΚΗ', teacher: 'Χρυσάνθου Χρύσανθος', room: 'Α.Δ 3' },
+    ]);
+  });
+
+  it("reads a priest's title before a name", () => {
+    expect(
+      details('ΟΡΘΟΔΟΞΙΑ ΚΑΙ ΠΟΛΙΤΙΣΜΟΣ\n(Υ209)\nπ. ΧΑΤΖΗΕΦΡΑΙΜΙΔΗΣ ΕΙΡΗΝΑΙΟΣ\nΑΙΘΟΥΣΑ Α2'),
+    ).toEqual([
+      {
+        course: 'ΟΡΘΟΔΟΞΙΑ ΚΑΙ ΠΟΛΙΤΙΣΜΟΣ (Υ209)',
+        teacher: 'π. ΧΑΤΖΗΕΦΡΑΙΜΙΔΗΣ ΕΙΡΗΝΑΙΟΣ',
+        room: 'ΑΙΘΟΥΣΑ Α2',
+      },
+    ]);
+  });
+
+  it('splits classes stacked in a cell at their room codes, each whole', () => {
+    expect(
+      details(
+        'Τεχνολογία Αεριοστροβίλων\nΤουρλιδάκης\nBΠ3_11\nΣχεδιασμός και Ανάπτυξη\nΜηχανολογικών Προϊόντων\nΑΠ3_2\nΣαπίδης',
+      ),
+    ).toEqual([
+      { course: 'Τεχνολογία Αεριοστροβίλων', teacher: 'Τουρλιδάκης', room: 'BΠ3_11' },
+      {
+        course: 'Σχεδιασμός και Ανάπτυξη Μηχανολογικών Προϊόντων',
+        teacher: 'Σαπίδης',
+        room: 'ΑΠ3_2',
+      },
+    ]);
+  });
+
+  it("joins one class's slots: a title cut short, its teacher in one & room in the other", () => {
+    const classes = parseTimetableGrid([
+      table([
+        header,
+        [time('09:00 – 10:00'), [run('Νανοδομημένα και\nΑΠ2_2')], [], [], [], []],
+        [
+          time('10:00 – 11:00'),
+          [run('Νανοδομημένα και Νανοσύνθετα Πολυμερικά Υλικά\n(ΣΤΗΜΟΝΙΑΡΗΣ)')],
+          [],
+          [],
+          [],
+          [],
+        ],
+      ]),
+    ]);
+    expect(classes).toEqual([
+      expect.objectContaining({
+        course: 'Νανοδομημένα και Νανοσύνθετα Πολυμερικά Υλικά',
+        teacher: 'ΣΤΗΜΟΝΙΑΡΗΣ',
+        room: 'ΑΠ2_2',
+        startTime: '09:00',
+        endTime: '11:00',
+      }),
+    ]);
+  });
+
+  it('keeps a lecture & its lab apart though their titles share a start', () => {
+    const classes = parseTimetableGrid([
+      table([
+        header,
+        [time('09:00 – 10:00'), [run('Κεραμικά Υλικά\nΑΠ2_2')], [], [], [], []],
+        [time('10:00 – 11:00'), [run('Κεραμικά Υλικά (Ε)\nΑΙΘ/ΕΡΓ (3_6)')], [], [], [], []],
+      ]),
+    ]);
+    expect(classes.map((one) => one.course)).toEqual(['Κεραμικά Υλικά', 'Κεραμικά Υλικά (Ε)']);
+  });
+
   it('takes a room from the column beside a class', () => {
     const classes = parseTimetableGrid([
       table([
