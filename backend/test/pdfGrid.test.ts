@@ -57,6 +57,56 @@ describe('gridBlocks', () => {
     expect(table.rows).toHaveLength(4);
   });
 
+  it('sets apart two classes printed side by side in one cell, not interleaving their lines', () => {
+    // ECE's sheet: two classes in one slot, each over three lines.
+    const blocks = gridBlocks([
+      ...days.map((day, index) => piece(day, 120 + index * 150, 510)),
+      piece('9:00-10:00', 40, 476),
+      piece('10:00-11:00', 40, 446),
+      piece('Ψηφιακές Επικοινωνίες (Θ)', 90, 486, 55),
+      piece('Κορδάτου -', 106, 481, 23),
+      piece('ΑΠ1_6', 111, 475, 13),
+      piece('Πολιτική Έρευνας, Τεχνολογίας', 154, 486, 59),
+      piece('και Καινοτομίας (Θ) Παυλίδου -', 154, 481, 59),
+      piece('ΑΠ1_11', 176, 475, 15),
+    ])!;
+    const table = blocks.find((block) => block.type === 'table') as Extract<
+      Block,
+      { type: 'table' }
+    >;
+    expect(table.rows[1]![1]!.map((run) => run.text).join('')).toBe(
+      'Ψηφιακές Επικοινωνίες (Θ)\nΚορδάτου -\nΑΠ1_6\n\n' +
+        'Πολιτική Έρευνας, Τεχνολογίας\nκαι Καινοτομίας (Θ) Παυλίδου -\nΑΠ1_11',
+    );
+    expect(
+      parseTimetableGrid(blocks).map(({ course, teacher, room }) => ({ course, teacher, room })),
+    ).toEqual([
+      { course: 'Ψηφιακές Επικοινωνίες (Θ)', teacher: 'Κορδάτου', room: 'ΑΠ1_6' },
+      {
+        course: 'Πολιτική Έρευνας, Τεχνολογίας και Καινοτομίας (Θ)',
+        teacher: 'Παυλίδου',
+        room: 'ΑΠ1_11',
+      },
+    ]);
+  });
+
+  it('keeps a column of rooms beside a class with it, as no class of its own', () => {
+    const blocks = gridBlocks([
+      ...days.map((day, index) => piece(day, 120 + index * 150, 510)),
+      piece('9:00-10:00', 40, 476),
+      piece('10:00-11:00', 40, 446),
+      piece('Υπολογιστική Μηχανική', 90, 482, 70),
+      piece('Κουρτζανίδης', 90, 474, 40),
+      piece('ΑΠ3_2', 175, 482, 15),
+      piece('ΑΠ3_9', 175, 474, 15),
+    ])!;
+    const table = blocks.find((block) => block.type === 'table') as Extract<
+      Block,
+      { type: 'table' }
+    >;
+    expect(table.rows[1]![1]!.map((run) => run.text).join('')).not.toContain('\n\n');
+  });
+
   it('leaves a page with no weekday header to be read as text', () => {
     expect(gridBlocks([piece('Ανακοίνωση', 40, 500), piece('Κείμενο', 40, 480)])).toBeNull();
   });

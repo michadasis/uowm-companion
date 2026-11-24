@@ -174,10 +174,46 @@ function splitByLines(cell: Inline): { course: string; teacher?: string; room: s
   if (inline) return { ...inline, room: '' };
 
   // A room & a teacher run onto one line: "Εργ.8 - Β. Παπαγεωργίου".
+  const ledRooms = new Set<string>();
   const split = all.flatMap((line) => {
     const joined = /^(.*\S)\s*[-–]\s*((?:[Α-ΩΆ-Ώ]\.\s*){1,3}[Α-ΩΆ-Ώ][α-ωά-ώϊΐ'’]+)$/u.exec(line);
-    return joined && roomLine(joined[1]!) ? [joined[1]!, joined[2]!] : [line];
+    if (joined && roomLine(joined[1]!)) return [joined[1]!, joined[2]!];
+    // A room code set before a title line in capitals: "Β4 ΕΠΙΧΕΙΡΗΣΕΩΝ (Κ-ΟΕ)".
+    const led = /^([Α-ΩA-Z]\d{1,2})\s+([^a-zα-ωά-ώ]{4,})$/u.exec(line);
+    if (led) ledRooms.add(led[1]!);
+    return led ? [led[1]!, led[2]!] : [line];
   });
+  // A list of names wrapped after its slash: "ΚΑΡΑΓΙΑΝΝΗΣ /" / "ΠΑΠΑΔΟΠΟΥΛΟΣ".
+  for (let i = split.length - 2; i >= 1; i--) {
+    if (/\s\/$/u.test(split[i]!) && /^[Α-ΩΆ-ΏΪ]{4,}(?:\s*\/.*)?$/u.test(split[i + 1]!)) {
+      split.splice(i, 2, `${split[i]} ${split[i + 1]}`);
+    }
+  }
+  // Surnames set apart by slashes, the room or lab after them: "ΠΑΠΑΘΑΝΑΣΙΟΥ /
+  // ΠΑΣΧΟΥΔΗ / ΣΙΣΤΑΝΗΣ ΕΡ ΒΟΤ", "ΚΑΡΑΓΙΑΝΝΗΣ / 9 / ΑΓΡΟ" (Agriculture).
+  const listedRooms = new Set<string>();
+  for (let i = split.length - 1; i >= 1; i--) {
+    if (roomLine(split[i]!)) continue;
+    const listed =
+      /^([Α-ΩΆ-ΏΪ]{4,}(?:\s*\/\s*[Α-ΩΆ-ΏΪ]{4,})*)(?:\s*\/?\s+((?:\d+|[Α-ΩA-Z]{1,4})(?:(?:\s*\/\s*|\s+)(?:\d+|[Α-ΩA-Z]{1,4}))*))?$/u.exec(
+        split[i]!,
+      );
+    if (!listed) continue;
+    const names = listed[1]!;
+    const where = listed[2];
+    // One name alone only before a room number: "ΚΑΡΑΓΙΑΝΝΗΣ / 9 / ΑΓΡΟ".
+    if (!names.includes('/') && !/^\d/u.test(where ?? '')) continue;
+    // A last surname wrapped under the room: "ΜΠΑΝΤΗΣ / ΧΑΤΖΗ / 15 / ΘΕΡΜ" / "ΒΑΘΙΣΤΑΣ".
+    const wrapped = where && i === split.length - 2 && /^[Α-ΩΆ-ΏΪ]{4,}$/u.test(split[i + 1]!);
+    const all = wrapped ? `${names} / ${split[i + 1]}` : names;
+    split.splice(
+      i,
+      wrapped ? 2 : 1,
+      `(${all.replace(/\s*\/\s*/gu, '/')})`,
+      ...(where ? [where] : []),
+    );
+    if (where) listedRooms.add(where);
+  }
   all.splice(0, all.length, ...split);
   const firstTitle = all.find((line) => !teacherLine.test(line)) ?? '';
   const capitalCourse = firstTitle !== '' && !/[α-ωά-ώ]/u.test(firstTitle);
@@ -185,7 +221,7 @@ function splitByLines(cell: Inline): { course: string; teacher?: string; room: s
   const kinds: Kind[] = all.map((line, index) => {
     const folded = fold(line);
     if (index > 0 && (kindLine.test(folded) || kindWord.test(line))) return 'kind';
-    if (roomLine(line)) return 'room';
+    if (roomLine(line) || listedRooms.has(line)) return 'room';
     if (index > 0 && groupLine.test(folded)) return 'group';
     if (index > 0 && postNote.test(folded)) return 'note';
     if (index > 0 && surelyTeacher(line, capitalCourse)) return 'teacher';
@@ -289,7 +325,11 @@ function splitByLines(cell: Inline): { course: string; teacher?: string; room: s
     kind === 'kind' && /^\(/u.test(lines[index]!) ? [lines[index]!] : [],
   );
   const course = [...of('text'), ...kindsOnTitle].join(' ').replace(courseCode, '');
-  const room = [...new Set(of('room').map((line) => line.replace(/\s*[-–]$/u, '')))].join(' ');
+  const rooms = [...new Set(of('room').map((line) => line.replace(/\s*[-–]$/u, '')))];
+  // A code before a title line may be the room of the class beside it; a room
+  // on a line of its own is surer.
+  const sure = rooms.filter((one) => !ledRooms.has(one));
+  const room = (sure.length ? sure : rooms).join(' ');
   const teachers = teacher.map((name) => name.replace(/^\((.*)\)$/u, '$1'));
   return { course, ...(teachers.length ? { teacher: teachers.join(', ') } : {}), room };
 }
@@ -417,6 +457,22 @@ function looksLikeRoom(text: string): boolean {
   );
 }
 
+// A class's kind anywhere in a line: "και Καινοτομίας (Θ) Παυλίδου -".
+const kindAnywhere = /\((?:Θ|Ε|E)\d?(?:\s*[,/]\s*(?:Θ|Ε|E))?\)/u;
+
+// A line ruled across a cell to set its classes apart: "— — —".
+const rule = /^\s*(?:(?:[—–]\s*){2,}|(?:-\s*){3,})$/u;
+
+/** A cell's text cut at its rules, the empty pieces left out. */
+function segments(text: string): string[] {
+  const pieces: string[][] = [[]];
+  for (const line of text.split('\n')) {
+    if (rule.test(line)) pieces.push([]);
+    else pieces.at(-1)!.push(line);
+  }
+  return pieces.map((piece) => piece.join('\n').trim()).filter(Boolean);
+}
+
 /**
  * The classes a cell stacks one under another, as some grids list every
  * class of a slot in one cell: each ends on the line naming its room. A cell
@@ -424,6 +480,45 @@ function looksLikeRoom(text: string): boolean {
  */
 function stackedParts(cell: Inline): Inline[] {
   if (cell.some((run) => run.italic)) return [cell];
+  // Classes the document set side by side, each told apart by a blank line,
+  // a few lines apiece.
+  const split = cellText(cell)
+    .split(/\n\s*\n/u)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  // A part with no title of its own — only rooms, or only the teachers where
+  // the other parts' titles carry a mark ("(Θ)", "ΜΠ103") — is the details of
+  // the class beside it.
+  const titled = (part: string): boolean =>
+    part.split('\n').some((line) => kindAnywhere.test(line) || courseCode.test(tidy(line)));
+  const marking = split.some(titled);
+  const detailsOnly = (part: string): boolean =>
+    part
+      .split('\n')
+      .every((line) => rule.test(line) || roomLine(tidy(line)) || /^[^(]*\)$/u.test(tidy(line))) ||
+    (marking && !titled(part));
+  const apart: string[] = [];
+  for (const part of split) {
+    const previous = apart.at(-1);
+    if (previous === undefined || !detailsOnly(part)) {
+      apart.push(part);
+      continue;
+    }
+    // Classes stacked down one column, their rooms down the next, each set
+    // off by a rule: the nth room goes with the nth class.
+    const classes = segments(previous);
+    const details = segments(part);
+    if (classes.length > 1 && classes.length === details.length) {
+      apart.splice(-1, 1, ...classes.map((one, i) => `${one}\n${details[i]!}`));
+    } else apart[apart.length - 1] = `${previous}\n${part}`;
+  }
+  if (apart.length > 1 && detailsOnly(apart[0]!)) apart.splice(0, 2, `${apart[1]}\n${apart[0]}`);
+  if (apart.length > 1 && apart.every((part) => part.includes('\n'))) {
+    return apart.flatMap((part) => stackedParts([{ text: part }]));
+  }
+  // Classes stacked in one cell, a rule between each: "— — —".
+  const ruled = segments(apart.join('\n'));
+  if (ruled.length > 1) return ruled.map((part) => [{ text: part }]);
   const lines = cellText(cell).split('\n').map(tidy).filter(Boolean);
   // Two classes side by side, read across: their titles, then each one's
   // "Teacher - Room" — "Ηλεκ. Κυκλώματα ΙΙ (Ε)" / "Ηλεκ. Μετρήσεις (Ε)" /

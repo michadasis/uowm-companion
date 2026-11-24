@@ -133,6 +133,46 @@ function joinLines(pieces: Placed[]): string {
     .join('\n');
 }
 
+/**
+ * The columns of text a cell sets side by side, left to right: two classes
+ * sharing a slot, each a few lines tall, with clear space between them. Read
+ * line by line across, as one, their lines would interleave. A column of a
+ * single line — a room printed beside a title — is no class of its own & goes
+ * with the column nearest it.
+ */
+function sideBySide(pieces: Placed[]): Placed[][] {
+  const columns: { pieces: Placed[]; left: number; right: number }[] = [];
+  for (const piece of [...pieces].sort((a, b) => a.across - b.across)) {
+    const column = columns.at(-1);
+    if (column && piece.across < column.right + 3) {
+      column.pieces.push(piece);
+      column.right = Math.max(column.right, piece.across + piece.width);
+    } else {
+      columns.push({ pieces: [piece], left: piece.across, right: piece.across + piece.width });
+    }
+  }
+  // A class has a title, a line of some length; a column of short lines only
+  // is a list of rooms ("ΑΠ3_9" / "&" / "ΑΠ3_2") beside one.
+  const tall = columns.filter(
+    (column) =>
+      groupBy(column.pieces, (piece) => piece.down, lineTolerance).length >= 2 &&
+      column.pieces.some((piece) => piece.text.trim().length > 12),
+  );
+  if (tall.length < 2) return [pieces];
+  const parts = tall.map((column) => [...column.pieces]);
+  for (const column of columns) {
+    if (tall.includes(column)) continue;
+    const distance = (other: (typeof tall)[number]): number =>
+      Math.max(other.left - column.right, column.left - other.right, 0);
+    const nearest = tall.reduce((a, b) => (distance(b) < distance(a) ? b : a));
+    parts[tall.indexOf(nearest)]!.push(...column.pieces);
+  }
+  return parts;
+}
+
+// A blank line keeps classes set side by side apart in the cell's text.
+const cellText = (pieces: Placed[]): string => sideBySide(pieces).map(joinLines).join('\n\n');
+
 // Some grids give bare hours, on a 12-hour clock: "9 - 10", "12 - 1", "1 - 2".
 const hourRange = /^(\d{1,2})\s*[-–]\s*(\d{1,2})$/;
 
@@ -256,7 +296,7 @@ export function gridBlocks(items: PositionedText[]): Block[] | null {
       [asInline('ΩΡΑ'), ...header.map((piece) => asInline(piece.text.trim()))],
       ...cells.map((row, index) => [
         asInline(timeText[index]!),
-        ...row.map((cell) => asInline(joinLines(cell))),
+        ...row.map((cell) => asInline(cellText(cell))),
       ]),
     ],
   };

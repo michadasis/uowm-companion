@@ -341,6 +341,42 @@ describe('parseTimetableGrid, cells with no italic teacher', () => {
     ]);
   });
 
+  it('pairs classes ruled apart down a cell with the rooms ruled apart beside them', () => {
+    expect(
+      details(
+        'ΧΜΝ09 Βιοϋλικά (Ε) (ΚΑΡΑΓΙΑΝΝΗΣ)\n— — —\nΧΜΤ06 Χημεία Τροφίμων\n(ΠΑΠΑΜΩΚΟΣ)\n\n' +
+          'ΑΙΘ/ΕΡΓ (ΚΟΙΛΑ,\nΕΡΓ 4301)\n— — —\nΑΠ2_2',
+      ),
+    ).toEqual([
+      { course: 'Βιοϋλικά (Ε)', teacher: 'ΚΑΡΑΓΙΑΝΝΗΣ', room: 'ΑΙΘ/ΕΡΓ (ΚΟΙΛΑ, ΕΡΓ 4301)' },
+      { course: 'Χημεία Τροφίμων', teacher: 'ΠΑΠΑΜΩΚΟΣ', room: 'ΑΠ2_2' },
+    ]);
+  });
+
+  it('gives a column of teachers beside a class to that class', () => {
+    expect(
+      details('ΑΝΑΤΟΜΙΑ ΚΑΙ\nΜΟΡΦΟΛΟΓΙΑ ΦΥΤΩΝ (Ε1)\n\nΠΑΠΑΘΑΝΑΣΙΟΥ /\nΠΑΣΧΟΥΔΗ / ΣΙΣΤΑΝΗΣ ΕΡ ΒΟΤ'),
+    ).toEqual([
+      {
+        course: 'ΑΝΑΤΟΜΙΑ ΚΑΙ ΜΟΡΦΟΛΟΓΙΑ ΦΥΤΩΝ (Ε1)',
+        teacher: 'ΠΑΠΑΘΑΝΑΣΙΟΥ/ΠΑΣΧΟΥΔΗ/ΣΙΣΤΑΝΗΣ',
+        room: 'ΕΡ ΒΟΤ',
+      },
+    ]);
+  });
+
+  it('reads a list of teachers with its last name wrapped under the room', () => {
+    expect(details('ΑΝΘΟΚΟΜΙΑ (Ε)\nΜΠΑΝΤΗΣ / ΧΑΤΖΗ / 15 / ΘΕΡΜ\nΒΑΘΙΣΤΑΣ')).toEqual([
+      { course: 'ΑΝΘΟΚΟΜΙΑ (Ε)', teacher: 'ΜΠΑΝΤΗΣ/ΧΑΤΖΗ/ΒΑΘΙΣΤΑΣ', room: '15 / ΘΕΡΜ' },
+    ]);
+  });
+
+  it('takes the room on its own line over a code set before a title line', () => {
+    expect(details('ΔΙΕΘΝΗΣ ΔΙΟΙΚΗΣΗ\nΒ4 ΕΠΙΧΕΙΡΗΣΕΩΝ (Κ-ΟΕ)\nΒ6\nΗΛΙΟΠΟΥΛΟΥ')).toEqual([
+      { course: 'ΔΙΕΘΝΗΣ ΔΙΟΙΚΗΣΗ ΕΠΙΧΕΙΡΗΣΕΩΝ (Κ-ΟΕ)', teacher: 'ΗΛΙΟΠΟΥΛΟΥ', room: 'Β6' },
+    ]);
+  });
+
   it('takes a room from the column beside a class', () => {
     const classes = parseTimetableGrid([
       table([
