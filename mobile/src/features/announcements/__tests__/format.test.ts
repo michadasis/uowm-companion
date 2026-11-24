@@ -30,6 +30,23 @@ describe('formatListDate', () => {
     expect(formatListDate('2026-11-17T08:00:00', 'el', now)).toBe('Πριν από 3 ημέρες');
   });
 
+  it('says "Προχθές" two days back, & the same days in English', () => {
+    expect(formatListDate('2026-11-18T08:00:00', 'el', now)).toBe('Προχθές');
+    expect(formatListDate('2026-11-20T08:00:00', 'en', now)).toBe('Today');
+    expect(formatListDate('2026-11-19T08:00:00', 'en', now)).toBe('Yesterday');
+    expect(formatListDate('2026-11-17T08:00:00', 'en', now)).toBe('3 days ago');
+  });
+
+  it('works without Intl.RelativeTimeFormat, which Hermes on Android lacks', () => {
+    const original = Object.getOwnPropertyDescriptor(Intl, 'RelativeTimeFormat');
+    Object.defineProperty(Intl, 'RelativeTimeFormat', { value: undefined, configurable: true });
+    try {
+      expect(formatListDate('2026-11-17T08:00:00', 'el', now)).toBe('Πριν από 3 ημέρες');
+    } finally {
+      if (original) Object.defineProperty(Intl, 'RelativeTimeFormat', original);
+    }
+  });
+
   it('gives the day & month after that, & the year only when it is not this one', () => {
     expect(formatListDate('2026-11-09T08:00:00', 'el', now)).toBe('9 Νοεμβρίου');
     expect(formatListDate('2025-11-09T08:00:00', 'el', now)).toBe('9 Νοεμβρίου 2025');

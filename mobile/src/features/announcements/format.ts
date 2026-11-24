@@ -23,6 +23,15 @@ export function formatUpdatedAt(timestamp: number, language: string): string {
 }
 
 /**
+ * "Σήμερα", "Χθες", "Προχθές" or "Πριν από 3 ημέρες", written out here because
+ * Hermes on Android has no Intl.RelativeTimeFormat.
+ */
+function daysAgo(days: number, language: string): string {
+  if (language === 'el') return ['Σήμερα', 'Χθες', 'Προχθές'][days] ?? `Πριν από ${days} ημέρες`;
+  return ['Today', 'Yesterday'][days] ?? `${days} days ago`;
+}
+
+/**
  * A post's date as a list shows it: "Σήμερα", "Χθες" or "Πριν από 3 ημέρες"
  * within the week, then the day & month — & the year only when it isn't this
  * one.
@@ -37,13 +46,7 @@ export function formatListDate(
   if (Number.isNaN(date.getTime())) return null;
   const midnight = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   const days = Math.round((midnight(now) - midnight(date)) / 86_400_000);
-  if (days >= 0 && days < 7) {
-    const relative = new Intl.RelativeTimeFormat(language, { numeric: 'auto' }).format(
-      -days,
-      'day',
-    );
-    return relative.charAt(0).toLocaleUpperCase(language) + relative.slice(1);
-  }
+  if (days >= 0 && days < 7) return daysAgo(days, language);
   return new Intl.DateTimeFormat(language, {
     day: 'numeric',
     month: 'long',
