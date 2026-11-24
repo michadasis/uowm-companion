@@ -236,3 +236,134 @@ describe('parseTimetableGrid on a spreadsheet layout', () => {
     ]);
   });
 });
+
+// One class in a Monday 09:00 slot, its cell plain text with no italic teacher.
+function plainCell(text: string): ReturnType<typeof parseTimetableGrid> {
+  return parseTimetableGrid([
+    table([header, [time('09:00 – 10:00'), [run(text)], [], [], [], []]]),
+  ]);
+}
+
+const details = (text: string) =>
+  plainCell(text).map(({ course, teacher, room }) => ({ course, teacher, room }));
+
+describe('parseTimetableGrid, cells with no italic teacher', () => {
+  it('reads "Course (Θ) Teacher - Room" wrapped at any word', () => {
+    expect(details('Σχέδιο (Ε) Στημονιάρης -\nΑΠ1_11')).toEqual([
+      { course: 'Σχέδιο (Ε)', teacher: 'Στημονιάρης', room: 'ΑΠ1_11' },
+    ]);
+    expect(details('Δομ. Προγραμματισμός (Ε)\nΚυριακίδης - ΑΠ1_8, ΕΥ1, ΕΥ2,\nΕΥ5')).toEqual([
+      { course: 'Δομ. Προγραμματισμός (Ε)', teacher: 'Κυριακίδης', room: 'ΑΠ1_8, ΕΥ1, ΕΥ2, ΕΥ5' },
+    ]);
+  });
+
+  it('reads two classes set side by side in one cell', () => {
+    expect(
+      details(
+        'Ηλεκ. Κυκλώματα ΙΙ (Ε)\nΗλεκ. Μετρήσεις (Ε)\nΠασχόπουλος - ΑΠ1_1\nΒανδίκας - ΑΠ1_10',
+      ),
+    ).toEqual([
+      { course: 'Ηλεκ. Κυκλώματα ΙΙ (Ε)', teacher: 'Πασχόπουλος', room: 'ΑΠ1_1' },
+      { course: 'Ηλεκ. Μετρήσεις (Ε)', teacher: 'Βανδίκας', room: 'ΑΠ1_10' },
+    ]);
+  });
+
+  it('keeps a title whole round a room printed beside it, the teacher last', () => {
+    expect(details('ΕΙΣΑΓΩΓΗ ΣΤΗ\nΔΙΟΙΚΗΣΗ\nΒ7\nΕΠΙΧΕΙΡΗΣΕΩΝ\nΗΛΙΟΠΟΥΛΟΥ')).toEqual([
+      { course: 'ΕΙΣΑΓΩΓΗ ΣΤΗ ΔΙΟΙΚΗΣΗ ΕΠΙΧΕΙΡΗΣΕΩΝ', teacher: 'ΗΛΙΟΠΟΥΛΟΥ', room: 'Β7' },
+    ]);
+  });
+
+  it('gives no teacher where the last line only closes the title', () => {
+    expect(details('ΚΑΙΝΟΤΟΜΙΑ ΚΑΙ\nΕΠΙΧΕΙΡΗΜΑΤΙΚΟΤΗΤΑ\nΒ6\n(Κ-ΟΕ)')).toEqual([
+      { course: 'ΚΑΙΝΟΤΟΜΙΑ ΚΑΙ ΕΠΙΧΕΙΡΗΜΑΤΙΚΟΤΗΤΑ (Κ-ΟΕ)', teacher: undefined, room: 'Β6' },
+    ]);
+  });
+
+  it('reads a teacher after the room, or a short name with an initial', () => {
+    expect(details('Χημεία\nΑΠ3_8\nΤόλης')).toEqual([
+      { course: 'Χημεία', teacher: 'Τόλης', room: 'ΑΠ3_8' },
+    ]);
+    expect(details('Λογιστική Ι\n1307\nΚυριακόγκωνας Παν.')).toEqual([
+      { course: 'Λογιστική Ι', teacher: 'Κυριακόγκωνας Παν.', room: '1307' },
+    ]);
+  });
+
+  it('reads a teacher in brackets, on a line of its own or closing the title', () => {
+    expect(details('0518Υ - ΕΚΠΑΙΔΕΥΤΙΚΗ\nΠΟΛΙΤΙΚΗ\n(ΣΚΛΑΒΟΣ ΑΝΑΣΤΑΣΙΟΣ)\nΜικρ. Αμφ.')).toEqual([
+      {
+        course: '0518Υ - ΕΚΠΑΙΔΕΥΤΙΚΗ ΠΟΛΙΤΙΚΗ',
+        teacher: 'ΣΚΛΑΒΟΣ ΑΝΑΣΤΑΣΙΟΣ',
+        room: 'Μικρ. Αμφ.',
+      },
+    ]);
+    expect(details('ΜΠ108 Εισαγωγή στη Χημική\nΑΠ3_8\nΜηχανική (ΑΝΤΩΝΙΑΔΟΥ)')).toEqual([
+      { course: 'Εισαγωγή στη Χημική Μηχανική', teacher: 'ΑΝΤΩΝΙΑΔΟΥ', room: 'ΑΠ3_8' },
+    ]);
+  });
+
+  it('reads the teacher after a course code, leaving a note on the post out', () => {
+    expect(
+      details(
+        'ΨΥΧΟΛΟΓΙΑ ΤΗΣ ΑΝΑΠΤΥΞΗΣ\n(Υ105)\nΣΤΑΥΡΟΥ ΚΥΡΙΑΚΗ\n(ΑΚΑΔΗΜΑΪΚΟΣ ΥΠΟΤΡΟΦΟΣ)\nΑΙΘΟΥΣΑ ΝΚ1',
+      ),
+    ).toEqual([
+      {
+        course: 'ΨΥΧΟΛΟΓΙΑ ΤΗΣ ΑΝΑΠΤΥΞΗΣ (Υ105)',
+        teacher: 'ΣΤΑΥΡΟΥ ΚΥΡΙΑΚΗ',
+        room: 'ΑΙΘΟΥΣΑ ΝΚ1',
+      },
+    ]);
+  });
+
+  it("reads a teacher's short code set above the room as the title runs on", () => {
+    expect(details('ΕΙΣΑΓΩΓΗ ΣΤΟΝ\nΚΟΡ\n4204\nΠΡΟΓΡΑΜΜΑΤΙΣΜΟ (Θ)')).toEqual([
+      { course: 'ΕΙΣΑΓΩΓΗ ΣΤΟΝ ΠΡΟΓΡΑΜΜΑΤΙΣΜΟ (Θ)', teacher: 'ΚΟΡ', room: '4204' },
+    ]);
+  });
+
+  it('keeps a title over two lines whole, with no teacher in it', () => {
+    expect(details('Θεμελιώδεις Έννοιες\nΜαθηματικών\nΑίθουσα Β2')).toEqual([
+      { course: 'Θεμελιώδεις Έννοιες Μαθηματικών', teacher: undefined, room: 'Αίθουσα Β2' },
+    ]);
+  });
+
+  it('splits a one-line cell at the comma or gap before its teachers', () => {
+    expect(details('DET103 ΧΡΗΜΑΤΟΟΙΚΟΝΟΜΙΚΗ ΛΟΓΙΣΤΙΚΗ Ι, ΣΠΙΝΘΗΡΟΠΟΥΛΟΣ - ΒΕΖΟΥ Μ.')).toEqual([
+      {
+        course: 'ΧΡΗΜΑΤΟΟΙΚΟΝΟΜΙΚΗ ΛΟΓΙΣΤΙΚΗ Ι',
+        teacher: 'ΣΠΙΝΘΗΡΟΠΟΥΛΟΣ - ΒΕΖΟΥ Μ.',
+        room: undefined,
+      },
+    ]);
+    expect(details('DET503 ΒΑΣΕΙΣ ΔΕΔΟΜΕΝΩΝ        ΠΑΝΥΤΣΙΔΗΣ')).toEqual([
+      { course: 'ΒΑΣΕΙΣ ΔΕΔΟΜΕΝΩΝ', teacher: 'ΠΑΝΥΤΣΙΔΗΣ', room: undefined },
+    ]);
+  });
+
+  it('takes a room from the column beside a class', () => {
+    const classes = parseTimetableGrid([
+      table([
+        [run('ΩΡΕΣ'), run('ΔΕΥΤΕΡΑ'), [], run('ΤΡΙΤΗ'), [], run('ΤΕΤΑΡΤΗ'), []].map((c) =>
+          Array.isArray(c) ? c : [c],
+        ),
+        [
+          time('9.00-10.00'),
+          [run('DET306 ΔΙΚΑΙΟ ΚΑΙ ΟΙΚΟΝΟΜΙΑ,   ΚΑΓΙΟΓΛΟΥ')],
+          [run('1202')],
+          [],
+          [],
+          [],
+          [],
+        ],
+      ]),
+    ]);
+    expect(classes).toEqual([
+      expect.objectContaining({
+        course: 'ΔΙΚΑΙΟ ΚΑΙ ΟΙΚΟΝΟΜΙΑ',
+        teacher: 'ΚΑΓΙΟΓΛΟΥ',
+        room: '1202',
+      }),
+    ]);
+  });
+});
