@@ -170,8 +170,90 @@ function sideBySide(pieces: Placed[]): Placed[][] {
   return parts;
 }
 
+/**
+ * One class's text, its fields read column by column: a sheet that sets the
+ * title, the teacher & the room in narrow columns of their own, side by side
+ * (Agriculture's), offsets their lines a little, & read line by line across
+ * they interleave — "ΣΤΙΣ ΓΕΩΠΟΝΙΚΕΣ ΕΠΙΣΤΗΜΕΣ ΑΛΒΑΝΟΥ ΕΡΓ". The title's
+ * column, the one with the most text, comes first, then the others left to
+ * right, each read top to bottom. Columns are told apart by the gap between
+ * a line's fields, as joinLines tells its fields apart.
+ */
+function classText(pieces: Placed[]): string {
+  const columns: { pieces: Placed[]; right: number }[] = [];
+  for (const piece of [...pieces].sort((a, b) => a.across - b.across)) {
+    const column = columns.at(-1);
+    if (column && piece.across <= column.right + fieldGap) {
+      column.pieces.push(piece);
+      column.right = Math.max(column.right, piece.across + piece.width);
+    } else {
+      columns.push({ pieces: [piece], right: piece.across + piece.width });
+    }
+  }
+  // Classes stacked down a cell between rules ("— — —"), their rooms in a
+  // column beside, pair by row: read across, each keeps its room.
+  const isRule = (piece: Placed): boolean => /^(?:[—–]\s*){2,}$/u.test(piece.text.trim());
+  if (columns.length < 2) return joinLines(pieces);
+  if (pieces.some(isRule)) return ruledText(columns, isRule) ?? joinLines(pieces);
+  // Only where the columns' lines sit a little apart do they interleave; a
+  // sheet whose fields share each line's height reads well line by line.
+  // The title's column is the first from the left with words in it, not a
+  // room's number ("15") set before it.
+  const lettered = (column: (typeof columns)[number]): number =>
+    column.pieces
+      .map((piece) => piece.text)
+      .join('')
+      .replace(/[^Α-ωΆ-ώA-Za-z]/gu, '').length;
+  const title = columns.find((column) => lettered(column) >= 3) ?? columns[0]!;
+  const titleDowns = title.pieces.map((piece) => piece.down);
+  const top = Math.min(...titleDowns) - lineTolerance;
+  const bottom = Math.max(...titleDowns) + lineTolerance;
+  // A field beside the title, within its height but on none of its lines.
+  const offset = columns.some(
+    (column) =>
+      column !== title &&
+      column.pieces.some(
+        (piece) =>
+          piece.down >= top &&
+          piece.down <= bottom &&
+          titleDowns.every((down) => Math.abs(down - piece.down) > 1.5),
+      ),
+  );
+  if (!offset) return joinLines(pieces);
+  return [title, ...columns.filter((column) => column !== title)]
+    .map((column) => joinLines(column.pieces))
+    .join('\n');
+}
+
+/**
+ * Classes stacked down a cell between rules, each column ruled at its own
+ * height: the titles' column cut at its rules, the rooms' at theirs, & the
+ * nth room set with the nth class. Read across instead, a room column's rule
+ * can fall inside a title: "Διαχείριση Ειδικών" / "— — —" / "Αποβλήτων". Null
+ * where the columns don't hold as many classes each.
+ */
+function ruledText(
+  columns: { pieces: Placed[] }[],
+  isRule: (piece: Placed) => boolean,
+): string | null {
+  const segmentsOf = (pieces: Placed[]): string[] => {
+    const parts: Placed[][] = [[]];
+    for (const piece of [...pieces].sort((a, b) => a.down - b.down)) {
+      if (isRule(piece)) parts.push([]);
+      else parts.at(-1)!.push(piece);
+    }
+    return parts.filter((part) => part.length > 0).map(joinLines);
+  };
+  const split = columns.map((column) => segmentsOf(column.pieces));
+  const count = split[0]!.length;
+  if (count < 2 || split.some((parts) => parts.length !== count)) return null;
+  return Array.from({ length: count }, (_, i) => split.map((parts) => parts[i]).join('\n')).join(
+    '\n— — —\n',
+  );
+}
+
 // A blank line keeps classes set side by side apart in the cell's text.
-const cellText = (pieces: Placed[]): string => sideBySide(pieces).map(joinLines).join('\n\n');
+const cellText = (pieces: Placed[]): string => sideBySide(pieces).map(classText).join('\n\n');
 
 // Some grids give bare hours, on a 12-hour clock: "9 - 10", "12 - 1", "1 - 2".
 const hourRange = /^(\d{1,2})\s*[-–]\s*(\d{1,2})$/;

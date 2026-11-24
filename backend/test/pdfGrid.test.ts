@@ -107,6 +107,58 @@ describe('gridBlocks', () => {
     expect(table.rows[1]![1]!.map((run) => run.text).join('')).not.toContain('\n\n');
   });
 
+  it('reads fields set in columns of their own, a little offset, column by column', () => {
+    // Agriculture's sheet: title, teacher & room side by side, their lines off.
+    const blocks = gridBlocks([
+      ...days.map((day, index) => piece(day, 120 + index * 150, 510)),
+      piece('9:00-10:00', 40, 476),
+      piece('10:00-11:00', 40, 446),
+      piece('ΕΦΑΡΜΟΓΕΣ ΠΛΗΡΟΦΟΡΙΚΗΣ', 90, 483.3, 65),
+      piece('ΣΤΙΣ ΓΕΩΠΟΝΙΚΕΣ ΕΠΙΣΤΗΜΕΣ', 90, 476.4, 64),
+      piece('(Θ)', 119, 469.4, 7),
+      piece('ΑΛΒΑΝΟΥ', 169, 476.8, 17),
+      piece('ΕΡΓ', 204, 480, 7),
+      piece('ΠΛΦ', 202, 473, 10),
+    ])!;
+    const table = blocks.find((block) => block.type === 'table') as Extract<
+      Block,
+      { type: 'table' }
+    >;
+    expect(table.rows[1]![1]!.map((run) => run.text).join('')).toBe(
+      'ΕΦΑΡΜΟΓΕΣ ΠΛΗΡΟΦΟΡΙΚΗΣ\nΣΤΙΣ ΓΕΩΠΟΝΙΚΕΣ ΕΠΙΣΤΗΜΕΣ\n(Θ)\nΑΛΒΑΝΟΥ\nΕΡΓ\nΠΛΦ',
+    );
+    expect(
+      parseTimetableGrid(blocks).map(({ course, teacher, room }) => ({ course, teacher, room })),
+    ).toEqual([
+      {
+        course: 'ΕΦΑΡΜΟΓΕΣ ΠΛΗΡΟΦΟΡΙΚΗΣ ΣΤΙΣ ΓΕΩΠΟΝΙΚΕΣ ΕΠΙΣΤΗΜΕΣ (Θ)',
+        teacher: 'ΑΛΒΑΝΟΥ',
+        room: 'ΕΡΓ ΠΛΦ',
+      },
+    ]);
+  });
+
+  it('pairs classes ruled apart down a cell with rooms ruled at their own height', () => {
+    const blocks = gridBlocks([
+      ...days.map((day, index) => piece(day, 120 + index * 150, 510)),
+      piece('9:00-10:00', 40, 476),
+      piece('10:00-11:00', 40, 436),
+      piece('ΜΠΧ03 Διαχείριση Ειδικών', 90, 488, 60),
+      piece('Αποβλήτων (ΤΑΓΑΡΗΣ)', 90, 482, 50),
+      piece('— — —', 90, 476, 20),
+      piece('ΧΜΔ07 Ετερογενής Κατάλυση (ΓΟΥΛΑ)', 90, 470, 60),
+      piece('ΑΠ2_1', 170, 485, 15),
+      piece('— — —', 170, 479, 15),
+      piece('ΑΠ2_2', 170, 470, 15),
+    ])!;
+    expect(
+      parseTimetableGrid(blocks).map(({ course, teacher, room }) => ({ course, teacher, room })),
+    ).toEqual([
+      { course: 'Διαχείριση Ειδικών Αποβλήτων', teacher: 'ΤΑΓΑΡΗΣ', room: 'ΑΠ2_1' },
+      { course: 'Ετερογενής Κατάλυση', teacher: 'ΓΟΥΛΑ', room: 'ΑΠ2_2' },
+    ]);
+  });
+
   it('leaves a page with no weekday header to be read as text', () => {
     expect(gridBlocks([piece('Ανακοίνωση', 40, 500), piece('Κείμενο', 40, 480)])).toBeNull();
   });

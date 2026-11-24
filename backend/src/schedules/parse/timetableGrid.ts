@@ -124,7 +124,9 @@ function roomLine(line: string): boolean {
     /^α\.δ\.?\s?\d/u.test(folded) ||
     /^εργ\.?\s?\d{1,2}$/u.test(folded) ||
     // Kozani's ΖΕΠ campus.
-    /^\(?ζεπ\)?$/u.test(folded)
+    /^\(?ζεπ\)?$/u.test(folded) ||
+    // Agriculture's "15 / ΑΓΡΟ", "9 / ΘΕΡΜ": a room & its building.
+    /^\d{1,2}\s*\/\s*[α-ω]{2,5}$/u.test(folded)
   );
 }
 
@@ -154,7 +156,7 @@ function surelyTeacher(line: string, capitalCourse: boolean): boolean {
     /^[Α-ΩΆ-Ώ][α-ωά-ώϊΐ]+(?:-[Α-ΩΆ-Ώ][α-ωά-ώϊΐ]+)?\s+[Α-ΩΆ-Ώ][α-ωά-ώ]{0,3}\.$/u.test(line) ||
     /^[Α-ΩΆ-ΏΪ]{3,}(?:-[Α-ΩΆ-ΏΪ]{3,})?\s+[Α-Ω]{1,3}\.$/u.test(line) ||
     // "(ΣΚΛΑΒΟΣ ΑΝΑΣΤΑΣΙΟΣ)", "(ΣΤΗΜΟΝΙΑΡΗΣ/ΚΟΥΝΤΟΥΡΑΣ)".
-    (/^\([Α-ΩΆ-ΏΪ]{4,}(?:[\s\-/,]+[Α-ΩΆ-ΏΪ]{3,}){0,3}\)$/u.test(line) &&
+    (/^\([Α-ΩΆ-ΏΪ]{4,}\.?(?:[\s\-/,]+[Α-ΩΆ-ΏΪ]{2,}\.?){0,5},?\)$/u.test(line) &&
       !postNote.test(fold(line))) ||
     // "Τσιαμπαλή Χαρά" under a title in capitals: a name, in the case titles aren't.
     (capitalCourse && /^[Α-ΩΆ-Ώ][α-ωά-ώϊΐ]+(?:\s+[Α-ΩΆ-Ώ][α-ωά-ώϊΐ]+){1,2}$/u.test(line))
@@ -200,7 +202,7 @@ function inlineTeacher(raw: string): { course: string; teacher: string } | null 
   // A gap of two spaces is enough after a coded title, as such sheets type it.
   const gap = courseCode.test(text.trim()) ? String.raw`\s{2,}` : String.raw`\s{3,}`;
   const match = new RegExp(
-    String.raw`^(.+?)(?:,\s*|${gap}|\s+[-–]\s+)(${surname}(?:\s*[-–]\s*${surname})*)\s*$`,
+    String.raw`^(.+?)(?:,\s*|${gap}${courseCode.test(text.trim()) ? String.raw`|\s+[-–]\s+` : ''})(${surname}(?:\s*[-–]\s*${surname})*)\s*$`,
     'u',
   ).exec(text.trim());
   // One space is gap enough before a coded title's surname with an ending only
@@ -334,6 +336,13 @@ function splitByLines(cell: Inline): {
     if (led) ledRooms.add(led[1]!);
     return led ? [led[1]!, led[2]!] : [line];
   });
+  // A name in brackets wrapped onto the next line: "(ΠΛΙΟΓΚΟΥ ΒΑΣ.," /
+  // "ΛΥΚΟΜΗΤΡΟΥ ΣΟΝ.)".
+  for (let i = split.length - 2; i >= 0; i--) {
+    if (/^\([^()]+$/u.test(split[i]!) && /^[^()]+\)$/u.test(split[i + 1]!)) {
+      split.splice(i, 2, `${split[i]} ${split[i + 1]}`);
+    }
+  }
   // A surname opening a list, set at the end of a title line: "ΠΟΙΟΤΙΚΗ
   // ΕΚΤΙΜΗΣΗ ΚΑΣΑΠΙΔΟΥ /".
   for (let i = split.length - 1; i >= 0; i--) {
@@ -374,6 +383,34 @@ function splitByLines(cell: Inline): {
     if (where) listedRooms.add(where);
   }
   all.splice(0, all.length, ...split);
+  // Rooms & labs in short codes, as Agriculture names them: "ΕΡ ΓΕΩ", "ΕΜ /
+  // ΕΠ", "15 / ΕΓΧ (ΑΓΡ)", "Ε ΑΝΑΠ / ΑΓΡΟ", "ΕΧ (ΝΈΟ)", "ΕΡΓ" / "ΠΛΦ" — under a
+  // title marked with its kind, & never a teacher's code by a room number.
+  const labRooms = new Set<string>();
+  if (all.some((line) => kindAnywhere.test(line))) {
+    // A surname with its room on one line: "ΠΑΠΑΔΟΠΟΥΛΟΣ ΕΧ (ΝΈΟ)", "ΠΑΠΑΔΟΠΟΥΛΟΣ (ΝΕΟ)".
+    for (let i = all.length - 1; i >= 1; i--) {
+      const named = /^([Α-ΩΆ-ΏΪ]{6,})\s+((?:[Α-ΩΆ-ΏΪ]{1,4}\s+)?\([Α-ΩΆ-ΏΪ]{2,4}\))$/u.exec(all[i]!);
+      if (named) {
+        all.splice(i, 1, named[1]!, named[2]!);
+        labRooms.add(named[2]!);
+      }
+    }
+    for (let i = all.length - 2; i >= 1; i--) {
+      if (all[i] === 'ΕΡΓ' && /^[Α-ΩΆ-ΏΪ]{2,5}$/u.test(all[i + 1]!)) {
+        all.splice(i, 2, `ΕΡΓ ${all[i + 1]}`);
+      }
+    }
+    const token = String.raw`(?:\d{1,2}|[Α-ΩΆ-ΏΪ]{1,5}|\([Α-ΩΆ-ΏΪ]{2,4}\))`;
+    const coded = new RegExp(String.raw`^${token}(?:(?:\s*\/\s*|\s+)${token})+$`, 'u');
+    all.forEach((line, index) => {
+      if (index > 0 && coded.test(line) && !/^[Α-ΩΆ-ΏΪ]{3,4}\s+\d{4}$/u.test(line)) {
+        labRooms.add(line);
+      }
+      // A lab's two letters alone: "ΕΧ", "ΕΠ".
+      if (index > 0 && /^[Α-ΩΆ-ΏΪ]{2}$/u.test(line) && !/^(?:ΑΠ)$/u.test(line)) labRooms.add(line);
+    });
+  }
   // The first line that is neither a room nor a name is the title's, telling
   // whether titles are in capitals.
   // A sheet with a column for the group ("ΟΛΕΣ", "Α") prints its teachers in
@@ -416,7 +453,7 @@ function splitByLines(cell: Inline): {
   const kinds: Kind[] = all.map((line, index) => {
     const folded = fold(line);
     if (index > 0 && (kindLine.test(folded) || kindWord.test(line))) return 'kind';
-    if (roomLine(line) || listedRooms.has(line)) return 'room';
+    if (roomLine(line) || listedRooms.has(line) || labRooms.has(line)) return 'room';
     if (index > 0 && groupLine.test(folded)) return 'group';
     if (index > 0 && postNote.test(folded)) return 'note';
     if (index > 0 && surelyTeacher(line, capitalCourse)) return 'teacher';
@@ -437,6 +474,21 @@ function splitByLines(cell: Inline): {
       (k, i) => i > index && k === 'text' && /^[^(]*\)$/u.test(lines[i]!),
     );
     if (close > 0) kinds[close] = 'room';
+  });
+  // A second kind letter, after the first, is the group's: "Ε" / ... / "Ε".
+  const firstKind = kinds.findIndex(
+    (kind, i) => kind === 'kind' && /^[θε]$/u.test(fold(lines[i]!)),
+  );
+  kinds.forEach((kind, i) => {
+    if (i > firstKind + 1 && firstKind >= 0 && kind === 'kind' && /^[θε]$/u.test(fold(lines[i]!))) {
+      kinds[i] = 'group';
+    }
+  });
+  // "15 / ΕΓΧ" / "(ΑΓΡ)": a short code in brackets after a room is its own.
+  kinds.forEach((kind, i) => {
+    if (kind === 'text' && kinds[i - 1] === 'room' && /^\([Α-ΩΆ-ΏΪ]{2,4}\)$/u.test(lines[i]!)) {
+      kinds[i] = 'room';
+    }
   });
   // "Αίθ. Α3" / "Θεωρία": the kind, in capitals, right after a room.
   kinds.forEach((kind, index) => {
@@ -476,9 +528,26 @@ function splitByLines(cell: Inline): {
     const last = texts.at(-1)!;
     const before = texts.at(-2)!;
     const line = lines[last]!;
+    // A lab's short code closing the cell, a surname before it: "ΖΑΡΑΛΗΣ" / "ΕΖΔ".
+    if (
+      /^[Α-ΩΆ-ΏΪ]{2,4}$/u.test(line) &&
+      /^[Α-ΩΆ-ΏΪ]{5,}$/u.test(lines[before]!) &&
+      kindAnywhere.test(lines.slice(0, before).join(' ')) &&
+      !teacherCodes.has(line) &&
+      !kinds.includes('room')
+    ) {
+      kinds[last] = 'room';
+      kinds[before] = 'teacher';
+      teacher = [lines[before]!];
+    }
     const afterRoom = kinds.slice(0, last).some((kind) => kind === 'room');
     const afterClosedTitle =
-      kindMark.test(lines[before]!) || codeMark.test(lines[before]!) || /\)$/u.test(lines[before]!);
+      kindMark.test(lines[before]!) ||
+      codeMark.test(lines[before]!) ||
+      /\)$/u.test(lines[before]!) ||
+      kinds
+        .slice(before + 1, last)
+        .some((kind, i) => kind === 'kind' && /^\(/u.test(lines[before + 1 + i]!));
     const capitalWord =
       capitalCourse &&
       /^[Α-ΩΆ-ΏΪ]+$/u.test(line) &&
@@ -487,6 +556,7 @@ function splitByLines(cell: Inline): {
         (texts.length >= 3 && !joiningEnd.test(fold(lines[before]!))));
     const capitalName = !/[α-ωά-ώ]/u.test(line);
     if (
+      teacher.length === 0 &&
       nameLike(line) &&
       !(grouped && capitalName) &&
       (afterRoom || afterClosedTitle || capitalWord)
@@ -508,6 +578,48 @@ function splitByLines(cell: Inline): {
       }
     }
   }
+  // The line closing the text, rooms only after it, as a cell read column by
+  // column gives it: "Χημεία" / "Τόλης" / "ΑΠ3_8". A title's own last line
+  // ends as a title does ("Μαθηματικών", "Μηχανικής"); a name does not.
+  const onlyOpen = teacher.length > 0 && teacher.every((name) => openLists.has(name));
+  if ((teacher.length === 0 || onlyOpen) && texts.length >= 2) {
+    const last = texts.at(-1)!;
+    const before = texts.at(-2)!;
+    const line = lines[last]!;
+    // A lab's short code closing the cell, a surname before it: "ΖΑΡΑΛΗΣ" / "ΕΖΔ".
+    if (
+      /^[Α-ΩΆ-ΏΪ]{2,4}$/u.test(line) &&
+      /^[Α-ΩΆ-ΏΪ]{5,}$/u.test(lines[before]!) &&
+      kindAnywhere.test(lines.slice(0, before).join(' ')) &&
+      !teacherCodes.has(line)
+    ) {
+      kinds[last] = 'room';
+      kinds[before] = 'teacher';
+      teacher = [...teacher, lines[before]!];
+    }
+  }
+  const stillOpen = teacher.length > 0 && teacher.every((name) => openLists.has(name));
+  if ((teacher.length === 0 || stillOpen) && texts.length >= 2 && kinds[texts.at(-1)!] === 'text') {
+    const last = texts.at(-1)!;
+    const before = texts.at(-2)!;
+    const line = lines[last]!;
+    const roomsAfter =
+      kinds.slice(last + 1).includes('room') &&
+      kinds.slice(last + 1).every((kind) => kind === 'room' || kind === 'kind' || kind === 'group');
+    const titleEnding =
+      /(?:ών|ων|ικής|ικης|ικού|ικου|ικά|ικα|ίας|ιας|ισμού|ισμου|ότητας|οτητας|σεων|ήσεων|ματος|μάτων|ματων|ματα|σεις|ής|ού|ΩΝ|ΜΑΤΑ|ΣΕΙΣ|ΙΚΗΣ|ΙΚΟΥ|ΙΚΑ|ΙΑΣ|ΙΣΜΟΥ|ΟΤΗΤΑΣ|ΣΕΩΝ|ΜΑΤΩΝ|Ι|ΙΙ|ΙΙΙ)$/u;
+    if (
+      roomsAfter &&
+      nameLike(line) &&
+      line.split(/\s+/u).length <= 2 &&
+      !titleEnding.test(line) &&
+      !joiningEnd.test(fold(lines[before]!)) &&
+      !(grouped && !/[α-ωά-ώ]/u.test(line))
+    ) {
+      kinds[last] = 'teacher';
+      teacher = [...(stillOpen ? teacher : []), line];
+    }
+  }
   // A name set just above the room while the title runs on below it:
   // "ΕΙΣΑΓΩΓΗ ΣΤΟΝ" / "ΚΟΡ" / "4204" / "ΠΡΟΓΡΑΜΜΑΤΙΣΜΟ (Θ)".
   const firstRoom = kinds.indexOf('room');
@@ -515,8 +627,14 @@ function splitByLines(cell: Inline): {
     const line = lines[firstRoom - 1]!;
     const titleRunsOn = lines
       .slice(firstRoom + 1)
-      .some((after, i) => kindMark.test(after) || kinds[firstRoom + 1 + i] === 'kind');
-    if (titleRunsOn && /^[Α-ΩΆ-ΏΪ]{3,}$/u.test(line) && texts.length >= 2) {
+      // A title word & its bracket: "ΠΡΟΓΡΑΜΜΑΤΙΣΜΟ (Θ)", "ΥΠΑΙΘΡΟΥ (ΑΟ)".
+      .some((after, i) => /\S\s+\([^()]+\)$/u.test(after) || kinds[firstRoom + 1 + i] === 'kind');
+    if (
+      titleRunsOn &&
+      /^[Α-ΩΆ-ΏΪ]{3,}$/u.test(line) &&
+      !/(?:ΟΤΗΤΑ|ΙΚΗΣ|ΙΑΣ|ΩΝ)$/u.test(line) &&
+      texts.length >= 2
+    ) {
       kinds[firstRoom - 1] = 'teacher';
       teacher = [line];
     }
@@ -527,7 +645,7 @@ function splitByLines(cell: Inline): {
   const named = kinds.lastIndexOf('teacher');
   const group = kinds.findIndex((kind, index) => index > lone && kind === 'group');
   const roomsEnd = group > lone ? group : named;
-  if (lone > 0 && named > lone && !kinds.slice(0, lone).includes('room')) {
+  if (lone > 0 && (named > lone || group > lone) && !kinds.slice(0, lone).includes('room')) {
     kinds.forEach((kind, index) => {
       if (index > lone && index < roomsEnd && kind === 'text') kinds[index] = 'room';
     });
@@ -791,7 +909,8 @@ function stackedParts(cell: Inline): Inline[] {
     part
       .split('\n')
       .every((line) => rule.test(line) || roomLine(tidy(line)) || /^[^(]*\)$/u.test(tidy(line))) ||
-    (marking && !titled(part));
+    (marking && !titled(part)) ||
+    /^[Α-ΩΆ-ΏΪ]{4,}\s*\/$/u.test(part.split('\n')[0]!.trim());
   const apart: string[] = [];
   for (const part of split) {
     const previous = apart.at(-1);
@@ -817,17 +936,22 @@ function stackedParts(cell: Inline): Inline[] {
   const lines = cellText(cell).split('\n').map(tidy).filter(Boolean);
   // The next class's coded title, run on after this one's teacher as a slot's
   // edge fell: "... Χρυσάνθου" / "Χρύσανθος" / "ΕΘ504 - ΗΘΙΚΗ".
+  const coded = (line: string): boolean => /^[Α-ΩA-Z]{1,4}\d{2,4}[Α-ΩA-Z]?\s*[-–]\s/u.test(line);
   const runOn = lines.findIndex(
     (line, index) =>
-      index > 0 &&
-      /^[Α-ΩA-Z]{1,4}\d{2,4}[Α-ΩA-Z]?\s*[-–]\s/u.test(line) &&
-      lines.slice(0, index).some((one) => groupLine.test(fold(one))) &&
+      index > 1 &&
+      coded(line) &&
+      lines.some((one, i) => i > 0 && groupLine.test(fold(one)) && !kindLine.test(fold(one))) &&
       /^[Α-ΩΆ-Ώ][α-ωά-ώϊΐ]+(?:\s+[Α-ΩΆ-Ώ][α-ωά-ώϊΐ]+){0,2}$/u.test(lines[index - 1]!),
   );
   if (runOn > 0) {
+    // Read column by column, this class's kind, room & group follow the next
+    // one's title: they stay with this class.
+    const rest = lines.slice(runOn);
+    const details = rest.filter((line) => !coded(line));
     return [
-      ...stackedParts([{ text: lines.slice(0, runOn).join('\n') }]),
-      ...lines.slice(runOn).map((line) => [{ text: line }]),
+      ...stackedParts([{ text: [...lines.slice(0, runOn), ...details].join('\n') }]),
+      ...rest.filter(coded).map((line) => [{ text: line }]),
     ];
   }
   // Two classes side by side, read across: their titles, then each one's
@@ -866,6 +990,16 @@ function stackedParts(cell: Inline): Inline[] {
   const least = sure ? 2 : 3;
   if (parts.length < 2 || parts.some((part) => part.length < least)) return [cell];
   return parts.map((part) => [{ text: part.join('\n') }]);
+}
+
+/**
+ * Whether a class is only a word of another's title, cut off where a slot's
+ * edge fell, with nothing of its own: "Μαθηματικός" under "Μαθηματικός
+ * Προγραμματισμός", "Ανάλυση" over "Χρηματοοικονομικών Καταστάσεων Ανάλυση".
+ */
+function fragmentOf(piece: ClassSession, whole: ClassSession): boolean {
+  if (piece.teacher || piece.room || piece.course.includes(' ')) return false;
+  return whole.course.startsWith(`${piece.course} `) || whole.course.endsWith(` ${piece.course}`);
 }
 
 /**
@@ -1041,7 +1175,7 @@ export function parseTimetableGrid(blocks: Block[]): ClassSession[] {
         }
         // A room under a course is where it is held; one with no course above
         // it belongs to a class the grid prints lower down, & is not a class.
-        if (looksLikeRoom(text)) {
+        if (looksLikeRoom(text) || (!text.includes('\n') && roomLine(text))) {
           if (above && above.slot >= slot - 1 && !above.session.room)
             above.session.room = tidy(text);
           continue;
@@ -1055,7 +1189,9 @@ export function parseTimetableGrid(blocks: Block[]): ClassSession[] {
           if (
             above &&
             above.slot === slot - 1 &&
-            sameTitle(above.session.course, session.course) &&
+            (sameTitle(above.session.course, session.course) ||
+              fragmentOf(session, above.session) ||
+              fragmentOf(above.session, session)) &&
             above.session.endTime === session.startTime &&
             above.session.type === session.type &&
             (!session.room || !above.session.room || session.room === above.session.room) &&
@@ -1100,5 +1236,55 @@ export function parseTimetableGrid(blocks: Block[]): ClassSession[] {
     }
   }
 
+  return withKnownTeachers(classes);
+}
+
+/**
+ * Gives a class with no teacher the one its title closes on, where the sheet
+ * names that teacher for another class — a surname set on the title's line,
+ * "... ΦΥΤΩΝ ΤΕΣΤΕΜΠΑΣΗΣ ΕΡ ΜΚ" — the rest after it the room.
+ */
+function withKnownTeachers(classes: ClassSession[]): ClassSession[] {
+  // A name the sheet gives as a teacher more often than it prints it in a
+  // title, & that does not end as a title's word does ("ΑΝΑΤΟΜΙΑ").
+  const asTeacher = new Map<string, number>();
+  const inTitles = new Map<string, number>();
+  for (const one of classes) {
+    for (const name of (one.teacher ?? '').split(/\s*[,/]\s*/u)) {
+      asTeacher.set(name, (asTeacher.get(name) ?? 0) + 1);
+    }
+    for (const word of new Set(one.course.split(' '))) {
+      inTitles.set(word, (inTitles.get(word) ?? 0) + 1);
+    }
+  }
+  const known = new Set(
+    [...asTeacher].flatMap(([name, count]) =>
+      /^[Α-ΩΆ-ΏΪ]{5,}$|^[Α-ΩΆ-Ώ][α-ωά-ώϊΐ]{4,}$/u.test(name) &&
+      count >= 2 &&
+      count >= (inTitles.get(name) ?? 0) &&
+      !/(?:ΙΑ|ΙΑΣ|ΙΚΗ|ΙΚΗΣ|ΙΚΑ|ΟΤΗΤΑ|ΟΤΗΤΕΣ|ΤΗΤΕΣ|ΣΕΙΣ|ΜΑΤΑ|ΩΝ|ία|ική|ικά|ότητα|ών)$/u.test(name)
+        ? [name]
+        : [],
+    ),
+  );
+  for (const one of classes) {
+    if (one.teacher) continue;
+    const words = one.course.split(' ');
+    const at = words.findIndex((word, i) => i > 0 && known.has(word));
+    if (at < 0) continue;
+    const after = words.slice(at + 1).join(' ');
+    // After the name, nothing, or a room, or the title's kind: "(Θ)".
+    const rest = after.replace(/\s*\((?:Θ|Ε|E)\d?\)$/u, '');
+    if (
+      rest &&
+      !roomLine(rest) &&
+      !/^(?:[Α-ΩΆ-ΏΪ]{1,5}|\d{1,2})(?:(?:\s*\/\s*|\s+)(?:[Α-ΩΆ-ΏΪ]{1,5}|\d{1,2}))*$/u.test(rest)
+    ) {
+      continue;
+    }
+    one.teacher = words[at]!;
+    one.course = [...words.slice(0, at), after.slice(rest.length).trim()].filter(Boolean).join(' ');
+    if (rest) one.room ??= rest;
+  }
   return classes;
 }

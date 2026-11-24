@@ -493,6 +493,64 @@ describe('parseTimetableGrid, cells with no italic teacher', () => {
     expect(classes.map((one) => one.course)).toEqual(['Κεραμικά Υλικά', 'Κεραμικά Υλικά (Ε)']);
   });
 
+  it("reads Agriculture's rooms in short codes after the teacher", () => {
+    expect(details('ΑΜΠΕΛΟΥΡΓΙΑ (Ε)\nΓΚΡΙΜΠΙΖΗΣ\n11 / ΑΓΡΟ')).toEqual([
+      { course: 'ΑΜΠΕΛΟΥΡΓΙΑ (Ε)', teacher: 'ΓΚΡΙΜΠΙΖΗΣ', room: '11 / ΑΓΡΟ' },
+    ]);
+    expect(details('ΦΥΣΙΟΛΟΓΙΑ ΘΡΕΨΗΣ\nΑΓΡΟΤΙΚΩΝ ΖΩΩΝ (Θ)\nΖΑΡΑΛΗΣ\nΕΖΔ')).toEqual([
+      { course: 'ΦΥΣΙΟΛΟΓΙΑ ΘΡΕΨΗΣ ΑΓΡΟΤΙΚΩΝ ΖΩΩΝ (Θ)', teacher: 'ΖΑΡΑΛΗΣ', room: 'ΕΖΔ' },
+    ]);
+  });
+
+  it('keeps a title with a dash whole where no code heads it', () => {
+    expect(details('ΕΠΙΚΟΙΝΩΝΙΑ ΑΝΘΡΩΠΟΥ - ΥΠΟΛΟΓΙΣΤΗ')).toEqual([
+      { course: 'ΕΠΙΚΟΙΝΩΝΙΑ ΑΝΘΡΩΠΟΥ - ΥΠΟΛΟΓΙΣΤΗ', teacher: undefined, room: undefined },
+    ]);
+  });
+
+  it('gives a title the teacher it closes on, where the sheet names them elsewhere', () => {
+    const classes = parseTimetableGrid([
+      table([
+        header,
+        [
+          time('09:00 – 10:00'),
+          [run('ΦΥΤΟΠΑΘΟΛΟΓΙΑ (Ε)\nΤΕΣΤΕΜΠΑΣΗΣ\nΕΡ ΜΚ')],
+          [run('ΕΙΔΙΚΗ ΦΥΤΟΠΑΘΟΛΟΓΙΑ (Θ)\nΤΕΣΤΕΜΠΑΣΗΣ\n11')],
+          [run('ΣΥΓΧΡΟΝΕΣ ΑΡΧΕΣ ΔΙΑΓΝΩΣΗΣ ΦΥΤΩΝ ΤΕΣΤΕΜΠΑΣΗΣ ΕΡ ΜΚ\n(Ε1)')],
+          [],
+          [],
+        ],
+      ]),
+    ]);
+    expect(classes[2]).toEqual(
+      expect.objectContaining({
+        course: 'ΣΥΓΧΡΟΝΕΣ ΑΡΧΕΣ ΔΙΑΓΝΩΣΗΣ ΦΥΤΩΝ (Ε1)',
+        teacher: 'ΤΕΣΤΕΜΠΑΣΗΣ',
+        room: 'ΕΡ ΜΚ',
+      }),
+    );
+  });
+
+  it('joins a word of a title, cut off by a slot, with its class', () => {
+    const classes = parseTimetableGrid([
+      table([
+        header,
+        [
+          time('17:00 – 18:00'),
+          [run('Μαθηματικός\nΠρογραμματισμός\nΑίθουσα Β12\nΠ. Μπουντζής')],
+          [],
+          [],
+          [],
+          [],
+        ],
+        [time('18:00 – 19:00'), [run('Μαθηματικός')], [], [], [], []],
+      ]),
+    ]);
+    expect(classes).toEqual([
+      expect.objectContaining({ course: 'Μαθηματικός Προγραμματισμός', endTime: '19:00' }),
+    ]);
+  });
+
   it('takes a room from the column beside a class', () => {
     const classes = parseTimetableGrid([
       table([
