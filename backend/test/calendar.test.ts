@@ -147,6 +147,26 @@ describe('finding the calendar decision', () => {
     ).toEqual([[2026, 202603]]);
   });
 
+  it('takes a decision a department names in Latin letters, but none of its other extracts', () => {
+    const page = `
+      <a class="doc-item" href="/docs/cs/2026/st07-21-apospasma-exe-s251-egkrisi-akadimaikou-imerologiou-etous-2026-2027-signed.pdf">Ακαδημαϊκό ημερολόγιο 2026-2027<span class="tag">PDF</span><span class="sr-only"> (ανοίγει σε νέα καρτέλα)</span></a>
+      <a class="doc-item" href="/docs/cs/2025/v03-21-apospasma-egkrisi-anatheorisis-pps-odigou-spoudon-2023-24-tmplir-signed.pdf">Πρόγραμμα σπουδών</a>
+      <a class="doc-item" href="/docs/cs/2026/chronodiagramma-cheim-2026-2027.pdf">Χρονοδιάγραμμα</a>`;
+    expect(
+      calendarCandidates(page, 'https://cs.uowm.gr/el/studies/').map((c) => [
+        c.year,
+        c.label,
+        c.url,
+      ]),
+    ).toEqual([
+      [
+        2026,
+        'Ακαδημαϊκό ημερολόγιο 2026-2027',
+        'https://cs.uowm.gr/docs/cs/2026/st07-21-apospasma-exe-s251-egkrisi-akadimaikou-imerologiou-etous-2026-2027-signed.pdf',
+      ],
+    ]);
+  });
+
   it('turns to the new academic year in October, after the September resits', () => {
     expect(academicYearOf(new Date('2027-09-20T12:00:00Z'))).toBe(2026);
     expect(academicYearOf(new Date('2027-10-01T12:00:00Z'))).toBe(2027);
