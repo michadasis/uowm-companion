@@ -401,17 +401,20 @@ export const departments: readonly Department[] = [
     school: 'sciences',
     city: 'kastoria',
     website: site('cs'),
+    // The site is no longer WordPress since late November 2026: posts come
+    // from its feed, & both schedules are entries on the Studies page whose
+    // links are swapped for each new one.
     sources: {
-      announcements: wordpress('cs', [39]),
+      announcements: { adapter: 'rss', feedUrl: `${site('cs')}/el/news/rss.xml` },
       exams: {
-        adapter: 'document-page',
-        pageUrl: `${site('cs')}/archiki-selida/programma-spoudwn/programma-exetaseon/`,
-        pick: 'first-link',
+        adapter: 'menu-link',
+        pageUrl: `${site('cs')}/el/studies/`,
+        label: 'Πρόγραμμα εξεταστικής',
       },
       timetable: {
-        adapter: 'document-page',
-        pageUrl: `${site('cs')}/archiki-selida/orologio-programma-mathimaton/`,
-        pick: 'newest-upload',
+        adapter: 'menu-link',
+        pageUrl: `${site('cs')}/el/studies/`,
+        label: 'Ωρολόγιο πρόγραμμα',
       },
     },
   },

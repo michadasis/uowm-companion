@@ -116,6 +116,41 @@ describe('discoverDocument', () => {
     );
   });
 
+  it('finds a document entry by its label when a note follows it, as on the Informatics site', async () => {
+    const studies = 'https://cs.uowm.gr/el/studies/';
+    const entry = (href: string, label: string, note: string) =>
+      `<li><a class="doc-item" href="${href}"><span class="doc-item-text">` +
+      `<span class="doc-item-label">${label}</span><span class="doc-item-note">${note}</span>` +
+      '</span><span class="tag">DOCX</span></a></li>';
+    const fetchText = pages({
+      [studies]:
+        '<ul>' +
+        entry(
+          '/docs/cs/2026/timetable-che.docx',
+          'Ωρολόγιο πρόγραμμα μαθημάτων',
+          'Χειμερινό 2026-2027',
+        ) +
+        entry(
+          '/docs/cs/2026/exams-cs-sep.docx',
+          'Πρόγραμμα εξεταστικής',
+          'Επαναληπτική Σεπτεμβρίου',
+        ) +
+        '</ul>',
+    });
+    const source = (label: string): ScheduleSource => ({
+      adapter: 'menu-link',
+      pageUrl: studies,
+      label,
+    });
+
+    expect((await discoverDocument(source('Πρόγραμμα εξεταστικής'), fetchText))?.url).toBe(
+      'https://cs.uowm.gr/docs/cs/2026/exams-cs-sep.docx',
+    );
+    expect((await discoverDocument(source('Ωρολόγιο πρόγραμμα'), fetchText))?.url).toBe(
+      'https://cs.uowm.gr/docs/cs/2026/timetable-che.docx',
+    );
+  });
+
   it('returns null when a page has no document', async () => {
     const fetchText = pages({ [examsPage]: '<article><a href="/page/">Σελίδα</a></article>' });
     const source: ScheduleSource = {

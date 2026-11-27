@@ -4,13 +4,13 @@ import { htmlToBlocks } from '../content/html-to-blocks.js';
 
 import type { Announcement } from './types.js';
 
-function slugOf(url: string): string {
+export function slugOf(url: string): string {
   const path = new URL(url).pathname.replace(/\/$/, '');
   return path.split('/').pop() || url;
 }
 
 /** The excerpt a post page gives, or the start of its first paragraph. */
-function excerptOf(pageExcerpt: string | null, body: Announcement['body']): string {
+export function excerptOf(pageExcerpt: string | null, body: Announcement['body']): string {
   if (pageExcerpt) return pageExcerpt;
   const firstParagraph = body.find((block) => block.type === 'paragraph');
   if (firstParagraph?.type !== 'paragraph') return '';

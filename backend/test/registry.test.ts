@@ -26,7 +26,11 @@ function sourceUrls(department: Department): string[] {
         ]
       : [];
   return [
-    announcements.adapter === 'wordpress-rest' ? announcements.apiRoot : announcements.listingUrl,
+    announcements.adapter === 'wordpress-rest'
+      ? announcements.apiRoot
+      : announcements.adapter === 'rss'
+        ? announcements.feedUrl
+        : announcements.listingUrl,
     ...schedule(exams),
     ...schedule(timetable),
   ];
@@ -39,6 +43,8 @@ function expectValidAnnouncements(source: AnnouncementsSource) {
     for (const category of source.categories) {
       expect(Number.isInteger(category) && category > 0).toBe(true);
     }
+  } else if (source.adapter === 'rss') {
+    expect(() => new URL(source.feedUrl)).not.toThrow();
   } else {
     expect(() => new URL(source.listingUrl)).not.toThrow();
     // The archive gives the post links; the post pages live under this prefix.

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { parseHtmlListingPost } from '../src/announcements/htmlListing.js';
+import { parseRssFeed } from '../src/announcements/rss.js';
 import {
   attachmentBlocks,
   parseWordPressPosts,
@@ -154,5 +155,93 @@ describe('attachmentBlocks', () => {
     expect(wordpressMediaUrl('https://eled.uowm.gr/wp-json/', 42)).toBe(
       'https://eled.uowm.gr/wp-json/wp/v2/media?parent=42&_fields=source_url%2Ctitle',
     );
+  });
+});
+
+describe('parseRssFeed', () => {
+  const item = (inner: string) => `<item>${inner}</item>`;
+  const feed = (...items: string[]) =>
+    `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>Ανακοινώσεις</title>${items.join('')}</channel></rss>`;
+
+  it('normalises an item into an announcement', () => {
+    const [announcement] = parseRssFeed(
+      feed(
+        item(
+          '<title>Ημερίδα: “Πιθανότητες &amp; Εφαρμογές”</title>' +
+            '<link>https://cs.uowm.gr/el/news/a/s759069bef372/</link>' +
+            '<guid isPermaLink="true">https://cs.uowm.gr/el/news/a/s759069bef372/</guid>' +
+            '<pubDate>Thu, 26 Nov 2026 22:25:31 +0200</pubDate>' +
+            '<category>Εκδηλώσεις</category>' +
+            '<description>&lt;p&gt;Την Παρασκευή στην &lt;strong&gt;Αίθουσα Β2&lt;/strong&gt;.&lt;/p&gt;' +
+            '&lt;p&gt;&lt;a href="https://cs.uowm.gr/uploads/announcements/2026/s75-1.pdf"&gt;Αφίσα&lt;/a&gt;&lt;/p&gt;</description>',
+        ),
+      ),
+      'cs',
+    );
+
+    expect(announcement).toMatchObject({
+      id: 'cs:s759069bef372',
+      title: 'Ημερίδα: “Πιθανότητες & Εφαρμογές”',
+      date: '2026-11-26T20:25:31.000Z',
+      excerpt: 'Την Παρασκευή στην Αίθουσα Β2.',
+      sourceUrl: 'https://cs.uowm.gr/el/news/a/s759069bef372/',
+    });
+    expect(announcement?.attachments).toEqual([
+      expect.objectContaining({
+        href: 'https://cs.uowm.gr/uploads/announcements/2026/s75-1.pdf',
+        format: 'pdf',
+      }),
+    ]);
+  });
+
+  it('reads a description given as CDATA', () => {
+    const [announcement] = parseRssFeed(
+      feed(
+        item(
+          '<title>Α</title><link>https://cs.uowm.gr/el/news/a/x1/</link>' +
+            '<description><![CDATA[<p>Σώμα.</p>]]></description>',
+        ),
+      ),
+      'cs',
+    );
+    expect(announcement?.excerpt).toBe('Σώμα.');
+  });
+
+  it('adds an enclosure the body does not already link, once', () => {
+    const pdf = 'https://cs.uowm.gr/newsletters/newsletter-04.pdf';
+    const [onlyEnclosed, alsoLinked] = parseRssFeed(
+      feed(
+        item(
+          '<title>Newsletter</title><link>https://cs.uowm.gr/el/news/a/n1/</link>' +
+            `<enclosure url="${pdf}" length="1" type="application/pdf"/>`,
+        ),
+        item(
+          '<title>Newsletter</title><link>https://cs.uowm.gr/el/news/a/n2/</link>' +
+            `<description>&lt;p&gt;&lt;a href="${pdf}"&gt;Το τεύχος&lt;/a&gt;&lt;/p&gt;</description>` +
+            `<enclosure url="${pdf}" length="1" type="application/pdf"/>`,
+        ),
+      ),
+      'cs',
+    );
+
+    expect(onlyEnclosed?.body).toEqual([
+      { type: 'attachment', name: 'newsletter 04', href: pdf, format: 'pdf' },
+    ]);
+    expect(alsoLinked?.attachments).toHaveLength(1);
+  });
+
+  it('leaves out an item without a title or a link & keeps an undated one undated', () => {
+    const announcements = parseRssFeed(
+      feed(
+        item('<link>https://cs.uowm.gr/el/news/a/no-title/</link>'),
+        item('<title>Χωρίς σύνδεσμο</title>'),
+        item(
+          '<title>Χωρίς ημερομηνία</title><link>https://cs.uowm.gr/el/news/a/d1/</link>' +
+            '<pubDate>ποτέ</pubDate><description>&lt;p&gt;Κάτι.&lt;/p&gt;</description>',
+        ),
+      ),
+      'cs',
+    );
+    expect(announcements.map((a) => [a.id, a.date])).toEqual([['cs:d1', null]]);
   });
 });

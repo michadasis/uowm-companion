@@ -3,6 +3,7 @@ import { FetchError, fetchJson, fetchText, mapWithConcurrency } from '../http/fe
 import type { AnnouncementsSource } from '../registry/index.js';
 
 import { parseHtmlListingPost } from './htmlListing.js';
+import { parseRssFeed } from './rss.js';
 import type { Announcement } from './types.js';
 import {
   attachmentBlocks,
@@ -25,13 +26,24 @@ const listingLastPage = 6;
 
 /**
  * Reads a department's or the university's announcements from whichever source
- * the registry records for it. WordPress REST is one request; the two sites
- * that block it are scraped, their post pages fetched a few at a time.
+ * the registry records for it. WordPress REST & RSS are one request each; the
+ * two sites that block REST are scraped, their post pages fetched a few at a
+ * time.
  */
 export async function fetchAnnouncements(
   source: AnnouncementsSource,
   id: string,
 ): Promise<Announcement[]> {
+  if (source.adapter === 'rss') {
+    const announcements = parseRssFeed(await fetchText(source.feedUrl), id);
+    // A feed with nothing in it is a page served in its place, not a quiet
+    // department; failing keeps it from being cached as the feed.
+    if (announcements.length === 0) {
+      throw new FetchError(`No announcements in the feed at ${source.feedUrl}`);
+    }
+    return orderNewestFirst(announcements).slice(0, perPage);
+  }
+
   if (source.adapter === 'wordpress-rest') {
     const data = await fetchJson(wordpressPostsUrl(source.apiRoot, source.categories, perPage));
     const announcements = parseWordPressPosts(wpPostsSchema.parse(data), id);

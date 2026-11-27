@@ -53,7 +53,17 @@ export interface HtmlListingSource {
   postPathPrefix: string;
 }
 
-export type AnnouncementsSource = WordPressRestSource | HtmlListingSource;
+/**
+ * Posts read from the site's RSS feed, each item carrying the whole post as
+ * HTML. For a site that is no longer WordPress, as Informatics since its new
+ * site went up in November 2026.
+ */
+export interface RssSource {
+  adapter: 'rss';
+  feedUrl: string;
+}
+
+export type AnnouncementsSource = WordPressRestSource | HtmlListingSource | RssSource;
 
 /**
  * Where a department keeps its current exam schedule or timetable.
